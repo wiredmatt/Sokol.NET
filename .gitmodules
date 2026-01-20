@@ -18,3 +18,7 @@
 	path = ext/box2d
 	url = https://github.com/elix22/box2d.git
 	branch = sokol-dev
+[submodule "ext/SharpGLTF"]
+	path = ext/SharpGLTF
+	url = https://github.com/elix22/SharpGLTF.git
+	branch = sokol-dotnet

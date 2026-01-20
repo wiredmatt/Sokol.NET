@@ -341,7 +341,7 @@ public static unsafe partial class GltfViewer
                 try
                 {
                     // Validate content now that all dependencies are loaded
-                    modelRoot._ValidateContentAfterAsyncLoad(SharpGLTF.Validation.ValidationMode.Strict);
+                    modelRoot.ValidateContentAfterAsyncLoad(SharpGLTF.Validation.ValidationMode.Strict);
                     Info($"[SharpGLTF] Model validation passed");
                 }
                 catch (Exception ex)
@@ -505,7 +505,7 @@ public static unsafe partial class GltfViewer
                 var imageDecoder = CreateImageDecoder();
 
                 // Continue loading (this will start loading one dependency and return)
-                modelRoot._ContinueAsyncResolveSatelliteDependencies(loadState, asyncLoader, imageDecoder);
+                modelRoot.ContinueAsyncResolveSatelliteDependencies(loadState, asyncLoader, imageDecoder);
 
                 // Update loading progress for UI
                 state.loadingProgress = (int)(loadState.Progress * 100);

@@ -143,7 +143,7 @@ public static unsafe partial class GltfViewer
 
                     // Begin async loading of satellite dependencies
                     // Pass the context so embedded buffers (GLB binary chunk) can be resolved
-                    state.asyncLoadState = modelRoot._BeginAsyncResolveSatelliteDependencies(context);
+                    state.asyncLoadState = modelRoot.BeginAsyncResolveSatelliteDependencies(context);
 
                     Info($"[SharpGLTF] Found {state.asyncLoadState.TotalDependencies} external dependencies to load");
 
@@ -1039,7 +1039,7 @@ public static unsafe partial class GltfViewer
 
                     // Begin async loading of satellite dependencies
                     // Pass the context so embedded buffers (GLB binary chunk) can be resolved
-                    state.asyncLoadState = modelRoot._BeginAsyncResolveSatelliteDependencies(context);
+                    state.asyncLoadState = modelRoot.BeginAsyncResolveSatelliteDependencies(context);
 
                     Info($"[SharpGLTF] Found {state.asyncLoadState.TotalDependencies} external dependencies to load");
 

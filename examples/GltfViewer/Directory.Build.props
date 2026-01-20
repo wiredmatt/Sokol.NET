@@ -43,6 +43,17 @@
     </Compile>
    </ItemGroup>
 
+   <ItemGroup>
+    <Compile Include="$(SokolNetHome)/ext/SharpGLTF/src/Shared/*.cs" >
+        <Link>SharpGLTF\Shared\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="$(SokolNetHome)/ext/SharpGLTF/src/SharpGLTF.Core/**/*.cs" >
+        <Link>SharpGLTF\Core\%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+  
+
 
    <ItemGroup>
       <ShaderFiles Include="shaders/bloom.glsl" />
