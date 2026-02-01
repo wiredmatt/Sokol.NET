@@ -490,8 +490,9 @@ public static unsafe class Box2dApp
         state.isCleaningUp = true;
         
         // Give Frame a chance to exit if it's running
+#if !WEB
         System.Threading.Thread.Sleep(20);
-        
+#endif
         try
         {
             // Destroy all bodies first

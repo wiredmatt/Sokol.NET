@@ -39,9 +39,21 @@
       <SokolLibPath>$(SokolLibsPath)emscripten/x86/$(BuildConfigLower)/sokol.a</SokolLibPath>
     </PropertyGroup>
 
+
+    <PropertyGroup>
+      <box2dCLibsPath>$(SokolNetHome)/ext/box2d/libs/</box2dCLibsPath>
+       <box2dLibPath>$(box2dCLibsPath)emscripten/x86/release/box2d.a</box2dLibPath>
+    </PropertyGroup>
+
     <ItemGroup>
       <NativeFileReference Include="$(SokolLibPath)">
         <Link>libs\sokol.a</Link>
+      </NativeFileReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeFileReference Include="$(box2dLibPath)">
+        <Link>libs\box2d.a</Link>
       </NativeFileReference>
     </ItemGroup>
 
