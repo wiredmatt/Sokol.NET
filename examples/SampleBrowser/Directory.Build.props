@@ -63,6 +63,16 @@
   </Target>
 
 
+   <!-- iOS And Android Configuration -->
+   <!-- Native Library Configuration for Android and iOS -->
+   <PropertyGroup>
+      <!-- Android box2d Library Configuration -->
+      <AndroidNativeLibrary_box2dPath>../../ext/box2d/libs/android</AndroidNativeLibrary_box2dPath>
+       <!-- iOS box2d Library Configuration -->
+       <IOSNativeLibrary_box2dPath>../../ext/box2d/libs/ios/release</IOSNativeLibrary_box2dPath>
+   </PropertyGroup>
+
+
    <!-- Android Configuration -->
    <PropertyGroup>
       <!-- Package Prefix (e.g., com.yourcompany will create com.yourcompany.appname) -->

@@ -30,7 +30,8 @@ public static unsafe class SamplebrowserApp
         Offscreen,
         Instancing,
         Loadpng,
-        CubemapJpeg
+        CubemapJpeg,
+        Box2dPhysics
     }
 
     struct SampleInfo
@@ -208,6 +209,16 @@ public static unsafe class SamplebrowserApp
                 FrameCallback = &CubemapJpegApp.Frame,
                 EventCallback = &CubemapJpegApp.Event,
                 CleanupCallback = &CubemapJpegApp.Cleanup
+            },
+            new SampleInfo
+            {
+                Id = SampleId.Box2dPhysics,
+                Name = "Box2D Physics",
+                Description = "Interactive physics simulation with Box2D - click to spawn shapes",
+                InitCallback = &Box2dApp.Init,
+                FrameCallback = &Box2dApp.Frame,
+                EventCallback = &Box2dApp.Event,
+                CleanupCallback = &Box2dApp.Cleanup
             }
         };
     }

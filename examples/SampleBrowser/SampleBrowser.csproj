@@ -79,9 +79,12 @@
       <PropertyGroup>
         <BuildConfigLower>$(Configuration.ToLower())</BuildConfigLower>
         <libSokol>$(SokolLibsPath)windows/$(OSArch)/$(BuildConfigLower)/sokol.dll</libSokol>
+        <libbox2d>$(SokolNetHome)/ext/box2d/libs/windows/$(OSArch)/release/box2d.dll</libbox2d>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="sokol.dll not found at $(libSokol). Please build the library using .\scripts\build-vs2022-windows.ps1" />
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libbox2d)')" Text="box2d.dll not found at $(libbox2d). Please build the library using .\ext\box2d\scripts\build-box2d-windows.ps1" />
+      <Copy SourceFiles="$(libbox2d)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -89,9 +92,12 @@
       <PropertyGroup>
         <BuildConfigLower>$(Configuration.ToLower())</BuildConfigLower>
         <libSokol>$(SokolLibsPath)windows/$(OSArch)/$(BuildConfigLower)/sokol.dll</libSokol>
+        <libbox2d>$(SokolNetHome)/ext/box2d/libs/windows/$(OSArch)/release/box2d.dll</libbox2d>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="sokol.dll not found at $(libSokol). Please build the library using .\scripts\build-vs2022-windows.ps1" />
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libbox2d)')" Text="box2d.dll not found at $(libbox2d). Please build the library using .\ext\box2d\scripts\build-box2d-windows.ps1" />
+      <Copy SourceFiles="$(libbox2d)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(PublishDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -99,9 +105,12 @@
       <PropertyGroup>
         <BuildConfigLower>$(Configuration.ToLower())</BuildConfigLower>
         <libSokol>$(SokolLibsPath)macos/$(OSArch)/$(BuildConfigLower)/libsokol.dylib</libSokol>
+        <libbox2d>$(SokolNetHome)/ext/box2d/libs/macos/$(OSArch)/release/libbox2d.dylib</libbox2d>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="libSokol.dylib not found at $(libSokol). Please build the library using ./scripts/build-xcode-macos.sh" /> 
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libbox2d)')" Text="libbox2d.dylib not found at $(libbox2d). Please build the library using ./ext/box2d/scripts/build-box2d-macos.sh" />
+      <Copy SourceFiles="$(libbox2d)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
        <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -109,9 +118,12 @@
       <PropertyGroup>
         <BuildConfigLower>$(Configuration.ToLower())</BuildConfigLower>
         <libSokol>$(SokolLibsPath)macos/$(OSArch)/$(BuildConfigLower)/libsokol.dylib</libSokol>
+        <libbox2d>$(SokolNetHome)/ext/box2d/libs/macos/$(OSArch)/release/libbox2d.dylib</libbox2d>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="libSokol.dylib not found at $(libSokol). Please build the library using ./scripts/build-xcode-macos.sh" /> 
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libbox2d)')" Text="libbox2d.dylib not found at $(libbox2d). Please build the library using ./ext/box2d/scripts/build-box2d-macos.sh" />
+      <Copy SourceFiles="$(libbox2d)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(PublishDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -119,9 +131,12 @@
       <PropertyGroup>
         <BuildConfigLower>$(Configuration.ToLower())</BuildConfigLower>
         <libSokol>$(SokolLibsPath)linux/$(OSArch)/$(BuildConfigLower)/libsokol.so</libSokol>
+        <libbox2d>$(SokolNetHome)/ext/box2d/libs/linux/$(OSArch)/release/libbox2d.so</libbox2d>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="libsokol.so not found at $(libSokol). Please build the library using ./scripts/build-linux-library.sh" />
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libbox2d)')" Text="libbox2d.so not found at $(libbox2d). Please build the library using ./ext/box2d/scripts/build-box2d-linux.sh" />
+      <Copy SourceFiles="$(libbox2d)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -129,9 +144,12 @@
       <PropertyGroup>
         <BuildConfigLower>$(Configuration.ToLower())</BuildConfigLower>
         <libSokol>$(SokolLibsPath)linux/$(OSArch)/$(BuildConfigLower)/libsokol.so</libSokol>
+        <libbox2d>$(SokolNetHome)/ext/box2d/libs/linux/$(OSArch)/release/libbox2d.so</libbox2d>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="libsokol.so not found at $(libSokol). Please build the library using ./scripts/build-linux-library.sh" />
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libbox2d)')" Text="libbox2d.so not found at $(libbox2d). Please build the library using ./ext/box2d/scripts/build-box2d-linux.sh" />
+      <Copy SourceFiles="$(libbox2d)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(PublishDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
