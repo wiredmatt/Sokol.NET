@@ -204,7 +204,7 @@ public static unsafe class InstancingSApp
                 width = sapp_width(),
                 height = sapp_height(),
                 delta_time = sapp_frame_duration(),
-                dpi_scale = sapp_dpi_scale()
+                dpi_scale = 1
             });
             SamplebrowserApp.DrawBackButton();
             simgui_render();
