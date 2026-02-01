@@ -34,7 +34,8 @@ public static unsafe class SamplebrowserApp
         Box2dPhysics,
         ShaderToyApp,
         Cgltf,
-        JoltPhysics
+        JoltPhysics,
+        Sdf
     }
 
     struct SampleInfo
@@ -89,7 +90,7 @@ public static unsafe class SamplebrowserApp
             ImGuiWindowFlags.NoScrollbar |
             ImGuiWindowFlags.NoCollapse))
         {
-            if (igButton("← Back", new Vector2(84, 34)))
+            if (igButton("<- Back", new Vector2(84, 34)))
             {
                 clicked = true;
                 RequestReturnToMenu();
@@ -252,6 +253,16 @@ public static unsafe class SamplebrowserApp
                 FrameCallback = &JoltphysicsApp.Frame,
                 EventCallback = &JoltphysicsApp.Event,
                 CleanupCallback = &JoltphysicsApp.Cleanup
+            },
+            new SampleInfo
+            {
+                Id = SampleId.Sdf,
+                Name = "SDF Rendering",
+                Description = "Signed Distance Field rendering demo with animated shapes",
+                InitCallback = &SdfApp.Init,
+                FrameCallback = &SdfApp.Frame,
+                EventCallback = &SdfApp.Event,
+                CleanupCallback = &SdfApp.Cleanup
             }
         };
     }
@@ -397,12 +408,20 @@ public static unsafe class SamplebrowserApp
             ImGuiWindowFlags.NoResize | 
             ImGuiWindowFlags.NoMove))
         {
-            igText("Welcome to the Sokol.NET Sample Browser!");
-            igText("Open source project under the MIT license");
-            igText("https://github.com/elix22/Sokol.NET");
-            igText("Select a sample from the list below to run it.");
+            igText("Sokol.NET Sample Browser");
+            igSpacing();
+            igText("Explore modern graphics programming through interactive demos!");
+            igText("Learn rendering techniques, physics simulation, and shader programming");
+            igText("with real-time 3D examples powered by Sokol graphics library.");
+            igSpacing();
+            igText("Perfect for developers learning graphics APIs and .NET game development.");
+            igSpacing();
+            igText("Free and open source (MIT License) • Full source code available");
+            igText("GitHub: https://github.com/elix22/Sokol.NET");
+            igSpacing();
+            igText("Choose a sample below to begin:");
 #if __ANDROID__ || __IOS__
-            igText("Press the Back button to return to this menu.");
+            igText("Tap the Back button to return to this menu.");
 #else
             igText("Press ESC to return to this menu.");
 #endif
