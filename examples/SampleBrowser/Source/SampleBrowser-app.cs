@@ -32,7 +32,8 @@ public static unsafe class SamplebrowserApp
         Loadpng,
         CubemapJpeg,
         Box2dPhysics,
-        ShaderToyApp
+        ShaderToyApp,
+        Cgltf
     }
 
     struct SampleInfo
@@ -230,6 +231,16 @@ public static unsafe class SamplebrowserApp
                 FrameCallback = &ShaderToyApp.Frame,
                 EventCallback = &ShaderToyApp.Event,
                 CleanupCallback = &ShaderToyApp.Cleanup
+            },
+            new SampleInfo
+            {
+                Id = SampleId.Cgltf,
+                Name = "GLTF Model Viewer",
+                Description = "Load and display a glTF model with PBR materials",
+                InitCallback = &CGltfApp.Init,
+                FrameCallback = &CGltfApp.Frame,
+                EventCallback = &CGltfApp.Event,
+                CleanupCallback = &CGltfApp.Cleanup
             }
         };
     }
