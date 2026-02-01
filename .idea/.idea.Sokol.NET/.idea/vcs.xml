@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ext/SharpGLTF" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ext/box2d" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ext/cimgui" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ext/cimgui/imgui" vcs="Git" />
