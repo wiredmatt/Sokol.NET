@@ -377,6 +377,9 @@ public static unsafe class SamplebrowserApp
         igSetNextWindowSize(new Vector2(windowWidth, windowHeight), ImGuiCond.Always);
         igSetNextWindowPos(new Vector2(0, 0), ImGuiCond.Always, Vector2.Zero);
 
+        // Make scrollbar thicker
+        igPushStyleVar_Float(ImGuiStyleVar.ScrollbarSize, 20.0f);
+
         byte open = 1;
         if (igBegin("Sokol.NET Sample Browser", ref open, 
             ImGuiWindowFlags.NoCollapse | 
@@ -384,8 +387,14 @@ public static unsafe class SamplebrowserApp
             ImGuiWindowFlags.NoMove))
         {
             igText("Welcome to the Sokol.NET Sample Browser!");
+            igText("Open source project under the MIT license");
+            igText("https://github.com/elix22/Sokol.NET");
             igText("Select a sample from the list below to run it.");
-            igText("Press ESC while in a sample to return to this menu.");
+#if __ANDROID__ || __IOS__
+            igText("Press the Back button to return to this menu.");
+#else
+            igText("Press ESC to return to this menu.");
+#endif
             igSeparator();
             igSpacing();
 
@@ -411,6 +420,8 @@ public static unsafe class SamplebrowserApp
 
             igEnd();
         }
+        
+        igPopStyleVar(1);
     }
 
     [UnmanagedCallersOnly]
