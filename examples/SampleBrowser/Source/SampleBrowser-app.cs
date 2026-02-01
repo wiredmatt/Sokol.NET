@@ -31,7 +31,8 @@ public static unsafe class SamplebrowserApp
         Instancing,
         Loadpng,
         CubemapJpeg,
-        Box2dPhysics
+        Box2dPhysics,
+        ShaderToyApp
     }
 
     struct SampleInfo
@@ -219,6 +220,16 @@ public static unsafe class SamplebrowserApp
                 FrameCallback = &Box2dApp.Frame,
                 EventCallback = &Box2dApp.Event,
                 CleanupCallback = &Box2dApp.Cleanup
+            },
+            new SampleInfo
+            {
+                Id = SampleId.ShaderToyApp,
+                Name = "ShaderToy Gallery",
+                Description = "Collection of ShaderToy demos - click Prev/Next to navigate",
+                InitCallback = &ShaderToyApp.Init,
+                FrameCallback = &ShaderToyApp.Frame,
+                EventCallback = &ShaderToyApp.Event,
+                CleanupCallback = &ShaderToyApp.Cleanup
             }
         };
     }
