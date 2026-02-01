@@ -417,14 +417,16 @@ public static unsafe class SamplebrowserApp
         {
             CurrentCleanupCallback();
         }
-
-        // Cleanup ImGui if in menu mode
-        if (state.showMenu)
+        else
         {
-            simgui_shutdown();
-        }
+            // Cleanup ImGui if in menu mode
+            if (state.showMenu)
+            {
+                simgui_shutdown();
+            }
 
-        sg_shutdown();
+            sg_shutdown();
+        }
 
         // Force a complete shutdown if debugging
         if (Debugger.IsAttached)
