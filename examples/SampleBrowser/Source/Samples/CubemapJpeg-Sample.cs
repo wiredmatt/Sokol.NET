@@ -339,7 +339,7 @@ public static unsafe class CubemapJpegApp
             width = sapp_width(),
             height = sapp_height(),
             delta_time = sapp_frame_duration(),
-            dpi_scale = sapp_dpi_scale()
+            dpi_scale = 1
         });
         SamplebrowserApp.DrawBackButton();
         simgui_render();
@@ -367,10 +367,21 @@ public static unsafe class CubemapJpegApp
             }
         }
 
+        // Clean up resources
+        if (state.bind.vertex_buffers[0].id != 0)
+            sg_destroy_buffer(state.bind.vertex_buffers[0]);
+        if (state.bind.index_buffer.id != 0)
+            sg_destroy_buffer(state.bind.index_buffer);
+        if (state.pip.id != 0)
+            sg_destroy_pipeline(state.pip);
+
         sfetch_shutdown();
         simgui_shutdown();
         sdtx_shutdown();
-        sg_shutdown();
+        
+        // Note: sg_shutdown will be called by SampleBrowser
+        // Reset state for next run
+        state = default;
     }
 
     public static SApp.sapp_desc sokol_main()
