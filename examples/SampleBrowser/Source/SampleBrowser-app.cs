@@ -414,13 +414,13 @@ public static unsafe class SamplebrowserApp
             igText("Sokol.NET Sample Browser");
             igSpacing();
             igText("Cross-platform graphics framework for C# with .NET NativeAOT");
-            igText("Desktop • Mobile • Web | Direct3D • Metal • OpenGL • WebGL");
+            igText("Desktop | Mobile | Web | Direct3D | Metal | OpenGL | WebGL");
             igSpacing();
             igText("Interactive demos featuring 3D graphics, physics engines (Jolt, Box2D),");
             igText("model loading (glTF, Assimp), skeletal animation (Spine, Ozz),");
             igText("shader effects, and more - all running with near-native performance.");
             igSpacing();
-            igText("Open source (MIT License) • 38 examples • Full source available");
+            igText("Open source (MIT License) | 38 examples | Full source available");
             igText("https://github.com/elix22/Sokol.NET");
             igSpacing();
             igText("Select a demo below to explore:");
