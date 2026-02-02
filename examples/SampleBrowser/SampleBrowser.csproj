@@ -78,6 +78,7 @@
   <PropertyGroup>
     <Box2DLibsPath>$(SokolNetHome)/ext/box2d/libs/</Box2DLibsPath>
     <JoltPhysicsCLibsPath>$(SokolNetHome)/ext/joltc/libs/</JoltPhysicsCLibsPath>
+    <SpineCLibsPath>$(SokolNetHome)/ext/spine-c/libs/</SpineCLibsPath>
   </PropertyGroup>
 
   <Target Name="CopyCustomContentWindows" AfterTargets="AfterBuild" Condition="'$(IsWindows)'=='true'">
@@ -87,6 +88,7 @@
         <libbox2d>$(Box2DLibsPath)windows/$(OSArch)/release/box2d.dll</libbox2d>
         <libJoltc>$(JoltPhysicsCLibsPath)windows/$(OSArch)/release/joltc.dll</libJoltc>
         <libJolt>$(JoltPhysicsCLibsPath)windows/$(OSArch)/release/Jolt.dll</libJolt>
+        <libSpine>$(SpineCLibsPath)windows/$(OSArch)/release/spine-c.dll</libSpine>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="sokol.dll not found at $(libSokol). Please build the library using .\scripts\build-vs2022-windows.ps1" />
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
@@ -96,6 +98,8 @@
       <Copy SourceFiles="$(libJoltc)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
       <Error Condition="! Exists('$(libJolt)')" Text="Jolt.dll not found at $(libJolt). Please build the library using .\ext\joltc\scripts\build-joltc-windows.ps1" />
       <Copy SourceFiles="$(libJolt)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libSpine)')" Text="spine-c.dll not found at $(libSpine). Please build the library using .\ext\spine-c\scripts\build-spine-c-windows.ps1" />
+      <Copy SourceFiles="$(libSpine)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -106,6 +110,7 @@
         <libbox2d>$(Box2DLibsPath)windows/$(OSArch)/release/box2d.dll</libbox2d>
         <libJoltc>$(JoltPhysicsCLibsPath)windows/$(OSArch)/release/joltc.dll</libJoltc>
         <libJolt>$(JoltPhysicsCLibsPath)windows/$(OSArch)/release/Jolt.dll</libJolt>
+        <libSpine>$(SpineCLibsPath)windows/$(OSArch)/release/spine-c.dll</libSpine>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="sokol.dll not found at $(libSokol). Please build the library using .\scripts\build-vs2022-windows.ps1" />
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
@@ -115,6 +120,8 @@
       <Copy SourceFiles="$(libJoltc)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Error Condition="! Exists('$(libJolt)')" Text="Jolt.dll not found at $(libJolt). Please build the library using .\ext\joltc\scripts\build-joltc-windows.ps1" />
       <Copy SourceFiles="$(libJolt)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libSpine)')" Text="spine-c.dll not found at $(libSpine). Please build the library using .\ext\spine-c\scripts\build-spine-c-windows.ps1" />
+      <Copy SourceFiles="$(libSpine)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(PublishDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -125,6 +132,7 @@
         <libbox2d>$(Box2DLibsPath)macos/$(OSArch)/release/libbox2d.dylib</libbox2d>
         <libJoltc>$(JoltPhysicsCLibsPath)macos/$(OSArch)/release/libjoltc.dylib</libJoltc>
         <libJolt>$(JoltPhysicsCLibsPath)macos/$(OSArch)/release/libJolt.dylib</libJolt>
+        <libSpine>$(SpineCLibsPath)macos/$(OSArch)/release/libspine-c.dylib</libSpine>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="libSokol.dylib not found at $(libSokol). Please build the library using ./scripts/build-xcode-macos.sh" /> 
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
@@ -134,6 +142,8 @@
       <Copy SourceFiles="$(libJoltc)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
       <Error Condition="! Exists('$(libJolt)')" Text="libJolt.dylib not found at $(libJolt). Please build the library using ./ext/joltc/scripts/build-joltc-macos.sh" />
       <Copy SourceFiles="$(libJolt)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libSpine)')" Text="libspine-c.dylib not found at $(libSpine). Please build the library using ./ext/spine-c/scripts/build-spine-c-macos.sh" />
+      <Copy SourceFiles="$(libSpine)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
        <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -144,6 +154,7 @@
         <libbox2d>$(Box2DLibsPath)macos/$(OSArch)/release/libbox2d.dylib</libbox2d>
         <libJoltc>$(JoltPhysicsCLibsPath)macos/$(OSArch)/release/libjoltc.dylib</libJoltc>
         <libJolt>$(JoltPhysicsCLibsPath)macos/$(OSArch)/release/libJolt.dylib</libJolt>
+        <libSpine>$(SpineCLibsPath)macos/$(OSArch)/release/libspine-c.dylib</libSpine>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="libSokol.dylib not found at $(libSokol). Please build the library using ./scripts/build-xcode-macos.sh" /> 
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
@@ -153,6 +164,8 @@
       <Copy SourceFiles="$(libJoltc)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Error Condition="! Exists('$(libJolt)')" Text="libJolt.dylib not found at $(libJolt). Please build the library using ./ext/joltc/scripts/build-joltc-macos.sh" />
       <Copy SourceFiles="$(libJolt)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libSpine)')" Text="libspine-c.dylib not found at $(libSpine). Please build the library using ./ext/spine-c/scripts/build-spine-c-macos.sh" />
+      <Copy SourceFiles="$(libSpine)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(PublishDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -163,6 +176,7 @@
         <libbox2d>$(Box2DLibsPath)linux/$(OSArch)/release/libbox2d.so</libbox2d>
         <libJoltc>$(JoltPhysicsCLibsPath)linux/$(OSArch)/release/libjoltc.so</libJoltc>
         <libJolt>$(JoltPhysicsCLibsPath)linux/$(OSArch)/release/libJolt.so</libJolt>
+        <libSpine>$(SpineCLibsPath)linux/$(OSArch)/release/libspine-c.so</libSpine>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="libsokol.so not found at $(libSokol). Please build the library using ./scripts/build-linux-library.sh" />
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
@@ -172,6 +186,8 @@
       <Copy SourceFiles="$(libJoltc)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
       <Error Condition="! Exists('$(libJolt)')" Text="libJolt.so not found at $(libJolt). Please build the library using ./ext/joltc/scripts/build-joltc-linux.sh" />
       <Copy SourceFiles="$(libJolt)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libSpine)')" Text="libspine-c.so not found at $(libSpine). Please build the library using ./ext/spine-c/scripts/build-spine-c-linux.sh" />
+      <Copy SourceFiles="$(libSpine)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(OutDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 
@@ -182,6 +198,7 @@
         <libbox2d>$(Box2DLibsPath)linux/$(OSArch)/release/libbox2d.so</libbox2d>
         <libJoltc>$(JoltPhysicsCLibsPath)linux/$(OSArch)/release/libjoltc.so</libJoltc>
         <libJolt>$(JoltPhysicsCLibsPath)linux/$(OSArch)/release/libJolt.so</libJolt>
+        <libSpine>$(SpineCLibsPath)linux/$(OSArch)/release/libspine-c.so</libSpine>
       </PropertyGroup>
       <Error Condition="! Exists('$(libSokol)')" Text="libsokol.so not found at $(libSokol). Please build the library using ./scripts/build-linux-library.sh" />
       <Copy SourceFiles="$(libSokol)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
@@ -191,6 +208,8 @@
       <Copy SourceFiles="$(libJoltc)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Error Condition="! Exists('$(libJolt)')" Text="libJolt.so not found at $(libJolt). Please build the library using ./ext/joltc/scripts/build-joltc-linux.sh" />
       <Copy SourceFiles="$(libJolt)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+      <Error Condition="! Exists('$(libSpine)')" Text="libspine-c.so not found at $(libSpine). Please build the library using ./ext/spine-c/scripts/build-spine-c-linux.sh" />
+      <Copy SourceFiles="$(libSpine)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
       <Copy SourceFiles="@(AssetsSourceFiles)" DestinationFolder="$(PublishDir)\%(RecursiveDir)" SkipUnchangedFiles="true" Retries="3" RetryDelayMilliseconds="300" />
   </Target>
 

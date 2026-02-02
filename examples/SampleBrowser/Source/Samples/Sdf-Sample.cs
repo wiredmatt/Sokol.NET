@@ -52,8 +52,13 @@ public static unsafe class SdfApp
     [UnmanagedCallersOnly]
     public static unsafe void Init()
     {
-        // Don't call sg_setup - SampleBrowser manages graphics context
-        // sg_setup(new sg_desc() { ... });
+        sg_setup(new sg_desc()
+        {
+            environment = sglue_environment(),
+            logger =    {
+                func = &SLog.slog_func,
+            }
+        });
 
         // Setup ImGui for back button
         simgui_setup(new simgui_desc_t

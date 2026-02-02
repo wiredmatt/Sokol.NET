@@ -89,6 +89,12 @@
       <IOSNativeLibrary_joltcPath>../../ext/joltc/libs/ios/release</IOSNativeLibrary_joltcPath>
    </PropertyGroup>
 
+   <!-- Spine Library Configuration for Android and iOS -->
+   <PropertyGroup>
+      <AndroidNativeLibrary_spine-cPath>../../ext/spine-c/libs/android</AndroidNativeLibrary_spine-cPath>
+      <IOSNativeLibrary_spine-cPath>../../ext/spine-c/libs/ios/release</IOSNativeLibrary_spine-cPath>
+   </PropertyGroup>
+
    <!-- Android Configuration -->
    <PropertyGroup>
       <!-- Package Prefix (e.g., com.yourcompany will create com.yourcompany.appname) -->

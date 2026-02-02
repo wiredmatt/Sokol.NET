@@ -35,7 +35,8 @@ public static unsafe class SamplebrowserApp
         ShaderToyApp,
         Cgltf,
         JoltPhysics,
-        Sdf
+        Sdf,
+        SpineInspector
     }
 
     struct SampleInfo
@@ -265,6 +266,16 @@ public static unsafe class SamplebrowserApp
                 FrameCallback = &SdfApp.Frame,
                 EventCallback = &SdfApp.Event,
                 CleanupCallback = &SdfApp.Cleanup
+            },
+            new SampleInfo
+            {
+                Id = SampleId.SpineInspector,
+                Name = "Spine Inspector",
+                Description = "Interactive Spine skeletal animation inspector with multiple characters",
+                InitCallback = &SpineInspectorApp.Init,
+                FrameCallback = &SpineInspectorApp.Frame,
+                EventCallback = &SpineInspectorApp.Event,
+                CleanupCallback = &SpineInspectorApp.Cleanup
             }
         };
     }
@@ -422,6 +433,8 @@ public static unsafe class SamplebrowserApp
             igSpacing();
             igText("Open source (MIT License) | 38 examples | Full source available");
             igText("https://github.com/elix22/Sokol.NET");
+            igSpacing();
+            igText("Spine Runtime © Esoteric Software - Licensed to Eli Aloni");
             igSpacing();
             igText("Select a demo below to explore:");
 #if __ANDROID__ || __IOS__
