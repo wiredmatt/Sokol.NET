@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 project(ozzutil VERSION 1.0.0 LANGUAGES CXX C)
 
+# Support for 16KB page sizes on Android (required for Android 15+ / API 35+)
+if(ANDROID)
+    add_link_options(-Wl,-z,max-page-size=16384)
+    message(STATUS "OzzUtil: Enabled 16KB page size support for Android")
+endif()
+
 # Platform detection
 set(PLATFORM_WEB FALSE)
 set(PLATFORM_IOS FALSE)

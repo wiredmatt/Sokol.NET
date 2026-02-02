@@ -40,6 +40,12 @@ SET(CMAKE_POLICY_DEFAULT_CMP0092 NEW)
 
 CMAKE_MINIMUM_REQUIRED( VERSION 3.22 )
 
+# Support for 16KB page sizes on Android (required for Android 15+ / API 35+)
+if(ANDROID)
+    add_link_options(-Wl,-z,max-page-size=16384)
+    message(STATUS "Assimp: Enabled 16KB page size support for Android")
+endif()
+
 #================================================================================#
 #                    Model formats not enabled by default
 #
