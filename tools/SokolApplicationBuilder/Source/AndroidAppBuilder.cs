@@ -539,7 +539,27 @@ namespace SokolApplicationBuilder
                 string content = File.ReadAllText(buildGradlePath);
                 content = content.Replace("applicationId = 'com.example.native_activity'", $"applicationId = '{packageName}'");
                 content = content.Replace("namespace 'com.example.native_activity'", $"namespace '{packageName}'");
+                
+                // Update versionCode and versionName from Directory.Build.props
+                string versionCode = androidProperties.GetValueOrDefault("AndroidVersionCode", "1");
+                string versionName = androidProperties.GetValueOrDefault("AppVersion", "1.0");
+                
+                // Update versionCode using regex to handle any existing value
+                var versionCodeRegex = new System.Text.RegularExpressions.Regex(@"versionCode\s+\d+", System.Text.RegularExpressions.RegexOptions.Multiline);
+                if (versionCodeRegex.IsMatch(content))
+                {
+                    content = versionCodeRegex.Replace(content, $"versionCode {versionCode}");
+                }
+                
+                // Update versionName using regex to handle any existing value
+                var versionNameRegex = new System.Text.RegularExpressions.Regex(@"versionName\s+""[^""]*""", System.Text.RegularExpressions.RegexOptions.Multiline);
+                if (versionNameRegex.IsMatch(content))
+                {
+                    content = versionNameRegex.Replace(content, $"versionName \"{versionName}\"");
+                }
+                
                 File.WriteAllText(buildGradlePath, content);
+                Log.LogMessage(MessageImportance.High, $"✅ Updated build.gradle: versionCode={versionCode}, versionName={versionName}");
             }
 
             // Update strings.xml
@@ -1439,6 +1459,292 @@ set_target_properties({libraryName} PROPERTIES
             }
         }
 
+        class KeystoreInfo
+        {
+            public string KeystorePath { get; set; }
+            public string StorePassword { get; set; }
+            public string KeyPassword { get; set; }
+            public string KeyAlias { get; set; }
+        }
+
+        KeystoreInfo EnsureReleaseKeystore()
+        {
+            string configDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".sokolnet_config");
+            string configFile = Path.Combine(configDir, "release_keystore.config");
+            
+            // Try to load existing configuration
+            if (File.Exists(configFile))
+            {
+                try
+                {
+                    var lines = File.ReadAllLines(configFile);
+                    var config = new Dictionary<string, string>();
+                    foreach (var line in lines)
+                    {
+                        var parts = line.Split('=', 2);
+                        if (parts.Length == 2)
+                        {
+                            config[parts[0].Trim()] = parts[1].Trim();
+                        }
+                    }
+                    
+                    if (config.ContainsKey("KeystorePath") && 
+                        config.ContainsKey("StorePassword") && 
+                        config.ContainsKey("KeyPassword") && 
+                        config.ContainsKey("KeyAlias"))
+                    {
+                        string keystorePath = config["KeystorePath"];
+                        if (File.Exists(keystorePath))
+                        {
+                            Log.LogMessage(MessageImportance.High, $"✅ Using existing release keystore: {keystorePath}");
+                            return new KeystoreInfo
+                            {
+                                KeystorePath = keystorePath,
+                                StorePassword = config["StorePassword"],
+                                KeyPassword = config["KeyPassword"],
+                                KeyAlias = config["KeyAlias"]
+                            };
+                        }
+                        else
+                        {
+                            Log.LogWarning($"⚠️ Configured keystore not found: {keystorePath}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.LogWarning($"Failed to read keystore config: {ex.Message}");
+                }
+            }
+            
+            // Prompt user for keystore setup
+            Log.LogMessage(MessageImportance.High, "");
+            Log.LogMessage(MessageImportance.High, "==============================================");
+            Log.LogMessage(MessageImportance.High, "  RELEASE KEYSTORE SETUP REQUIRED");
+            Log.LogMessage(MessageImportance.High, "==============================================");
+            Log.LogMessage(MessageImportance.High, "");
+            Log.LogMessage(MessageImportance.High, "To sign your app for Google Play release, you need a release keystore.");
+            Log.LogMessage(MessageImportance.High, "");
+            Log.LogMessage(MessageImportance.High, "Options:");
+            Log.LogMessage(MessageImportance.High, "  1. Create a new release keystore (recommended for first-time release)");
+            Log.LogMessage(MessageImportance.High, "  2. Use an existing release keystore (if you've released this app before)");
+            Log.LogMessage(MessageImportance.High, "");
+            Console.Write("Enter your choice (1 or 2): ");
+            string choice = Console.ReadLine()?.Trim();
+            
+            KeystoreInfo keystoreInfo = null;
+            
+            if (choice == "1")
+            {
+                // Create new keystore
+                Log.LogMessage(MessageImportance.High, "");
+                Log.LogMessage(MessageImportance.High, "Creating new release keystore...");
+                Log.LogMessage(MessageImportance.High, "");
+                
+                Console.Write("Enter keystore file path (or press Enter for default ~/.android/release.keystore): ");
+                string keystorePath = Console.ReadLine()?.Trim();
+                if (string.IsNullOrEmpty(keystorePath))
+                {
+                    keystorePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".android", "release.keystore");
+                }
+                
+                // Make sure directory exists
+                Directory.CreateDirectory(Path.GetDirectoryName(keystorePath));
+                
+                Console.Write("Enter keystore password (min 6 characters): ");
+                string storePassword = ReadPassword();
+                while (storePassword.Length < 6)
+                {
+                    Log.LogMessage(MessageImportance.High, "Password must be at least 6 characters!");
+                    Console.Write("Enter keystore password: ");
+                    storePassword = ReadPassword();
+                }
+                
+                Console.Write("Confirm keystore password: ");
+                string confirmStorePassword = ReadPassword();
+                while (storePassword != confirmStorePassword)
+                {
+                    Log.LogMessage(MessageImportance.High, "Passwords don't match!");
+                    Console.Write("Confirm keystore password: ");
+                    confirmStorePassword = ReadPassword();
+                }
+                
+                Console.Write("Enter key alias (default: releasekey): ");
+                string keyAlias = Console.ReadLine()?.Trim();
+                if (string.IsNullOrEmpty(keyAlias))
+                {
+                    keyAlias = "releasekey";
+                }
+                
+                Console.Write("Enter key password (min 6 characters, or press Enter to use same as keystore): ");
+                string keyPassword = ReadPassword();
+                if (string.IsNullOrEmpty(keyPassword))
+                {
+                    keyPassword = storePassword;
+                }
+                while (keyPassword.Length < 6)
+                {
+                    Log.LogMessage(MessageImportance.High, "Password must be at least 6 characters!");
+                    Console.Write("Enter key password: ");
+                    keyPassword = ReadPassword();
+                }
+                
+                Console.Write("Enter your name (CN): ");
+                string cn = Console.ReadLine()?.Trim();
+                if (string.IsNullOrEmpty(cn))
+                {
+                    cn = "Unknown";
+                }
+                
+                Console.Write("Enter your organizational unit (OU, optional): ");
+                string ou = Console.ReadLine()?.Trim();
+                
+                Console.Write("Enter your organization (O, optional): ");
+                string o = Console.ReadLine()?.Trim();
+                
+                Console.Write("Enter your city/locality (L, optional): ");
+                string l = Console.ReadLine()?.Trim();
+                
+                Console.Write("Enter your state/province (ST, optional): ");
+                string st = Console.ReadLine()?.Trim();
+                
+                Console.Write("Enter your country code (C, 2 letters, optional): ");
+                string c = Console.ReadLine()?.Trim();
+                
+                // Build DN string
+                var dnParts = new List<string> { $"CN={cn}" };
+                if (!string.IsNullOrEmpty(ou)) dnParts.Add($"OU={ou}");
+                if (!string.IsNullOrEmpty(o)) dnParts.Add($"O={o}");
+                if (!string.IsNullOrEmpty(l)) dnParts.Add($"L={l}");
+                if (!string.IsNullOrEmpty(st)) dnParts.Add($"ST={st}");
+                if (!string.IsNullOrEmpty(c)) dnParts.Add($"C={c}");
+                string dname = string.Join(", ", dnParts);
+                
+                // Generate keystore
+                Log.LogMessage(MessageImportance.High, "");
+                Log.LogMessage(MessageImportance.High, "Generating release keystore...");
+                
+                var keystoreResult = Cli.Wrap("keytool")
+                    .WithArguments($"-genkeypair -v -keystore \"{keystorePath}\" -storepass {storePassword} -alias {keyAlias} -keypass {keyPassword} -keyalg RSA -keysize 2048 -validity 10000 -dname \"{dname}\"")
+                    .WithStandardOutputPipe(PipeTarget.ToDelegate(s => Log.LogMessage(MessageImportance.Normal, s)))
+                    .WithStandardErrorPipe(PipeTarget.ToDelegate(s => Log.LogError(s)))
+                    .ExecuteAsync()
+                    .GetAwaiter()
+                    .GetResult();
+                
+                if (keystoreResult.ExitCode != 0)
+                {
+                    Log.LogError("Failed to create keystore!");
+                    return null;
+                }
+                
+                keystoreInfo = new KeystoreInfo
+                {
+                    KeystorePath = keystorePath,
+                    StorePassword = storePassword,
+                    KeyPassword = keyPassword,
+                    KeyAlias = keyAlias
+                };
+                
+                Log.LogMessage(MessageImportance.High, "✅ Release keystore created successfully!");
+            }
+            else if (choice == "2")
+            {
+                // Use existing keystore
+                Log.LogMessage(MessageImportance.High, "");
+                Log.LogMessage(MessageImportance.High, "Using existing release keystore...");
+                Log.LogMessage(MessageImportance.High, "");
+                
+                Console.Write("Enter keystore file path: ");
+                string keystorePath = Console.ReadLine()?.Trim();
+                
+                while (!File.Exists(keystorePath))
+                {
+                    Log.LogMessage(MessageImportance.High, $"Keystore not found: {keystorePath}");
+                    Console.Write("Enter keystore file path: ");
+                    keystorePath = Console.ReadLine()?.Trim();
+                }
+                
+                Console.Write("Enter keystore password: ");
+                string storePassword = ReadPassword();
+                
+                Console.Write("Enter key alias: ");
+                string keyAlias = Console.ReadLine()?.Trim();
+                
+                Console.Write("Enter key password (or press Enter if same as keystore password): ");
+                string keyPassword = ReadPassword();
+                if (string.IsNullOrEmpty(keyPassword))
+                {
+                    keyPassword = storePassword;
+                }
+                
+                keystoreInfo = new KeystoreInfo
+                {
+                    KeystorePath = keystorePath,
+                    StorePassword = storePassword,
+                    KeyPassword = keyPassword,
+                    KeyAlias = keyAlias
+                };
+                
+                Log.LogMessage(MessageImportance.High, "✅ Using existing release keystore!");
+            }
+            else
+            {
+                Log.LogError("Invalid choice!");
+                return null;
+            }
+            
+            // Save configuration
+            if (keystoreInfo != null)
+            {
+                try
+                {
+                    Directory.CreateDirectory(configDir);
+                    File.WriteAllText(configFile, $@"KeystorePath={keystoreInfo.KeystorePath}
+StorePassword={keystoreInfo.StorePassword}
+KeyPassword={keystoreInfo.KeyPassword}
+KeyAlias={keystoreInfo.KeyAlias}
+");
+                    Log.LogMessage(MessageImportance.High, $"✅ Keystore configuration saved to: {configFile}");
+                    Log.LogMessage(MessageImportance.High, "");
+                    Log.LogMessage(MessageImportance.High, "⚠️  IMPORTANT: Keep your keystore and passwords secure!");
+                    Log.LogMessage(MessageImportance.High, "   If you lose them, you won't be able to update your app on Google Play.");
+                    Log.LogMessage(MessageImportance.High, "");
+                }
+                catch (Exception ex)
+                {
+                    Log.LogWarning($"Failed to save keystore config: {ex.Message}");
+                }
+            }
+            
+            return keystoreInfo;
+        }
+        
+        string ReadPassword()
+        {
+            var password = new StringBuilder();
+            while (true)
+            {
+                var key = Console.ReadKey(true);
+                if (key.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine();
+                    break;
+                }
+                else if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+                {
+                    password.Remove(password.Length - 1, 1);
+                    Console.Write("\b \b");
+                }
+                else if (!char.IsControl(key.KeyChar))
+                {
+                    password.Append(key.KeyChar);
+                    Console.Write("*");
+                }
+            }
+            return password.ToString();
+        }
+
         string EnsureDebugKeystore()
         {
             // Create debug keystore if it doesn't exist
@@ -1473,7 +1779,15 @@ set_target_properties({libraryName} PROPERTIES
 
             Log.LogMessage(MessageImportance.High, "Signing release APK...");
 
-            string debugKeystore = EnsureDebugKeystore();
+            // Get release keystore information
+            var keystoreInfo = EnsureReleaseKeystore();
+            if (keystoreInfo == null)
+            {
+                Log.LogError("Failed to obtain release keystore information!");
+                return;
+            }
+
+            string debugKeystore = keystoreInfo.KeystorePath;
 
             // Sign the APK
             string signedApkPath = Path.Combine(androidPath, "app", "build", "outputs", "apk", "release", "app-release.apk");
@@ -1507,7 +1821,7 @@ set_target_properties({libraryName} PROPERTIES
                         Log.LogMessage(MessageImportance.High, $"Using apksigner: {apksignerPath}");
                         
                         var apksignerResult = Cli.Wrap(apksignerPath.Split('\n')[0]) // Use first line if multiple
-                            .WithArguments($"sign --ks \"{debugKeystore}\" --ks-pass pass:android --key-pass pass:android --out \"{signedApkPath}\" \"{unsignedApkPath}\"")
+                            .WithArguments($"sign --ks \"{debugKeystore}\" --ks-pass pass:{keystoreInfo.StorePassword} --key-pass pass:{keystoreInfo.KeyPassword} --out \"{signedApkPath}\" \"{unsignedApkPath}\"")
                             .WithStandardOutputPipe(PipeTarget.ToDelegate(s => Log.LogMessage(MessageImportance.Normal, s)))
                             .WithStandardErrorPipe(PipeTarget.ToDelegate(s => Log.LogError(s)))
                             .ExecuteAsync()
@@ -1536,7 +1850,7 @@ set_target_properties({libraryName} PROPERTIES
                 File.Copy(unsignedApkPath, signedApkPath, true);
                 
                 var jarsignerResult = Cli.Wrap("jarsigner")
-                    .WithArguments($"-keystore \"{debugKeystore}\" -storepass android -keypass android -digestalg SHA-256 -sigalg SHA256withRSA \"{signedApkPath}\" androiddebugkey")
+                    .WithArguments($"-keystore \"{debugKeystore}\" -storepass {keystoreInfo.StorePassword} -keypass {keystoreInfo.KeyPassword} -digestalg SHA-256 -sigalg SHA256withRSA \"{signedApkPath}\" {keystoreInfo.KeyAlias}")
                     .WithStandardOutputPipe(PipeTarget.ToDelegate(s => Log.LogMessage(MessageImportance.Normal, s)))
                     .WithStandardErrorPipe(PipeTarget.ToDelegate(s => Log.LogError(s)))
                     .ExecuteAsync()
@@ -1575,11 +1889,17 @@ set_target_properties({libraryName} PROPERTIES
 
             Log.LogMessage(MessageImportance.High, "Signing release AAB...");
 
-            string debugKeystore = EnsureDebugKeystore();
+            // Get release keystore information
+            var keystoreInfo = EnsureReleaseKeystore();
+            if (keystoreInfo == null)
+            {
+                Log.LogError("Failed to obtain release keystore information!");
+                return;
+            }
 
             // Sign the AAB with jarsigner (AAB files use JAR signing)
             var jarsignerResult = Cli.Wrap("jarsigner")
-                .WithArguments($"-keystore \"{debugKeystore}\" -storepass android -keypass android -digestalg SHA-256 -sigalg SHA256withRSA \"{aabPath}\" androiddebugkey")
+                .WithArguments($"-keystore \"{keystoreInfo.KeystorePath}\" -storepass {keystoreInfo.StorePassword} -keypass {keystoreInfo.KeyPassword} -digestalg SHA-256 -sigalg SHA256withRSA \"{aabPath}\" {keystoreInfo.KeyAlias}")
                 .WithStandardOutputPipe(PipeTarget.ToDelegate(s => Log.LogMessage(MessageImportance.Normal, s)))
                 .WithStandardErrorPipe(PipeTarget.ToDelegate(s => Log.LogError(s)))
                 .ExecuteAsync()
@@ -1658,8 +1978,20 @@ set_target_properties({libraryName} PROPERTIES
             
             // Version from Directory.Build.props (defaults to "1.0")
             string appVersion = androidProperties.GetValueOrDefault("AppVersion", "1.0");
-            // versionCode is derived from version string (e.g., "1.0" -> 1, "1.2.3" -> 1)
-            string versionCode = appVersion.Split('.')[0];
+            
+            // versionCode (build number) - read from AndroidVersionCode property or derive from version string
+            string versionCode;
+            if (androidProperties.TryGetValue("AndroidVersionCode", out string? versionCodeValue) && !string.IsNullOrWhiteSpace(versionCodeValue))
+            {
+                versionCode = versionCodeValue;
+                Log.LogMessage(MessageImportance.High, $"📱 Using AndroidVersionCode: {versionCode}");
+            }
+            else
+            {
+                // Fallback: derive from version string (e.g., "1.0" -> 1, "1.2.3" -> 1)
+                versionCode = appVersion.Split('.')[0];
+                Log.LogMessage(MessageImportance.Normal, $"ℹ️  AndroidVersionCode not specified, derived from AppVersion: {versionCode}");
+            }
             
             manifest.AppendLine($"    android:versionCode=\"{versionCode}\"");
             manifest.AppendLine($"          android:versionName=\"{appVersion}\">");
@@ -1667,7 +1999,7 @@ set_target_properties({libraryName} PROPERTIES
 
             // SDK versions
             string minSdk = androidProperties.GetValueOrDefault("AndroidMinSdkVersion", "26");
-            string targetSdk = androidProperties.GetValueOrDefault("AndroidTargetSdkVersion", "34");
+            string targetSdk = androidProperties.GetValueOrDefault("AndroidTargetSdkVersion", "35");
             manifest.AppendLine($"  <uses-sdk android:minSdkVersion=\"{minSdk}\" android:targetSdkVersion=\"{targetSdk}\"/>");
 
             // Permissions - read from Directory.Build.props

@@ -36,6 +36,7 @@ This directory also hosts the **interactive WebAssembly examples showcase** for 
 - [Android Properties Configuration](./ANDROID_PROPERTIES.md) - Configure Android builds with Directory.Build.props (permissions, SDK versions, fullscreen, orientation)
 - [Android Screen Orientation](./ANDROID_SCREEN_ORIENTATION.md) - Quick reference for screen orientation configuration
 - [AAB Build Guide](./AAB_BUILD_GUIDE.md) - Android App Bundle build guide
+- **[Release Keystore Guide](./RELEASE_KEYSTORE_GUIDE.md)** 🔐 - Complete guide to signing your app for Google Play release
 
 ### iOS
 

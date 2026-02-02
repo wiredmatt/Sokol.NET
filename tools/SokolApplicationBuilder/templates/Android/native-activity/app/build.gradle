@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace 'com.example.native_activity'
-    compileSdk 34
+    compileSdk 35
     // NDK version is dynamically set during build via -PndkVersionOverride
     // Default is 29.0.14033849 if not specified
     ndkVersion project.hasProperty('ndkVersionOverride') ? 
@@ -13,7 +13,7 @@ android {
     defaultConfig {
         applicationId = 'com.example.native_activity'
         minSdk 26
-        targetSdk 34
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
@@ -27,9 +27,9 @@ android {
                 if (cmakeArgs) {
                     // Split cmakeArgs string into individual arguments
                     def argList = cmakeArgs.split(/\s+/) as List
-                    arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-26', *argList
+                    arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-26', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON', *argList
                 } else {
-                    arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-26'
+                    arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-26', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
                 }
             }
         }

@@ -710,6 +710,32 @@
 			}
 		},
 		{
+			"label": "Android: Build Release AAB (Google Play)",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"${workspaceFolder}/tools/SokolApplicationBuilder",
+				"--",
+				"--task",
+				"build",
+				"--type",
+				"release",
+				"--architecture",
+				"android",
+				"--subtask",
+				"aab",
+				"--path",
+				"${workspaceFolder}/${input:examplePath}"
+			],
+			"group": "build",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "prepare-bepuphysics",
 			"type": "shell",
 			"command": "dotnet",
