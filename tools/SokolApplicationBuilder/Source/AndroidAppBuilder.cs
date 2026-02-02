@@ -274,26 +274,29 @@ namespace SokolApplicationBuilder
                 }
             }
 
-            // Search Android SDK for best available NDK (prefer 27+ for 16KB support)
-            Log.LogMessage(MessageImportance.Normal, "Searching Android SDK for suitable NDK (prefer 27+ for 16KB page size support)...");
+            // Search Android SDK for NDK 27+ (REQUIRED for 16KB page size support)
+            Log.LogMessage(MessageImportance.High, "🔍 Searching for Android NDK 27+ (required for Google Play submission)...");
             
             // Use the helper method to get Android SDK path
             string androidSdk = GetAndroidSdkPath();
 
             if (!Directory.Exists(androidSdk))
             {
-                Log.LogWarning($"Android SDK not found at: {androidSdk}");
+                Log.LogError($"❌ Android SDK not found at: {androidSdk}");
+                Log.LogError($"❌ Please install Android SDK and NDK 27+");
                 return null;
             }
 
             string ndkDir = Path.Combine(androidSdk, "ndk");
             if (!Directory.Exists(ndkDir))
             {
-                Log.LogWarning($"Android NDK directory not found at: {ndkDir}");
+                Log.LogError($"❌ Android NDK directory not found at: {ndkDir}");
+                Log.LogError($"❌ Please install NDK 27+ via Android Studio SDK Manager or Android command-line tools");
+                Log.LogError($"   Example: sdkmanager --install 'ndk;27.1.12297006'");
                 return null;
             }
 
-            // Find all NDK versions
+            // Find all NDK versions 27+
             var ndkVersions = new List<(string path, int majorVersion, string fullVersion)>();
             
             foreach (string ndkPath in Directory.GetDirectories(ndkDir))
@@ -322,75 +325,61 @@ namespace SokolApplicationBuilder
                 }
             }
 
-            if (ndkVersions.Count == 0)
+            // Filter to only NDK 27+
+            var validNdks = ndkVersions.Where(ndk => ndk.majorVersion >= 27).ToList();
+
+            // Check environment NDK if it exists
+            if (envNdkMajorVersion >= 27)
             {
-                Log.LogWarning("No valid NDK installations found");
-                return null;
+                // Add environment NDK to the list if it's 27+
+                validNdks.Add((envNdk, envNdkMajorVersion, envNdkFullVersion));
             }
 
-            // Prefer NDK 27+ for 16KB page size support, then any version >= 25
-            var preferredNdk = ndkVersions
-                .Where(ndk => ndk.majorVersion >= 25)
-                .OrderByDescending(ndk => ndk.majorVersion) // Prefer highest version (27+ has 16KB support)
-                .FirstOrDefault();
-
-            // If SDK has a better NDK than environment, use it
-            if (preferredNdk.path != null)
+            if (validNdks.Count == 0)
             {
-                // Compare with environment NDK if it exists and is >= 25
-                if (envNdkMajorVersion >= 25 && envNdkMajorVersion >= preferredNdk.majorVersion)
+                Log.LogError("❌ NDK 27+ is REQUIRED for building Android applications");
+                Log.LogError("❌ Google Play requires 16KB page size support (Android 15+ / API 35+)");
+                Log.LogError("");
+                Log.LogError("📥 Please install NDK 27 or higher:");
+                Log.LogError("   • Via Android Studio: Tools → SDK Manager → SDK Tools → NDK (Side by side)");
+                Log.LogError("   • Via command line: sdkmanager --install 'ndk;27.1.12297006'");
+                Log.LogError("   • Recommended: Install NDK 29+ for best compatibility");
+                Log.LogError("");
+                
+                if (ndkVersions.Count > 0)
                 {
-                    // Environment NDK is newer or equal, use it
-                    DETECTED_NDK_VERSION = envNdkFullVersion;
-                    string pageSizeNote = envNdkMajorVersion >= 27 
-                        ? " (includes 16KB page size support)" 
-                        : " (WARNING: NDK 27+ recommended for 16KB page size support)";
-                    Log.LogMessage(MessageImportance.High, $"✅ Using NDK version {envNdkFullVersion} from environment{pageSizeNote}");
-                    return envNdk;
+                    var latestNdk = ndkVersions.OrderByDescending(ndk => ndk.majorVersion).First();
+                    Log.LogError($"❌ Found NDK {latestNdk.fullVersion}, but this version is too old");
+                    Log.LogError($"   NDK 27+ is required for 16KB page size support");
                 }
-                else if (envNdkMajorVersion >= 25 && preferredNdk.majorVersion >= 27)
+                else if (envNdkMajorVersion > 0)
                 {
-                    // SDK has NDK 27+ which is better for 16KB support
-                    DETECTED_NDK_VERSION = preferredNdk.fullVersion;
-                    Log.LogMessage(MessageImportance.High, $"✅ Selected NDK version {preferredNdk.fullVersion} from SDK (includes 16KB page size support)");
-                    Log.LogMessage(MessageImportance.Normal, $"   Environment has NDK {envNdkFullVersion} but preferring SDK NDK 27+ for 16KB page size support");
-                    return preferredNdk.path;
+                    Log.LogError($"❌ Found NDK {envNdkFullVersion} in environment, but this version is too old");
+                    Log.LogError($"   NDK 27+ is required for 16KB page size support");
                 }
                 else
                 {
-                    // Use SDK NDK
-                    DETECTED_NDK_VERSION = preferredNdk.fullVersion;
-                    string pageSizeNote = preferredNdk.majorVersion >= 27 
-                        ? " (includes 16KB page size support)" 
-                        : " (WARNING: NDK 27+ recommended for 16KB page size support)";
-                    Log.LogMessage(MessageImportance.High, $"✅ Selected NDK version {preferredNdk.fullVersion}{pageSizeNote} (minimum required: 25)");
-                    return preferredNdk.path;
+                    Log.LogError("❌ No NDK installation found at all");
                 }
+                
+                return null;
             }
 
-            // If SDK search failed but environment has valid NDK >= 25, use it
-            if (envNdkMajorVersion >= 25)
+            // Select the best NDK 27+ (prefer higher versions)
+            var selectedNdk = validNdks
+                .OrderByDescending(ndk => ndk.majorVersion)
+                .ThenByDescending(ndk => ndk.fullVersion)
+                .First();
+
+            DETECTED_NDK_VERSION = selectedNdk.fullVersion;
+            Log.LogMessage(MessageImportance.High, $"✅ Selected NDK version {selectedNdk.fullVersion} (includes 16KB page size support)");
+            
+            if (validNdks.Count > 1)
             {
-                DETECTED_NDK_VERSION = envNdkFullVersion;
-                string pageSizeNote = envNdkMajorVersion >= 27 
-                    ? " (includes 16KB page size support)" 
-                    : " (WARNING: NDK 27+ recommended for 16KB page size support)";
-                Log.LogMessage(MessageImportance.High, $"✅ Using NDK version {envNdkFullVersion} from environment{pageSizeNote}");
-                return envNdk;
+                Log.LogMessage(MessageImportance.Normal, $"   Found {validNdks.Count} compatible NDK versions, using the latest");
             }
-
-            // If no NDK >= 25 found anywhere, warn and use the latest available
-            if (ndkVersions.Count > 0)
-            {
-                var latestNdk = ndkVersions.OrderByDescending(ndk => ndk.majorVersion).First();
-                DETECTED_NDK_VERSION = latestNdk.fullVersion;
-                Log.LogWarning($"⚠️  No NDK version >= 25 found. Using NDK {latestNdk.fullVersion}, but this may cause runtime errors!");
-                Log.LogWarning($"⚠️  Please install NDK 27 or higher for best compatibility and 16KB page size support.");
-                return latestNdk.path;
-            }
-
-            Log.LogError("❌ No valid NDK installation found!");
-            return null;
+            
+            return selectedNdk.path;
         }
 
         public override bool Equals(object? obj)
