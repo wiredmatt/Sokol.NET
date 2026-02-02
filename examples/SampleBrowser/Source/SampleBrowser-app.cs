@@ -57,6 +57,7 @@ public static unsafe class SamplebrowserApp
         public bool showMenu;
         public SampleId pendingSample; // Sample to start on next frame
         public bool requestStopSample; // Flag to request stopping current sample
+        public bool showLicenseInfo; // Flag to show Spine license info dialog
     }
 
     static _state state = new _state();
@@ -435,6 +436,11 @@ public static unsafe class SamplebrowserApp
             igText("https://github.com/elix22/Sokol.NET");
             igSpacing();
             igText("Spine Runtime © Esoteric Software - Licensed to Eli Aloni");
+            igSameLine(0, 10);
+            if (igButton("License Info", new Vector2(120, 0)))
+            {
+                state.showLicenseInfo = true;
+            }
             igSpacing();
             igText("Select a demo below to explore:");
 #if __ANDROID__ || __IOS__
@@ -456,6 +462,7 @@ public static unsafe class SamplebrowserApp
                 if (igButton(sample.Name, new Vector2(windowWidth - 40, 0)))
                 {
                     StartSample(sample.Id);
+                    state.showLicenseInfo = false;
                 }
                 
                 igSpacing();
@@ -469,6 +476,46 @@ public static unsafe class SamplebrowserApp
         }
         
         igPopStyleVar(1);
+        
+        // Draw Spine license info dialog
+        if (state.showLicenseInfo)
+        {
+            igSetNextWindowSize(new Vector2(500, 220), ImGuiCond.Always);
+            igSetNextWindowPos(new Vector2(windowWidth / 2 - 250, windowHeight / 2 - 110), ImGuiCond.Always, Vector2.Zero);
+            igSetNextWindowFocus();
+            
+            byte licenseOpen = 1;
+            if (igBegin("Spine Runtime License Information", ref licenseOpen, 
+                ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
+            {
+                igSpacing();
+                igText("Spine Runtime © Esoteric Software");
+                igSpacing();
+                igSeparator();
+                igSpacing();
+                
+                igText("Licensee: Eli Aloni");
+                igText("License Type: Spine Essential License");
+                igText("Purchase Date: December 12, 2022");
+                igText("Invoice: #ch_3MEAkiLDEe7LyNND1fEkZmpB");
+                
+                igSpacing();
+                igSeparator();
+                igSpacing();
+                
+                if (igButton("Close", new Vector2(100, 30)))
+                {
+                    state.showLicenseInfo = false;
+                }
+                
+                igEnd();
+            }
+            
+            if (licenseOpen == 0)
+            {
+                state.showLicenseInfo = false;
+            }
+        }
     }
 
     [UnmanagedCallersOnly]
