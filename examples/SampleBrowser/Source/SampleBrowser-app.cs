@@ -482,7 +482,7 @@ public static unsafe class SamplebrowserApp
         {
             igSetNextWindowSize(new Vector2(500, 220), ImGuiCond.Always);
             igSetNextWindowPos(new Vector2(windowWidth / 2 - 250, windowHeight / 2 - 110), ImGuiCond.Always, Vector2.Zero);
-            igSetNextWindowFocus();
+            // igSetNextWindowFocus();
             
             byte licenseOpen = 1;
             if (igBegin("Spine Runtime License Information", ref licenseOpen, 
