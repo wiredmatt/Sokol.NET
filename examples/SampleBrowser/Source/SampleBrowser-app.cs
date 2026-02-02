@@ -75,9 +75,11 @@ public static unsafe class SamplebrowserApp
     {
         bool clicked = false;
         
-        // Position at top-left corner
-        igSetNextWindowPos(new Vector2(10, 10), ImGuiCond.Always, Vector2.Zero);
-        igSetNextWindowSize(new Vector2(100, 50), ImGuiCond.Always);
+        // Position at bottom-left corner
+        float buttonHeight = 50;
+        float yPos = sapp_heightf() - buttonHeight - 10; // 10px margin from bottom
+        igSetNextWindowPos(new Vector2(10, yPos), ImGuiCond.Always, Vector2.Zero);
+        igSetNextWindowSize(new Vector2(100, buttonHeight), ImGuiCond.Always);
         
         igPushStyleVar_Float(ImGuiStyleVar.WindowRounding, 8.0f);
         igPushStyleVar_Vec2(ImGuiStyleVar.WindowPadding, new Vector2(8, 8));
@@ -404,22 +406,24 @@ public static unsafe class SamplebrowserApp
 
         byte open = 1;
         if (igBegin("Sokol.NET Sample Browser", ref open, 
+            ImGuiWindowFlags.NoTitleBar|
             ImGuiWindowFlags.NoCollapse | 
             ImGuiWindowFlags.NoResize | 
             ImGuiWindowFlags.NoMove))
         {
             igText("Sokol.NET Sample Browser");
             igSpacing();
-            igText("Explore modern graphics programming through interactive demos!");
-            igText("Learn rendering techniques, physics simulation, and shader programming");
-            igText("with real-time 3D examples powered by Sokol graphics library.");
+            igText("Cross-platform graphics framework for C# with .NET NativeAOT");
+            igText("Desktop • Mobile • Web | Direct3D • Metal • OpenGL • WebGL");
             igSpacing();
-            igText("Perfect for developers learning graphics APIs and .NET game development.");
+            igText("Interactive demos featuring 3D graphics, physics engines (Jolt, Box2D),");
+            igText("model loading (glTF, Assimp), skeletal animation (Spine, Ozz),");
+            igText("shader effects, and more - all running with near-native performance.");
             igSpacing();
-            igText("Free and open source (MIT License) • Full source code available");
-            igText("GitHub: https://github.com/elix22/Sokol.NET");
+            igText("Open source (MIT License) • 38 examples • Full source available");
+            igText("https://github.com/elix22/Sokol.NET");
             igSpacing();
-            igText("Choose a sample below to begin:");
+            igText("Select a demo below to explore:");
 #if __ANDROID__ || __IOS__
             igText("Tap the Back button to return to this menu.");
 #else
