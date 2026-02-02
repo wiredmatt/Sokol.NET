@@ -196,14 +196,8 @@ public static unsafe class SpineInspectorApp
     [UnmanagedCallersOnly]
     public static unsafe void Init()
     {
-        sg_setup(new sg_desc()
-        {
-            environment = sglue_environment(),
-            logger =    {
-                func = &SLog.slog_func,
-            }
-        });
-
+        // Don't call sg_setup - SampleBrowser manages graphics context
+        
         // Setup sokol-gl
         sgl_setup(new sgl_desc_t
         {
@@ -327,10 +321,17 @@ public static unsafe class SpineInspectorApp
     [UnmanagedCallersOnly]
     public static void Cleanup()
     {
+        // Destroy Spine objects before shutdown
+        sspine_destroy_instance(state.instance);
+        sspine_destroy_skeleton(state.skeleton);
+        sspine_destroy_atlas(state.atlas);
+        
+        // Dispose buffers
         state.buffers.atlas.Dispose();
         state.buffers.skeleton.Dispose();
         state.buffers.image.Dispose();
         
+        // Shutdown subsystems
         sgimgui_discard(state.ui.sgimgui);
         simgui_shutdown();
         sspine_shutdown();
@@ -338,7 +339,6 @@ public static unsafe class SpineInspectorApp
         sgl_shutdown();
         
         // Don't call sg_shutdown - SampleBrowser manages graphics context
-        // sg_shutdown();
 
         // Reset state for next run
         state = new State();
