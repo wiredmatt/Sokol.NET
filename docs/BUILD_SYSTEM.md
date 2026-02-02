@@ -35,6 +35,12 @@ This prevents unnecessary commits when:
 - **Web (Emscripten)**: x86 (Debug & Release)
 
 > **Note**: Android and iOS libraries are compiled on-the-fly during project build and are not included in the CI/CD pipeline.
+> 
+> **Android Build Requirements**: 
+> - **NDK 27+ required** for Google Play submission (16KB page size support for Android 15+ / API 35+)
+> - The build system automatically selects NDK 27+ when available, preferring it over older versions
+> - All native Android libraries are automatically built with 16KB alignment
+> - NDK 29+ recommended for best compatibility
 
 > **Note**: Linux ARM64 (aarch64) is not included in CI/CD due to cross-compilation complexity. ARM64 Linux builds should be done natively on ARM64 hardware if needed.
 

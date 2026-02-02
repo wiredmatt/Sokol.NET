@@ -32,18 +32,25 @@ These tasks will:
 
 ### Required Tools
 
-1. **Java JDK** - Required for signing and bundletool
+1. **Android NDK 27+** - **Required for Google Play submission**
+   - **Minimum**: NDK 27 (includes 16KB page size support for Android 15+ / API 35+)
+   - **Recommended**: NDK 29 or later for best compatibility
+   - The build system automatically selects the best available NDK version
+   - **Why required**: Google Play enforces 16KB page size support for apps targeting Android 15+ (API 35+)
+   - All native libraries are automatically built with proper 16KB alignment
+
+2. **Java JDK** - Required for signing and bundletool
    ```bash
    java -version  # Should be installed
    ```
 
-2. **bundletool** (for local AAB testing) - Optional but recommended for installing AAB on devices
+3. **bundletool** (for local AAB testing) - Optional but recommended for installing AAB on devices
    - Download from: https://github.com/google/bundletool/releases
    - Place in one of these locations:
      - `<project-root>/tools/bundletool.jar`
      - Anywhere in your `ANDROID_SDK_ROOT` or `ANDROID_HOME`
 
-3. **Android Debug Keystore** - Created automatically if not present at `~/.android/debug.keystore`
+4. **Android Debug Keystore** - Created automatically if not present at `~/.android/debug.keystore`
 
 ## Building AAB Files
 

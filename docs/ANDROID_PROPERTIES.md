@@ -21,10 +21,18 @@ When building for Android, SokolApplicationBuilder automatically:
   <!-- Minimum Android SDK version (default: 26) -->
   <AndroidMinSdkVersion>26</AndroidMinSdkVersion>
   
-  <!-- Target Android SDK version (default: 34) -->
-  <AndroidTargetSdkVersion>34</AndroidTargetSdkVersion>
+  <!-- Target Android SDK version (default: 35) -->
+  <AndroidTargetSdkVersion>35</AndroidTargetSdkVersion>
 </PropertyGroup>
 ```
+
+**Important for Google Play Submission:**
+
+- **NDK 27+ Required**: Google Play requires 16KB page size support for apps targeting Android 15+ (API 35+)
+- **Automatic Selection**: The build system automatically selects NDK 27+ when available, even if older NDK versions are present in environment variables
+- **Recommended**: Install NDK 29 or later for best compatibility
+- All native libraries are automatically built with 16KB alignment (`-Wl,-z,max-page-size=16384`)
+- System libraries (like `libc++_shared.so`) from NDK 27+ are properly aligned for 16KB pages
 
 ### Permissions
 

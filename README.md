@@ -151,7 +151,9 @@ This repository's maintainer has a valid Spine license for development and distr
   - **Windows**: Visual Studio 2022 Build Tools
   - **macOS**: Xcode Command Line Tools
   - **Linux**: GCC/Clang
-  - **Android**: Android SDK & NDK 25+
+  - **Android**: Android SDK & **NDK 27+** (NDK 29+ recommended for Google Play)
+    - **Required for Google Play**: NDK 27+ includes 16KB page size support (Android 15+ / API 35+ requirement)
+    - The build system automatically selects the best available NDK version
   - **iOS**: Xcode 14+
 
 ## 🏁 Quick Start
