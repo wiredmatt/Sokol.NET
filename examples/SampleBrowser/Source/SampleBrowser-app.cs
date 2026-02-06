@@ -110,11 +110,12 @@ public static unsafe class SamplebrowserApp
     [UnmanagedCallersOnly]
     private static unsafe void Init()
     {
-        Console.WriteLine("SampleBrowser Initialize() Enter");
+        Info("SampleBrowser Initialize() Enter");
 
         sg_setup(new sg_desc()
         {
             environment = sglue_environment(),
+            disable_validation = false,  // Enable validation for debugging
             logger = {
                 func = &slog_func,
             }
@@ -304,10 +305,16 @@ public static unsafe class SamplebrowserApp
 
         if (sample.InitCallback == null) return;
 
-        Console.WriteLine($"Starting sample: {sample.Name}");
+        Log($"Starting sample: {sample.Name}");
+        Log($"[Native] Shutting down ImGui for sample transition...");
 
-        // Shutdown ImGui before starting sample (samples will reinitialize it if needed)
+        // Only shutdown ImGui, keep graphics context alive
         simgui_shutdown();
+        
+        Log($"[Native] ImGui shutdown complete");
+#if !WEB
+        System.Threading.Thread.Sleep(20);
+#endif
 
         // Set current sample callbacks
         CurrentInitCallback = sample.InitCallback;
@@ -326,9 +333,9 @@ public static unsafe class SamplebrowserApp
     {
         if (state.currentSample == SampleId.None) return;
 
-        Console.WriteLine($"Stopping sample: {state.currentSample}");
+        Log($"Stopping sample: {state.currentSample}");
 
-        // Cleanup current sample
+        // Cleanup current sample (samples handle their own simgui_shutdown and sg_shutdown)
         if (CurrentCleanupCallback != null)
         {
             CurrentCleanupCallback();
@@ -343,15 +350,12 @@ public static unsafe class SamplebrowserApp
         state.currentSample = SampleId.None;
         state.showMenu = true;
 
-        sg_setup(new sg_desc()
-        {
-            environment = sglue_environment(),
-            logger = {
-                func = &slog_func,
-            }
-        });
+#if !WEB
+        System.Threading.Thread.Sleep(20);
+#endif
 
-        // Reinitialize ImGui for menu
+        // Reinitialize ImGui for menu (reuse existing graphics context)
+        Log($"[Native] Reinitializing ImGui for menu...");
         simgui_setup(new simgui_desc_t
         {
             logger = {
@@ -361,6 +365,7 @@ public static unsafe class SamplebrowserApp
         
         ImGuiIO* io = igGetIO_Nil();
         io->ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+        Log($"[Native] ImGui initialized for menu");
     }
 
     [UnmanagedCallersOnly]

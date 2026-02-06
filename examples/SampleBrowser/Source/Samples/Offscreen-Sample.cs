@@ -28,13 +28,17 @@ public static unsafe class OffscreenApp
     struct Offscreen
     {
         public sg_pass pass;
+        public sg_shader shd;
         public sg_pipeline pip;
         public sg_bindings bind;
+        public sg_image color_img;
+        public sg_image depth_img;
     }
 
     struct Display
     {
         public sg_pass_action pass_action;
+        public sg_shader shd;
         public sg_pipeline pip;
         public sg_bindings bind;
     }
@@ -74,13 +78,7 @@ public static unsafe class OffscreenApp
     [UnmanagedCallersOnly]
     public static unsafe void Init()
     {
-        sg_setup(new sg_desc()
-        {
-            environment = sglue_environment(),
-            logger =    {
-                func = &SLog.slog_func,
-            }
-        });
+        // Note: Graphics context already initialized by SampleBrowser, do NOT call sg_setup
 
         simgui_setup(new simgui_desc_t
         {
@@ -113,6 +111,10 @@ public static unsafe class OffscreenApp
         img_desc.usage = new sg_image_usage() { depth_stencil_attachment = true };
         img_desc.label = "depth-image";
         sg_image depth_img = sg_make_image(img_desc);
+        
+        // Store images in state for cleanup
+        state.offscreen.color_img = color_img;
+        state.offscreen.depth_img = depth_img;
         
         // Create offscreen pass with color and depth attachments
         sg_pass pass = default;
@@ -191,6 +193,7 @@ public static unsafe class OffscreenApp
         };
         offscreen_pipeline_desc.layout.buffers[0] = sshape_vertex_buffer_layout_state();
         offscreen_pipeline_desc.shader = sg_make_shader(offscreen_shader_desc(sg_query_backend()));
+        state.offscreen.shd = offscreen_pipeline_desc.shader;
         offscreen_pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
         offscreen_pipeline_desc.cull_mode = SG_CULLMODE_BACK;
         offscreen_pipeline_desc.sample_count = 1;
@@ -216,6 +219,7 @@ public static unsafe class OffscreenApp
         };
         pipeline_desc.layout.buffers[0] = sshape_vertex_buffer_layout_state();
         pipeline_desc.shader = sg_make_shader(default_shader_desc(sg_query_backend()));
+        state.display.shd = pipeline_desc.shader;
         pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
         pipeline_desc.cull_mode = SG_CULLMODE_BACK;
         pipeline_desc.depth = new sg_depth_state()
@@ -330,8 +334,43 @@ public static unsafe class OffscreenApp
     [UnmanagedCallersOnly]
     public static void Cleanup()
     {
+        // Destroy offscreen pass resources
+        if (state.offscreen.pass.attachments.colors[0].id != 0)
+            sg_destroy_view(state.offscreen.pass.attachments.colors[0]);
+        if (state.offscreen.pass.attachments.depth_stencil.id != 0)
+            sg_destroy_view(state.offscreen.pass.attachments.depth_stencil);
+        
+        // Destroy images
+        if (state.offscreen.color_img.id != 0)
+            sg_destroy_image(state.offscreen.color_img);
+        if (state.offscreen.depth_img.id != 0)
+            sg_destroy_image(state.offscreen.depth_img);
+        
+        // Destroy offscreen buffers, pipeline, and shader
+        if (state.offscreen.bind.vertex_buffers[0].id != 0)
+            sg_destroy_buffer(state.offscreen.bind.vertex_buffers[0]);
+        if (state.offscreen.bind.index_buffer.id != 0)
+            sg_destroy_buffer(state.offscreen.bind.index_buffer);
+        if (state.offscreen.pip.id != 0)
+            sg_destroy_pipeline(state.offscreen.pip);
+        if (state.offscreen.shd.id != 0)
+            sg_destroy_shader(state.offscreen.shd);
+        
+        // Destroy display resources
+        if (state.display.bind.views[VIEW_tex].id != 0)
+            sg_destroy_view(state.display.bind.views[VIEW_tex]);
+        if (state.display.bind.samplers[SMP_smp].id != 0)
+            sg_destroy_sampler(state.display.bind.samplers[SMP_smp]);
+        if (state.display.pip.id != 0)
+            sg_destroy_pipeline(state.display.pip);
+        if (state.display.shd.id != 0)
+            sg_destroy_shader(state.display.shd);
+        
         simgui_shutdown();
-        sg_shutdown();
+        // Note: Graphics context managed by SampleBrowser, do NOT call sg_shutdown
+        
+        // Reset state
+        state = new _state();
     }
 
     [UnmanagedCallersOnly]

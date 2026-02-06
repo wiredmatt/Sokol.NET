@@ -35,6 +35,7 @@ public static unsafe class InstancingSApp
     {
 
         public sg_pass_action pass_action;
+        public sg_shader shd;
         public sg_pipeline pip;
         public sg_bindings bind;
         public float ry;
@@ -51,13 +52,7 @@ public static unsafe class InstancingSApp
     [UnmanagedCallersOnly]
     public static unsafe void Init()
     {
-        sg_setup(new sg_desc()
-        {
-            environment = sglue_environment(),
-            logger =    {
-                func = &SLog.slog_func,
-            }
-        });
+        // Note: Graphics context already initialized by SampleBrowser, do NOT call sg_setup
 
         simgui_setup(new simgui_desc_t
         {
@@ -222,8 +217,23 @@ public static unsafe class InstancingSApp
     [UnmanagedCallersOnly]
     public static void Cleanup()
     {
+        // Destroy graphics resources
+        if (state.bind.vertex_buffers[0].id != 0)
+            sg_destroy_buffer(state.bind.vertex_buffers[0]);
+        if (state.bind.vertex_buffers[1].id != 0)
+            sg_destroy_buffer(state.bind.vertex_buffers[1]);
+        if (state.bind.index_buffer.id != 0)
+            sg_destroy_buffer(state.bind.index_buffer);
+        if (state.pip.id != 0)
+            sg_destroy_pipeline(state.pip);
+        if (state.shd.id != 0)
+            sg_destroy_shader(state.shd);
+        
         simgui_shutdown();
-        sg_shutdown();
+        // Note: Graphics context managed by SampleBrowser, do NOT call sg_shutdown
+        
+        // Reset state
+        state = new ParticleState();
     }
 
     [UnmanagedCallersOnly]

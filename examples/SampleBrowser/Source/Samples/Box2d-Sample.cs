@@ -60,8 +60,8 @@ public static unsafe class Box2dApp
     [UnmanagedCallersOnly]
     public static unsafe void Init()
     {
-        // Note: sg_setup already called by SampleBrowser
-        
+        // Note: Graphics context already initialized by SampleBrowser, do NOT call sg_setup
+
         simgui_setup(new simgui_desc_t
         {
             logger = { func = &slog_func }
@@ -545,9 +545,10 @@ public static unsafe class Box2dApp
         if (state.pip.id != 0)
             sg_destroy_pipeline(state.pip);
 
+        sg_reset_state_cache();
         simgui_shutdown();
+        // Note: Graphics context managed by SampleBrowser, do NOT call sg_shutdown
         
-        // Note: sg_shutdown will be called by SampleBrowser
         // Reset state for next run
         state = new _state();
     }

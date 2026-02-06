@@ -16,6 +16,7 @@ using static Sokol.SG.sg_compare_func;
 using static Sokol.Utils;
 using static Imgui.ImguiNative;
 using static Sokol.STM;
+using static Sokol.SLog;
 using Imgui;
 
 public static unsafe class DrawcallPerf
@@ -31,6 +32,7 @@ public static unsafe class DrawcallPerf
         public sg_pass_action pass_action;
         public sg_image[] img;
         public sg_view[] view;
+        public sg_shader shd;
         public sg_pipeline pip;
         public sg_bindings bind;
         public int num_instances;
@@ -81,18 +83,11 @@ public static unsafe class DrawcallPerf
     [UnmanagedCallersOnly]
     public static unsafe void Init()
     {
-        Console.WriteLine("Initialize() Enter");
+        Info("Initialize() Enter");
+
+        // Note: Graphics context already initialized by SampleBrowser, do NOT call sg_setup
 
         stm_setup();
-
-        sg_setup(new sg_desc()
-        {
-            environment = sglue_environment(),
-            uniform_buffer_size = MAX_INSTANCES * 256 + 1024,
-               logger = {
-                func = &SLog.slog_func,
-            }
-        });
 
         simgui_setup(new simgui_desc_t
         {
@@ -224,6 +219,7 @@ public static unsafe class DrawcallPerf
         pipeline_desc.layout.attrs[ATTR_drawcallperf_in_bright].format = SG_VERTEXFORMAT_FLOAT;
 
         pipeline_desc.shader = sg_make_shader(drawcallperf_shader_desc(sg_query_backend()));
+        state.shd = pipeline_desc.shader;
         pipeline_desc.index_type = SG_INDEXTYPE_UINT16;
         pipeline_desc.cull_mode = SG_CULLMODE_BACK;
         pipeline_desc.depth = new sg_depth_state
@@ -353,9 +349,25 @@ public static unsafe class DrawcallPerf
     [UnmanagedCallersOnly]
     public static void Cleanup()
     {
+        // Destroy graphics resources
+        if (state.bind.vertex_buffers[0].id != 0)
+            sg_destroy_buffer(state.bind.vertex_buffers[0]);
+        if (state.bind.index_buffer.id != 0)
+            sg_destroy_buffer(state.bind.index_buffer);
+        if (state.pip.id != 0)
+            sg_destroy_pipeline(state.pip);
+        if (state.shd.id != 0)
+            sg_destroy_shader(state.shd);
+        
         sgimgui_discard(state.sgimgui);
         simgui_shutdown();
-        sg_shutdown();
+        // Note: Graphics context managed by SampleBrowser, do NOT call sg_shutdown
+        
+        // Reset state
+        state = new _state();
+#if !WEB
+        System.Threading.Thread.Sleep(20);
+#endif      
     }
 
     public static sapp_desc sokol_main()

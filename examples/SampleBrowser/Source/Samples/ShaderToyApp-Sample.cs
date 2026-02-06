@@ -255,7 +255,12 @@ public static unsafe class ShaderToyApp
             for (int i = 0; i < state.pipelines.Length; i++)
             {
                 if (state.pipelines[i].id != 0)
+                {
+                    // Get shader from pipeline before destroying pipeline
+                    sg_pipeline_info info = sg_query_pipeline_info(state.pipelines[i]);
                     sg_destroy_pipeline(state.pipelines[i]);
+                    // Note: shaders are automatically destroyed when pipeline is destroyed
+                }
             }
         }
         

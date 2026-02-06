@@ -48,13 +48,7 @@ public static unsafe class CubemapJpegApp
     [UnmanagedCallersOnly]
     public static unsafe void Init()
     {
-        sg_setup(new sg_desc()
-        {
-            environment = sglue_environment(),
-            logger = {
-                func = &slog_func,
-            }
-        });
+        // Note: Graphics context already initialized by SampleBrowser, do NOT call sg_setup
 
         simgui_setup(new simgui_desc_t
         {

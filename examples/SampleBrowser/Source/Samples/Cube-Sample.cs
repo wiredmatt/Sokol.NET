@@ -22,6 +22,7 @@ public static unsafe class CubeSapp
     struct _state
     {
         public float rx, ry;
+        public sg_shader shd;
         public sg_pipeline pip;
         public sg_bindings bind;
         public bool PauseUpdate;
@@ -33,15 +34,9 @@ public static unsafe class CubeSapp
     [UnmanagedCallersOnly]
     public static unsafe void Init()
     {
-        Console.WriteLine("Initialize() Enter");
+        Info("Initialize() Enter");
 
-        sg_setup(new sg_desc()
-        {
-            environment = sglue_environment(),
-            logger = {
-                func = &slog_func,
-            }
-        });
+        // Note: Graphics context already initialized by SampleBrowser, do NOT call sg_setup
 
         simgui_setup(new simgui_desc_t
         {
@@ -111,6 +106,7 @@ public static unsafe class CubeSapp
 
 
         sg_shader shd = sg_make_shader(cube_app_shader_cs.Shaders.cube_shader_desc(sg_query_backend()));
+        state.shd = shd;
 
         var pipeline_desc = default(sg_pipeline_desc);
         pipeline_desc.layout.buffers[0].stride = 28;
@@ -208,8 +204,24 @@ public static unsafe class CubeSapp
     [UnmanagedCallersOnly]
     public static void Cleanup()
     {
+        // Destroy graphics resources
+        if (state.bind.vertex_buffers[0].id != 0)
+            sg_destroy_buffer(state.bind.vertex_buffers[0]);
+        if (state.bind.index_buffer.id != 0)
+            sg_destroy_buffer(state.bind.index_buffer);
+        if (state.pip.id != 0)
+            sg_destroy_pipeline(state.pip);
+        if (state.shd.id != 0)
+            sg_destroy_shader(state.shd);
+        
         simgui_shutdown();
-        sg_shutdown();
+        // Note: Graphics context managed by SampleBrowser, do NOT call sg_shutdown
+        
+        // Reset state
+        state = new _state();
+#if !WEB
+        System.Threading.Thread.Sleep(20);
+#endif
     }
 
     public static SApp.sapp_desc sokol_main()
