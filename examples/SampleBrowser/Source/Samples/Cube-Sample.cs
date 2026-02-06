@@ -219,9 +219,6 @@ public static unsafe class CubeSapp
         
         // Reset state
         state = new _state();
-#if !WEB
-        System.Threading.Thread.Sleep(20);
-#endif
     }
 
     public static SApp.sapp_desc sokol_main()

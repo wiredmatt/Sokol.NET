@@ -325,9 +325,7 @@ public static unsafe class DynTextApp
         
         // Reset state
         state = new _state();
-#if !WEB
-        System.Threading.Thread.Sleep(20);
-#endif
+
     }
 
     [UnmanagedCallersOnly]

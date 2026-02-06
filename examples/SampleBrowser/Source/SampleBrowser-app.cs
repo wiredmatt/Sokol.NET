@@ -312,9 +312,6 @@ public static unsafe class SamplebrowserApp
         simgui_shutdown();
         
         Log($"[Native] ImGui shutdown complete");
-#if !WEB
-        System.Threading.Thread.Sleep(20);
-#endif
 
         // Set current sample callbacks
         CurrentInitCallback = sample.InitCallback;
@@ -349,10 +346,6 @@ public static unsafe class SamplebrowserApp
 
         state.currentSample = SampleId.None;
         state.showMenu = true;
-
-#if !WEB
-        System.Threading.Thread.Sleep(20);
-#endif
 
         // Reinitialize ImGui for menu (reuse existing graphics context)
         Log($"[Native] Reinitializing ImGui for menu...");

@@ -364,10 +364,7 @@ public static unsafe class DrawcallPerf
         // Note: Graphics context managed by SampleBrowser, do NOT call sg_shutdown
         
         // Reset state
-        state = new _state();
-#if !WEB
-        System.Threading.Thread.Sleep(20);
-#endif      
+        state = new _state();    
     }
 
     public static sapp_desc sokol_main()
