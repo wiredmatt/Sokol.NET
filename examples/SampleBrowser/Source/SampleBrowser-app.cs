@@ -34,7 +34,7 @@ public static unsafe class SamplebrowserApp
         CubemapJpeg,
         Box2dPhysics,
         ShaderToyApp,
-        Cgltf,
+        // Cgltf,
         Sdf,
         SpineInspector
     }
@@ -115,6 +115,7 @@ public static unsafe class SamplebrowserApp
         sg_setup(new sg_desc()
         {
             environment = sglue_environment(),
+            disable_validation = true,
             shader_pool_size = 64,
             buffer_pool_size = 4096 * 2,//increased to handle very large scene graphs
             sampler_pool_size = 512, // Reduced from 2048 - texture cache prevents duplicate samplers
@@ -253,16 +254,16 @@ public static unsafe class SamplebrowserApp
                 EventCallback = &ShaderToyApp.Event,
                 CleanupCallback = &ShaderToyApp.Cleanup
             },
-            new SampleInfo
-            {
-                Id = SampleId.Cgltf,
-                Name = "GLTF Model Viewer",
-                Description = "Load and display a glTF model with PBR materials",
-                InitCallback = &CGltfApp.Init,
-                FrameCallback = &CGltfApp.Frame,
-                EventCallback = &CGltfApp.Event,
-                CleanupCallback = &CGltfApp.Cleanup
-            },
+            // new SampleInfo
+            // {
+            //     Id = SampleId.Cgltf,
+            //     Name = "GLTF Model Viewer",
+            //     Description = "Load and display a glTF model with PBR materials",
+            //     InitCallback = &CGltfApp.Init,
+            //     FrameCallback = &CGltfApp.Frame,
+            //     EventCallback = &CGltfApp.Event,
+            //     CleanupCallback = &CGltfApp.Cleanup
+            // },
             new SampleInfo
             {
                 Id = SampleId.Sdf,

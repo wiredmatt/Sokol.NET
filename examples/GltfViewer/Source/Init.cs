@@ -20,6 +20,7 @@ public static unsafe partial class GltfViewer
         sg_setup(new sg_desc()
         {
             environment = sglue_environment(),
+            disable_validation = true,
             shader_pool_size = 64,
             buffer_pool_size = 4096 * 2,//increased to handle very large scene graphs
             sampler_pool_size = 512, // Reduced from 2048 - texture cache prevents duplicate samplers

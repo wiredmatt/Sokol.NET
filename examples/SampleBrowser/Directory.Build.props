@@ -4,7 +4,7 @@
       <BaseIntermediateOutputPath>obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
       
       <!-- Application Version (used across all platforms) -->
-      <AppVersion>1.3</AppVersion>
+      <AppVersion>1.3.1</AppVersion>
       
       <IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows> 
       <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX> 
@@ -113,7 +113,7 @@
       <AndroidPackagePrefix>com.sokol</AndroidPackagePrefix>
       
       <!-- Android Version Code (release/build number - increment for each release) -->
-      <AndroidVersionCode>4</AndroidVersionCode>
+      <AndroidVersionCode>5</AndroidVersionCode>
 
       <!-- SDK Versions -->
       <AndroidMinSdkVersion>26</AndroidMinSdkVersion>

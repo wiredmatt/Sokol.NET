@@ -33,6 +33,7 @@ public static unsafe partial class GltfViewer
         "DancingGangster/glTF-Binary/DancingGangster.glb",
         "littlest_tokyo/LittleTokio.gltf" ,
         "ChronographWatch/glTF/ChronographWatch.gltf",
+        "DamagedHelmet/glTF/DamagedHelmet.gltf",
         "CommercialRefrigerator/glTF/CommercialRefrigerator.gltf",
         "Dragon/Dragon.gltf",
         "CarConcept/glTF/CarConcept.gltf",
