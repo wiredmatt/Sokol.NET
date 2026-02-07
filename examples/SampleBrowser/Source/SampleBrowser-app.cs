@@ -34,7 +34,6 @@ public static unsafe class SamplebrowserApp
         Box2dPhysics,
         ShaderToyApp,
         Cgltf,
-        JoltPhysics,
         Sdf,
         SpineInspector
     }
@@ -248,16 +247,6 @@ public static unsafe class SamplebrowserApp
                 FrameCallback = &CGltfApp.Frame,
                 EventCallback = &CGltfApp.Event,
                 CleanupCallback = &CGltfApp.Cleanup
-            },
-            new SampleInfo
-            {
-                Id = SampleId.JoltPhysics,
-                Name = "Jolt Physics",
-                Description = "3D physics simulation with Jolt Physics - spawns falling objects",
-                InitCallback = &JoltphysicsApp.Init,
-                FrameCallback = &JoltphysicsApp.Frame,
-                EventCallback = &JoltphysicsApp.Event,
-                CleanupCallback = &JoltphysicsApp.Cleanup
             },
             new SampleInfo
             {

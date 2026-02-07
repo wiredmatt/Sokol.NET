@@ -48,13 +48,6 @@
 
 
     <PropertyGroup>
-      <JoltPhysicsCLibsPath>$(SokolNetHome)/ext/joltc/libs/</JoltPhysicsCLibsPath>
-      <JoltcLibPath>$(JoltPhysicsCLibsPath)emscripten/x86/release/joltc.a</JoltcLibPath>
-      <JoltLibPath>$(JoltPhysicsCLibsPath)emscripten/x86/release/libJolt.a</JoltLibPath>
-    </PropertyGroup>
-
-
-    <PropertyGroup>
       <SpineCLibsPath>$(SokolNetHome)/ext/spine-c/libs/</SpineCLibsPath>
       <SpineCLibPath>$(SpineCLibsPath)emscripten/x86/release/spine-c.a</SpineCLibPath>
     </PropertyGroup>
@@ -68,15 +61,6 @@
     <ItemGroup>
       <NativeFileReference Include="$(box2dLibPath)">
         <Link>libs\box2d.a</Link>
-      </NativeFileReference>
-    </ItemGroup>
-
-    <ItemGroup>
-      <NativeFileReference Include="$(JoltcLibPath)">
-        <Link>libs\joltc.a</Link>
-      </NativeFileReference>
-      <NativeFileReference Include="$(JoltLibPath)">
-        <Link>libs\libJolt.a</Link>
       </NativeFileReference>
     </ItemGroup>
 
