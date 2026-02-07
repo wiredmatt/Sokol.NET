@@ -525,6 +525,9 @@ public static unsafe partial class GltfViewer
             dpi_scale = 1// TBD ELI , looks very samll on Android sapp_dpi_scale()
         });
 
+           
+        SamplebrowserApp.DrawBackButton();
+
         // Auto-position camera using scene bounds after model is loaded
         if (!state.cameraInitialized && state.modelLoaded && state.model != null)
         {
