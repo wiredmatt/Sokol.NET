@@ -44,6 +44,15 @@
    </ItemGroup>
 
    <ItemGroup>
+    <Compile Include="$(SokolNetHome)/ext/SharpGLTF/src/Shared/*.cs" >
+        <Link>SharpGLTF\Shared\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="$(SokolNetHome)/ext/SharpGLTF/src/SharpGLTF.Core/**/*.cs" >
+        <Link>SharpGLTF\Core\%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+   <ItemGroup>
       <ShaderFiles Include="shaders/**/*.glsl" />
    </ItemGroup>
 
@@ -51,16 +60,37 @@
     <AssetsSourceFiles Include="Assets/**/*.*" />
   </ItemGroup>
 
+   <ItemGroup>
+      <ShaderFiles Include="shaders/bloom.glsl" />
+      <ShaderFiles Include="shaders/cubemap.glsl" />
+      <ShaderFiles Include="shaders/pbr.glsl" />
+   </ItemGroup>
+
+  <ItemGroup>
+     <SkinningMorphingShaderFiles Include="shaders/pbr.glsl" />
+  </ItemGroup>
+
    <!-- Compile shaders into the host-specific folder before build -->
+   <!-- Recompile ALL shaders if ANY .glsl file is modified -->
   <Target Name="CompileShaders" BeforeTargets="BeforeBuild"
           Inputs="@(ShaderFiles)"
-          Outputs="@(ShaderFiles -> 'shaders/compiled/$(HostShaderFolder)/%(Filename)-shader.cs')">
+          Outputs="shaders/compiled/$(HostShaderFolder)/.shader_timestamp">
         <!-- Ensure the output folder exists -->
     <MakeDir Directories="shaders/compiled/$(HostShaderFolder)" />
-    <Message Text="Compiling shader: %(ShaderFiles.Identity) into shaders/compiled/$(HostShaderFolder)" Importance="high" />
-    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(ShaderFiles.Identity)&quot; --output shaders/compiled/$(HostShaderFolder)/%(Filename)-shader.cs --slang $(ShaderSlang) -f sokol_csharp" />
-  </Target>
+    <Message Text="Compiling all shaders into shaders/compiled/$(HostShaderFolder)" Importance="high" />
+    <!-- Compile each shader file -->
+    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(ShaderFiles.Identity)&quot; --reflection  --output shaders/compiled/$(HostShaderFolder)/%(ShaderFiles.Filename)-shader.cs --slang $(ShaderSlang) -f sokol_csharp" />
+    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(SkinningMorphingShaderFiles.Identity)&quot; --defines &quot;SKINNING&quot; --module &quot;skinning&quot; --reflection  --output shaders/compiled/$(HostShaderFolder)/%(SkinningMorphingShaderFiles.Filename)-shader-skinning.cs --slang $(ShaderSlang) -f sokol_csharp" />
+    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(SkinningMorphingShaderFiles.Identity)&quot; --defines &quot;MORPHING&quot; --module &quot;morphing&quot; --reflection  --output shaders/compiled/$(HostShaderFolder)/%(SkinningMorphingShaderFiles.Filename)-shader-morphing.cs --slang $(ShaderSlang) -f sokol_csharp" />
+    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(SkinningMorphingShaderFiles.Identity)&quot; --defines &quot;SKINNING:MORPHING&quot; --module &quot;skinning_morphing&quot; --reflection  --output shaders/compiled/$(HostShaderFolder)/%(SkinningMorphingShaderFiles.Filename)-shader-skinning-morphing.cs --slang $(ShaderSlang) -f sokol_csharp" />
 
+    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(SkinningMorphingShaderFiles.Identity)&quot; --defines &quot;TRANSMISSION&quot; --module &quot;transmission&quot; --reflection  --output shaders/compiled/$(HostShaderFolder)/%(SkinningMorphingShaderFiles.Filename)-shader-transmission.cs --slang $(ShaderSlang) -f sokol_csharp" />
+    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(SkinningMorphingShaderFiles.Identity)&quot; --defines &quot;TRANSMISSION:SKINNING&quot; --module &quot;transmission_skinning&quot; --reflection  --output shaders/compiled/$(HostShaderFolder)/%(SkinningMorphingShaderFiles.Filename)-shader-transmission-skinning.cs --slang $(ShaderSlang) -f sokol_csharp" />
+    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(SkinningMorphingShaderFiles.Identity)&quot; --defines &quot;TRANSMISSION:MORPHING&quot; --module &quot;transmission_morphing&quot; --reflection  --output shaders/compiled/$(HostShaderFolder)/%(SkinningMorphingShaderFiles.Filename)-shader-transmission-morphing.cs --slang $(ShaderSlang) -f sokol_csharp" />
+    <Exec Command="&quot;$(SokolShdcPath)&quot; --input &quot;%(SkinningMorphingShaderFiles.Identity)&quot; --defines &quot;TRANSMISSION:SKINNING:MORPHING&quot; --module &quot;transmission_skinning_morphing&quot; --reflection  --output shaders/compiled/$(HostShaderFolder)/%(SkinningMorphingShaderFiles.Filename)-shader-transmission-skinning-morphing.cs --slang $(ShaderSlang) -f sokol_csharp" />
+    <!-- Create timestamp file to track completion -->
+    <Touch Files="shaders/compiled/$(HostShaderFolder)/.shader_timestamp" AlwaysCreate="true" />
+  </Target>
 
    <!-- iOS And Android Configuration -->
    <!-- Native Library Configuration for Android and iOS -->
