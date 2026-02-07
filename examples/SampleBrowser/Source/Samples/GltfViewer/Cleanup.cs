@@ -24,12 +24,8 @@ public static unsafe partial class GltfViewer
 
         FileSystem.Instance.Shutdown();
         simgui_shutdown();
-        sg_shutdown();
+        // sg_shutdown();
 
-        // Force a complete shutdown if debugging
-        if (Debugger.IsAttached)
-        {
-            Environment.Exit(0);
-        }
+        state = new _state();
     }
 }

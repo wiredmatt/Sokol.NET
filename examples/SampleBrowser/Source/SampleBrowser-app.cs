@@ -25,6 +25,7 @@ public static unsafe class SamplebrowserApp
     {
         None = 0,
         Cube,
+        GltfViewer,
         Dyntex,
         Drawcallperf,
         Offscreen,
@@ -114,7 +115,11 @@ public static unsafe class SamplebrowserApp
         sg_setup(new sg_desc()
         {
             environment = sglue_environment(),
-            disable_validation = false,  // Enable validation for debugging
+            shader_pool_size = 64,
+            buffer_pool_size = 4096 * 2,//increased to handle very large scene graphs
+            sampler_pool_size = 512, // Reduced from 2048 - texture cache prevents duplicate samplers
+            view_pool_size = 512, // Increased to handle many texture views (each texture needs a view)
+            uniform_buffer_size = 64 * 1024 * 1024, // 64 MB - increased to handle very large scene graphs (2500+ nodes)
             logger = {
                 func = &slog_func,
             }
@@ -157,6 +162,16 @@ public static unsafe class SamplebrowserApp
                 FrameCallback = &CubeSapp.Frame,
                 EventCallback = &CubeSapp.Event,
                 CleanupCallback = &CubeSapp.Cleanup
+            },
+            new SampleInfo
+            {
+                Id = SampleId.GltfViewer,
+                Name = "GLTF Viewer",
+                Description = "A viewer for GLTF 3D models",
+                InitCallback = &GltfViewer.Init,
+                FrameCallback = &GltfViewer.Frame,
+                EventCallback = &GltfViewer.Event,
+                CleanupCallback = &GltfViewer.Cleanup
             },
             new SampleInfo
             {

@@ -238,27 +238,27 @@ public static unsafe partial class GltfViewer
 
 
     [UnmanagedCallersOnly]
-    private static unsafe void Init()
+    public static unsafe void Init()
     {
         InitApplication();
 
     }
 
     [UnmanagedCallersOnly]
-    private static unsafe void Frame()
+    public static unsafe void Frame()
     {
         RunSingleFrame();
     }
 
 
     [UnmanagedCallersOnly]
-    private static unsafe void Event(sapp_event* e)
+    public static unsafe void Event(sapp_event* e)
     {
         HandleEvent(e);
     }
 
     [UnmanagedCallersOnly]
-    static void Cleanup()
+    public static unsafe void Cleanup()
     {
         ApplicationCleanup();
     }
