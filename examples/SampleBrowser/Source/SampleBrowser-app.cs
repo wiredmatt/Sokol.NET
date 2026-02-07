@@ -564,6 +564,11 @@ public static unsafe class SamplebrowserApp
             sg_shutdown();
         }
 
+        // Force garbage collection to clean up any remaining managed objects
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
         // Force a complete shutdown if debugging
         if (Debugger.IsAttached)
         {

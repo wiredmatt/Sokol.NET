@@ -50,6 +50,7 @@ public static unsafe class JoltphysicsApp
     struct _state
     {
         public sg_pass_action pass_action;
+        public sg_shader shd_smooth;
         public sg_pipeline pip_smooth;
         public sg_bindings cube_bind;
         public sg_bindings sphere_bind;
@@ -58,6 +59,12 @@ public static unsafe class JoltphysicsApp
         public BodyInterface bodyInterface;
         public JobSystemThreadPool jobSystem;
         public Camera camera;
+        
+        // Jolt objects that need disposal
+        public ObjectLayerPairFilterTable objectLayerPairFilter;
+        public BroadPhaseLayerInterfaceTable broadPhaseLayerInterface;
+        public ObjectVsBroadPhaseLayerFilterTable objectVsBroadPhaseLayerFilter;
+        public PhysicsSystemSettings physicsSystemSettings;
 
         public List<PhysicsBody> bodies;
         public float spawnTimer;
@@ -87,14 +94,6 @@ public static unsafe class JoltphysicsApp
     public static unsafe void Init()
     {
         Info("Init started");
-        
-        // Setup ImGui for back button
-        simgui_setup(new simgui_desc_t
-        {
-            logger = {
-                func = &slog_func,
-            }
-        });
 
         state.pass_action = default;
         state.pass_action.colors[0].load_action = sg_load_action.SG_LOADACTION_CLEAR;
@@ -105,35 +104,37 @@ public static unsafe class JoltphysicsApp
         Foundation.Init();
   
         // Create layer filters
-        var objectLayerPairFilter = new ObjectLayerPairFilterTable(2);
+        state.objectLayerPairFilter = new ObjectLayerPairFilterTable(2);
  
         
-        objectLayerPairFilter.EnableCollision(Layers.NON_MOVING, Layers.MOVING);
-        objectLayerPairFilter.EnableCollision(Layers.MOVING, Layers.MOVING);
+        state.objectLayerPairFilter.EnableCollision(Layers.NON_MOVING, Layers.MOVING);
+        state.objectLayerPairFilter.EnableCollision(Layers.MOVING, Layers.MOVING);
 
 
 
-        var broadPhaseLayerInterface = new BroadPhaseLayerInterfaceTable(2, 2);
+        state.broadPhaseLayerInterface = new BroadPhaseLayerInterfaceTable(2, 2);
 
         
-        broadPhaseLayerInterface.MapObjectToBroadPhaseLayer(Layers.NON_MOVING, 0);
-        broadPhaseLayerInterface.MapObjectToBroadPhaseLayer(Layers.MOVING, 1);
+        state.broadPhaseLayerInterface.MapObjectToBroadPhaseLayer(Layers.NON_MOVING, 0);
+        state.broadPhaseLayerInterface.MapObjectToBroadPhaseLayer(Layers.MOVING, 1);
 
         // Create physics system
-        var physicsSystemSettings = new PhysicsSystemSettings
+        state.objectVsBroadPhaseLayerFilter = new ObjectVsBroadPhaseLayerFilterTable(
+            state.broadPhaseLayerInterface, 2,
+            state.objectLayerPairFilter, 2);
+        
+        state.physicsSystemSettings = new PhysicsSystemSettings
         {
             MaxBodies = 65536,
             MaxBodyPairs = 65536,
             MaxContactConstraints = 10240,
             NumBodyMutexes = 0,
-            ObjectLayerPairFilter = objectLayerPairFilter,
-            BroadPhaseLayerInterface = broadPhaseLayerInterface,
-            ObjectVsBroadPhaseLayerFilter = new ObjectVsBroadPhaseLayerFilterTable(
-                broadPhaseLayerInterface, 2,
-                objectLayerPairFilter, 2)
+            ObjectLayerPairFilter = state.objectLayerPairFilter,
+            BroadPhaseLayerInterface = state.broadPhaseLayerInterface,
+            ObjectVsBroadPhaseLayerFilter = state.objectVsBroadPhaseLayerFilter
         };
 
-        state.physicsSystem = new PhysicsSystem(physicsSystemSettings);
+        state.physicsSystem = new PhysicsSystem(state.physicsSystemSettings);
 
         // Create job system for multi-threading
         // maxJobs: Maximum number of concurrent jobs (default: 2048)
@@ -204,10 +205,10 @@ public static unsafe class JoltphysicsApp
 
 
         // Create shaders and pipelines
-        var shd_smooth = sg_make_shader(physics_demo_smooth_shader_desc(sg_query_backend()));
+        state.shd_smooth = sg_make_shader(physics_demo_smooth_shader_desc(sg_query_backend()));
 
         var pip_desc = default(sg_pipeline_desc);
-        pip_desc.shader = shd_smooth;
+        pip_desc.shader = state.shd_smooth;
         // Geometry attributes from buffer 0
         pip_desc.layout.attrs[ATTR_physics_demo_smooth_position] = new sg_vertex_attr_state() { format = SG_VERTEXFORMAT_FLOAT3, buffer_index = 0 };
         pip_desc.layout.attrs[ATTR_physics_demo_smooth_normal] = new sg_vertex_attr_state() { format = SG_VERTEXFORMAT_FLOAT3, buffer_index = 0 };
@@ -367,11 +368,9 @@ public static unsafe class JoltphysicsApp
         // Clean up all bodies
         foreach (var body in state.bodies)
         {
-            state.bodyInterface.RemoveBody(body.bodyId);
-            state.bodyInterface.DestroyBody(body.bodyId);
+            state.bodyInterface.RemoveAndDestroyBody(body.bodyId);            
         }
-        state.bodyInterface.RemoveBody(state.groundBodyId);
-        state.bodyInterface.DestroyBody(state.groundBodyId);
+        state.bodyInterface.RemoveAndDestroyBody(state.groundBodyId);
 
         // Dispose all Body objects
         foreach (var bodyObj in state.bodyObjects)
@@ -389,11 +388,54 @@ public static unsafe class JoltphysicsApp
         {
             shapeSetting?.Dispose();
         }
+        
+        // Clear all Lists to help GC
+        state.bodies?.Clear();
+        state.shapes?.Clear();
+        state.shapeSettings?.Clear();
+        state.bodyObjects?.Clear();
 
-        // Dispose physics resources
-        state.jobSystem?.Dispose();
-        state.physicsSystem?.Dispose();
+        // Dispose physics resources BEFORE Foundation.Shutdown()
+        // Even if OwnsHandle is false, calling Dispose() triggers cleanup logic
+        if (state.jobSystem != null)
+        {
+            state.jobSystem.Dispose();
+            state.jobSystem = null;
+        }
+        
+        if (state.physicsSystem != null)
+        {
+            state.physicsSystem.Dispose();
+            state.physicsSystem = null;
+        }
+        state.bodyInterface = default;
+        
+        // Dispose physics settings and filters
+        if (state.objectVsBroadPhaseLayerFilter != null)
+        {
+            state.objectVsBroadPhaseLayerFilter.Dispose();
+            state.objectVsBroadPhaseLayerFilter = null;
+        }
+        if (state.broadPhaseLayerInterface != null)
+        {
+            state.broadPhaseLayerInterface.Dispose();
+            state.broadPhaseLayerInterface = null;
+        }
+        if (state.objectLayerPairFilter != null)
+        {
+            state.objectLayerPairFilter.Dispose();
+            state.objectLayerPairFilter = null;
+        }
+        
+        // Null out the struct to clear any remaining references
+        state.physicsSystemSettings = default;
+        
+        // Call Foundation.Shutdown() LAST to clean up any remaining Jolt state
         Foundation.Shutdown();
+        
+        // Clear arrays to release references
+        state.cubeInstances = null;
+        state.sphereInstances = null;
 
         // Destroy Sokol graphics resources
         // Destroy cube buffers
@@ -412,7 +454,9 @@ public static unsafe class JoltphysicsApp
         if (state.sphere_bind.vertex_buffers[1].id != 0)
             sg_destroy_buffer(state.sphere_bind.vertex_buffers[1]);
 
-        // Destroy pipeline
+        // Destroy shader and pipeline
+        if (state.shd_smooth.id != 0)
+            sg_destroy_shader(state.shd_smooth);
         if (state.pip_smooth.id != 0)
             sg_destroy_pipeline(state.pip_smooth);
 

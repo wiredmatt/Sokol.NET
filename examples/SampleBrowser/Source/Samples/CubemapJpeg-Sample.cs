@@ -34,8 +34,10 @@ public static unsafe class CubemapJpegApp
     struct _state
     {
         public sg_pass_action pass_action;
+        public sg_shader shd;
         public sg_pipeline pip;
         public sg_bindings bind;
+        public sg_image img;
         public Camera camera;
         public int load_count;
         public bool load_failed;
@@ -163,7 +165,8 @@ public static unsafe class CubemapJpegApp
             label = "cubemap-sampler"
         });
 
-        // a pipeline object
+        // shader and pipeline object
+        state.shd = sg_make_shader(cubemap_shader_desc(sg_query_backend()));
         state.pip = sg_make_pipeline(new sg_pipeline_desc()
         {
             layout = {
@@ -171,7 +174,7 @@ public static unsafe class CubemapJpegApp
                     [ATTR_cubemap_pos] = new sg_vertex_attr_state { format = SG_VERTEXFORMAT_FLOAT3 }
                 }
             },
-            shader = sg_make_shader(cubemap_shader_desc(sg_query_backend())),
+            shader = state.shd,
             index_type = SG_INDEXTYPE_UINT16,
             depth = new sg_depth_state()
             {
@@ -264,7 +267,7 @@ public static unsafe class CubemapJpegApp
             // All 6 faces loaded?
             if (state.load_count == NUM_FACES)
             {
-                sg_image img = sg_make_image(new sg_image_desc()
+                state.img = sg_make_image(new sg_image_desc()
                 {
                     type = sg_image_type.SG_IMAGETYPE_CUBE,
                     width = FACE_WIDTH,
@@ -281,7 +284,7 @@ public static unsafe class CubemapJpegApp
                 // Initialize the pre-allocated view
                 sg_init_view(state.bind.views[VIEW_tex], new sg_view_desc()
                 {
-                    texture = { image = img },
+                    texture = { image = state.img },
                     label = "cubemap-view"
                 });
             }
@@ -366,14 +369,22 @@ public static unsafe class CubemapJpegApp
             sg_destroy_buffer(state.bind.vertex_buffers[0]);
         if (state.bind.index_buffer.id != 0)
             sg_destroy_buffer(state.bind.index_buffer);
+        if (state.shd.id != 0)
+            sg_destroy_shader(state.shd);
         if (state.pip.id != 0)
             sg_destroy_pipeline(state.pip);
+        if (state.img.id != 0)
+            sg_destroy_image(state.img);
+        if (state.bind.views[VIEW_tex].id != 0)
+            sg_destroy_view(state.bind.views[VIEW_tex]);
+        if (state.bind.samplers[SMP_smp].id != 0)
+            sg_destroy_sampler(state.bind.samplers[SMP_smp]);
 
         sfetch_shutdown();
         simgui_shutdown();
         sdtx_shutdown();
         
-        // Note: sg_shutdown will be called by SampleBrowser
+        // Note: Graphics context managed by SampleBrowser, do NOT call sg_shutdown
         // Reset state for next run
         state = default;
     }
