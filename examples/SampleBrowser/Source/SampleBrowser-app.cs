@@ -36,7 +36,7 @@ public static unsafe class SamplebrowserApp
         ShaderToyApp,
         // Cgltf,
         Sdf,
-        SpineInspector
+        // SpineInspector
     }
 
     struct SampleInfo
@@ -58,6 +58,7 @@ public static unsafe class SamplebrowserApp
         public SampleId pendingSample; // Sample to start on next frame
         public bool requestStopSample; // Flag to request stopping current sample
         public bool showLicenseInfo; // Flag to show Spine license info dialog
+        public bool showAttributions; // Flag to show asset attributions dialog
     }
 
     static _state state = new _state();
@@ -274,16 +275,16 @@ public static unsafe class SamplebrowserApp
                 EventCallback = &SdfApp.Event,
                 CleanupCallback = &SdfApp.Cleanup
             },
-            new SampleInfo
-            {
-                Id = SampleId.SpineInspector,
-                Name = "Spine Inspector",
-                Description = "Interactive Spine skeletal animation inspector with multiple characters",
-                InitCallback = &SpineInspectorApp.Init,
-                FrameCallback = &SpineInspectorApp.Frame,
-                EventCallback = &SpineInspectorApp.Event,
-                CleanupCallback = &SpineInspectorApp.Cleanup
-            }
+            // new SampleInfo
+            // {
+            //     Id = SampleId.SpineInspector,
+            //     Name = "Spine Inspector",
+            //     Description = "Interactive Spine skeletal animation inspector with multiple characters",
+            //     InitCallback = &SpineInspectorApp.Init,
+            //     FrameCallback = &SpineInspectorApp.Frame,
+            //     EventCallback = &SpineInspectorApp.Event,
+            //     CleanupCallback = &SpineInspectorApp.Cleanup
+            // }
         };
     }
 
@@ -432,17 +433,15 @@ public static unsafe class SamplebrowserApp
             igText("Desktop | Mobile | Web | Direct3D | Metal | OpenGL | WebGL");
             igSpacing();
             igText("Interactive demos featuring 3D graphics, physics engines (Jolt, Box2D),");
-            igText("model loading (glTF, Assimp), skeletal animation (Spine, Ozz),");
-            igText("shader effects, and more - all running with near-native performance.");
+            igText("model loading (glTF, Assimp), shader effects, and more");
+            igText("all running with near-native performance.");
             igSpacing();
             igText("Open source (MIT License) | 38 examples | Full source available");
             igText("https://github.com/elix22/Sokol.NET");
             igSpacing();
-            igText("Spine Runtime © Esoteric Software - Licensed to Eli Aloni");
-            igSameLine(0, 10);
-            if (igButton("License Info", new Vector2(120, 0)))
+            if (igButton("Attributions", new Vector2(120, 0)))
             {
-                state.showLicenseInfo = true;
+                state.showAttributions = true;
             }
             igSpacing();
             igText("Select a demo below to explore:");
@@ -465,7 +464,7 @@ public static unsafe class SamplebrowserApp
                 if (igButton(sample.Name, new Vector2(windowWidth - 40, 0)))
                 {
                     StartSample(sample.Id);
-                    state.showLicenseInfo = false;
+                    state.showAttributions = false;
                 }
                 
                 igSpacing();
@@ -480,44 +479,133 @@ public static unsafe class SamplebrowserApp
         
         igPopStyleVar(1);
         
-        // Draw Spine license info dialog
-        if (state.showLicenseInfo)
+        // Draw asset attributions dialog
+        DrawAttributionsDialog(windowWidth, windowHeight);
+    }
+
+    private static void DrawAttributionsDialog(float windowWidth, float windowHeight)
+    {
+        if (!state.showAttributions) return;
+        
+        float dialogWidth = 700;
+        float dialogHeight = 500;
+        igSetNextWindowSize(new Vector2(dialogWidth, dialogHeight), ImGuiCond.Always);
+        igSetNextWindowPos(new Vector2(windowWidth / 2 - dialogWidth / 2, windowHeight / 2 - dialogHeight / 2), ImGuiCond.Always, Vector2.Zero);
+        
+        byte attributionsOpen = 1;
+        if (igBegin("Asset Attributions", ref attributionsOpen, 
+            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
         {
-            igSetNextWindowSize(new Vector2(500, 220), ImGuiCond.Always);
-            igSetNextWindowPos(new Vector2(windowWidth / 2 - 250, windowHeight / 2 - 110), ImGuiCond.Always, Vector2.Zero);
-            // igSetNextWindowFocus();
+            igText("This application uses the following open source assets:");
+            igSpacing();
+            igSeparator();
+            igSpacing();
             
-            byte licenseOpen = 1;
-            if (igBegin("Spine Runtime License Information", ref licenseOpen, 
-                ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
+            // 3D Models
+            igTextColored(new Vector4(0.2f, 0.8f, 1.0f, 1.0f), "3D Models:");
+            igSpacing();
+            
+            // Car Concept
+            igBulletText("Car Concept");
+            igText("   Artist: Eric Chadwick");
+            igText("   Owner: Darmstadt Graphics Group GmbH");
+            igText("   License: CC BY 4.0");
+            igSpacing();
+            
+            // Chronograph Watch
+            igBulletText("Chronograph Watch");
+            igText("   Artist: Eric Chadwick");
+            igText("   Owner: Darmstadt Graphics Group GmbH");
+            igText("   License: CC BY 4.0");
+            igSpacing();
+            
+            // Commercial Refrigerator
+            igBulletText("Commercial Refrigerator");
+            igText("   Artist: Eric Chadwick (conversion)");
+            igText("   Based on work by: Sean Thomas");
+            igText("   License: CC BY 4.0");
+            igSpacing();
+        
+            
+            // Littlest Tokyo
+            igBulletText("Littlest Tokyo");
+            igText("   Artist: 3D Models Low Poly");
+            igText("   Source: Sketchfab");
+            igText("   License: CC BY 4.0");
+            igSpacing();
+            
+            // BoomBox
+            igBulletText("BoomBox");
+            igText("   Artist: Microsoft");
+            igText("   License: CC0 (Public Domain)");
+            igSpacing();
+            
+            // Water Bottle
+            igBulletText("Water Bottle");
+            igText("   Artist: Microsoft");
+            igText("   License: CC0 (Public Domain)");
+            igSpacing();
+            
+            // Glass Vase Flowers
+            igBulletText("Glass Vase with Flowers");
+            igText("   Artists: Eric Chadwick & Rico Cilliers");
+            igText("   License: CC0 (Public Domain)");
+            igSpacing();
+            
+            // Diffuse Transmission Plant
+            igBulletText("Diffuse Transmission Plant");
+            igText("   Artists: Eric Chadwick & Rico Cilliers");
+            igText("   Owner: Darmstadt Graphics Group GmbH");
+            igText("   License: CC BY 4.0 / CC0");
+            igSpacing();
+            
+            // Glass Hurricane Candle Holder
+            igBulletText("Glass Hurricane Candle Holder");
+            igText("   Artist: Eric Chadwick");
+            igText("   Owner: Wayfair, LLC");
+            igText("   License: CC BY 4.0");
+            igSpacing();
+            
+            // Morph Stress Test
+            igBulletText("Morph Stress Test");
+            igText("   Artist: Ed Mackey");
+            igText("   Owner: Analytical Graphics, Inc.");
+            igText("   License: CC BY 4.0");
+            igSpacing();
+            
+            // ShaderToy Shaders
+            igTextColored(new Vector4(0.2f, 0.8f, 1.0f, 1.0f), "ShaderToy Shaders:");
+            igSpacing();
+            
+            // Raymarching Primitives
+            igBulletText("Raymarching Primitives");
+            igText("   Author: Inigo Quilez");
+            igText("   License: MIT");
+            igSpacing();
+            
+            // Procedural Ocean
+            igBulletText("Procedural Ocean");
+            igText("   Author: afl_ext");
+            igText("   License: MIT");
+            igSpacing();
+            
+            igSeparator();
+            igSpacing();
+            igText("All CC BY 4.0 licensed content:");
+            igText("https://creativecommons.org/licenses/by/4.0/");
+            igSpacing();
+            
+            if (igButton("Close", new Vector2(100, 30)))
             {
-                igSpacing();
-                igText("Spine Runtime © Esoteric Software");
-                igSpacing();
-                igSeparator();
-                igSpacing();
-                
-                igText("Licensee: Eli Aloni");
-                igText("License Type: Spine Essential License");
-                igText("Purchase Date: December 12, 2022");
-                igText("Invoice: #ch_3MEAkiLDEe7LyNND1fEkZmpB");
-                
-                igSpacing();
-                igSeparator();
-                igSpacing();
-                
-                if (igButton("Close", new Vector2(100, 30)))
-                {
-                    state.showLicenseInfo = false;
-                }
-                
-                igEnd();
+                state.showAttributions = false;
             }
             
-            if (licenseOpen == 0)
-            {
-                state.showLicenseInfo = false;
-            }
+            igEnd();
+        }
+        
+        if (attributionsOpen == 0)
+        {
+            state.showAttributions = false;
         }
     }
 

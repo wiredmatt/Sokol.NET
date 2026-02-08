@@ -21,11 +21,6 @@ public static unsafe class ShaderToyApp
     {
         Raymarching = 0,
         ProceduralOcean = 1,
-        StormyTorus = 2,
-        UniverseBall = 3,
-        FractalLand = 4,
-        FractalPyramid = 5,
-        Gemmarium = 6,
     }
 
     class _state
@@ -46,7 +41,7 @@ public static unsafe class ShaderToyApp
     }
 
     static _state state = new _state();
-    static readonly string[] shader_names = { "Raymarching Primitives", "Procedural Ocean", "Stormy Torus", "Universe Ball", "Fractal Land", "Fractal Pyramid", "Gemmarium" };
+    static readonly string[] shader_names = { "Raymarching Primitives", "Procedural Ocean" };
 
     [UnmanagedCallersOnly]
     public static unsafe void Init()
@@ -76,8 +71,8 @@ public static unsafe class ShaderToyApp
             label = "fsq vertices"
         });
 
-        // Create pipelines for all shaders
-        state.pipelines = new sg_pipeline[7];
+        // Create pipelines for MIT-licensed shaders only
+        state.pipelines = new sg_pipeline[2];
         
         // Raymarching shader
         sg_pipeline_desc desc0 = default;
@@ -90,36 +85,6 @@ public static unsafe class ShaderToyApp
         desc1.layout.attrs[proceduralocean_shader_cs.Shaders.ATTR_proceduralocean_position].format = SG_VERTEXFORMAT_FLOAT2;
         desc1.shader = sg_make_shader(proceduralocean_shader_cs.Shaders.proceduralocean_shader_desc(sg_query_backend()));
         state.pipelines[1] = sg_make_pipeline(desc1);
-        
-        // Stormy Torus shader
-        sg_pipeline_desc desc2 = default;
-        desc2.layout.attrs[stormytorus_shader_cs.Shaders.ATTR_stormytorus_position].format = SG_VERTEXFORMAT_FLOAT2;
-        desc2.shader = sg_make_shader(stormytorus_shader_cs.Shaders.stormytorus_shader_desc(sg_query_backend()));
-        state.pipelines[2] = sg_make_pipeline(desc2);
-        
-        // Universe Ball shader
-        sg_pipeline_desc desc3 = default;
-        desc3.layout.attrs[universeball_shader_cs.Shaders.ATTR_universeball_position].format = SG_VERTEXFORMAT_FLOAT2;
-        desc3.shader = sg_make_shader(universeball_shader_cs.Shaders.universeball_shader_desc(sg_query_backend()));
-        state.pipelines[3] = sg_make_pipeline(desc3);
-        
-        // Fractal Land shader
-        sg_pipeline_desc desc4 = default;
-        desc4.layout.attrs[fractalland_shader_cs.Shaders.ATTR_fractalland_position].format = SG_VERTEXFORMAT_FLOAT2;
-        desc4.shader = sg_make_shader(fractalland_shader_cs.Shaders.fractalland_shader_desc(sg_query_backend()));
-        state.pipelines[4] = sg_make_pipeline(desc4);
-        
-        // Fractal Pyramid shader
-        sg_pipeline_desc desc5 = default;
-        desc5.layout.attrs[fractalpyramid_shader_cs.Shaders.ATTR_fractalpyramid_position].format = SG_VERTEXFORMAT_FLOAT2;
-        desc5.shader = sg_make_shader(fractalpyramid_shader_cs.Shaders.fractalpyramid_shader_desc(sg_query_backend()));
-        state.pipelines[5] = sg_make_pipeline(desc5);
-        
-        // Gemmarium shader
-        sg_pipeline_desc desc6 = default;
-        desc6.layout.attrs[gemmarium_shader_cs.Shaders.ATTR_gemmarium_position].format = SG_VERTEXFORMAT_FLOAT2;
-        desc6.shader = sg_make_shader(gemmarium_shader_cs.Shaders.gemmarium_shader_desc(sg_query_backend()));
-        state.pipelines[6] = sg_make_pipeline(desc6);
 
         state.pass_action = default;
         state.pass_action.colors[0].load_action = SG_LOADACTION_DONTCARE;
