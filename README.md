@@ -12,6 +12,19 @@ Sokol.NET is a comprehensive C# binding and application framework built on top o
 
 Experience Sokol.NET's capabilities instantly with interactive WebAssembly examples. No installation required!
 
+### 📱 Sample Browser on Google Play
+
+**[📲 Download from Google Play Store](https://play.google.com/store/apps/details?id=com.sokol.SampleBrowser)** | **[📂 View Source Code](examples/SampleBrowser)**
+
+The **Sokol.NET Sample Browser** is now available on Google Play! Experience 11 interactive demos directly on your Android device, showcasing:
+- 🎮 **3D Graphics** - Rotating cube, GLTF viewer with 12 models, offscreen rendering, instancing
+- 🎨 **Shader Effects** - Real-time raymarching and procedural ocean shaders
+- ⚛️ **Physics** - Interactive Box2D simulation
+- 🖼️ **Textures** - Dynamic textures (Conway's Game of Life), PNG loading, cubemap skybox
+- 📐 **Advanced Rendering** - Signed Distance Field (SDF) rendering
+
+All powered by **.NET NativeAOT** for near-native performance on Android devices.
+
 ## 🎯 Features
 
 - **Cross-Platform**: Deploy to Windows, macOS, Linux, Android, iOS, and WebAssembly from a single codebase
