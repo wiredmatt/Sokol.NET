@@ -121,7 +121,7 @@ public static unsafe partial class GltfViewer
             igEndMainMenuBar();
         }
 
-        Vector2 pos = new Vector2(30, 60);
+        Vector2 pos = new Vector2(0, 20);
 
         // Model Info Window
         if (state.ui.model_info_open)
@@ -252,7 +252,7 @@ public static unsafe partial class GltfViewer
 
     static void DrawModelBrowserWindow(ref Vector2 pos)
     {
-        igSetNextWindowSize(new Vector2(350, 150), ImGuiCond.Once);
+        igSetNextWindowSize(new Vector2(280, 150), ImGuiCond.Once);
         igSetNextWindowPos(pos, ImGuiCond.Once, Vector2.Zero);
         byte open = 1;
         if (igBegin("Model Browser", ref open, ImGuiWindowFlags.None))
@@ -269,7 +269,7 @@ public static unsafe partial class GltfViewer
             igSeparator();
 
             // Previous button
-            if (igButton("<- Previous", new Vector2(160, 0)))
+            if (igButton("<- Previous", new Vector2(120, 0)))
             {
                 if (!state.isLoadingModel)
                 {
@@ -283,7 +283,7 @@ public static unsafe partial class GltfViewer
             igSameLine(0, 10);
 
             // Next button
-            if (igButton("Next ->", new Vector2(160, 0)))
+            if (igButton("Next ->", new Vector2(120, 0)))
             {
                 if (!state.isLoadingModel)
                 {
@@ -310,8 +310,14 @@ public static unsafe partial class GltfViewer
 
     static void DrawAnimationWindow(ref Vector2 pos)
     {
-        igSetNextWindowSize(new Vector2(300, 400), ImGuiCond.Once);
-        igSetNextWindowPos(pos, ImGuiCond.Once, Vector2.Zero);
+        float windowWidth = 250;
+        float screenWidth = sapp_widthf();
+        igSetNextWindowSize(new Vector2(windowWidth, 280), ImGuiCond.Once);
+        
+        // Position at top-right corner of screen
+        float xPos = screenWidth - windowWidth-1; // 10px margin from right edge
+        igSetNextWindowPos(new Vector2(xPos, 20), ImGuiCond.Once, Vector2.Zero);
+        
         byte open = 1;
         if (igBegin("Animation", ref open, ImGuiWindowFlags.None))
         {

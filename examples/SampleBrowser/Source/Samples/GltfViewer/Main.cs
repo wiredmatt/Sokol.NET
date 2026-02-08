@@ -30,13 +30,13 @@ public static unsafe partial class GltfViewer
     // Please check the license of each model before using it for commercial purposes!
     static readonly string[] availableModels = new string[]
     {
+        "WaterBottle/glTF/WaterBottle.gltf",
         "DancingGangster/glTF-Binary/DancingGangster.glb",
         "littlest_tokyo/LittleTokio.gltf" ,
         "ChronographWatch/glTF/ChronographWatch.gltf",
         "CommercialRefrigerator/glTF/CommercialRefrigerator.gltf",
         "CarConcept/glTF/CarConcept.gltf",
         "BoomBox/glTF-Binary/BoomBox.glb",
-        "WaterBottle/glTF/WaterBottle.gltf",
         "GlassVaseFlowers/glTF/GlassVaseFlowers.gltf",
         "DiffuseTransmissionPlant/glTF/DiffuseTransmissionPlant.gltf",
         "GlassHurricaneCandleHolder/glTF/GlassHurricaneCandleHolder.gltf",

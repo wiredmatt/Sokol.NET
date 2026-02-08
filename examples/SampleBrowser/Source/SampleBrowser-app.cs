@@ -487,8 +487,9 @@ public static unsafe class SamplebrowserApp
     {
         if (!state.showAttributions) return;
         
-        float dialogWidth = 700;
-        float dialogHeight = 500;
+        // Make dialog responsive to screen size (90% width, 80% height on mobile, smaller on desktop)
+        float dialogWidth = Math.Min(700, windowWidth * 0.9f);
+        float dialogHeight = Math.Min(500, windowHeight * 0.8f);
         igSetNextWindowSize(new Vector2(dialogWidth, dialogHeight), ImGuiCond.Always);
         igSetNextWindowPos(new Vector2(windowWidth / 2 - dialogWidth / 2, windowHeight / 2 - dialogHeight / 2), ImGuiCond.Always, Vector2.Zero);
         
@@ -496,6 +497,17 @@ public static unsafe class SamplebrowserApp
         if (igBegin("Asset Attributions", ref attributionsOpen, 
             ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
         {
+            // Close button at the top (always visible)
+            if (igButton("Close", new Vector2(100, 30)))
+            {
+                state.showAttributions = false;
+            }
+            igSeparator();
+            igSpacing();
+            
+            // Scrollable content area
+            igBeginChild_Str("AttributionsContent", new Vector2(0, 0), ImGuiChildFlags.None, ImGuiWindowFlags.None);
+            
             igText("This application uses the following open source assets:");
             igSpacing();
             igSeparator();
@@ -595,10 +607,7 @@ public static unsafe class SamplebrowserApp
             igText("https://creativecommons.org/licenses/by/4.0/");
             igSpacing();
             
-            if (igButton("Close", new Vector2(100, 30)))
-            {
-                state.showAttributions = false;
-            }
+            igEndChild();
             
             igEnd();
         }
