@@ -51,6 +51,7 @@ jobs:
                [[ "$file" == ext/*.cpp ]] || \
                [[ "$file" == ext/*.h ]] || \
                [[ "$file" == scripts/build-*-sokol-library* ]] || \
+               [[ "$file" == tools/SokolApplicationBuilder/** ]] || \
                [[ "$file" == .github/workflows/build-libraries.yml ]]; then
               echo "Found sokol library source change: $file"
               SHOULD_BUILD=true
