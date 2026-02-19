@@ -36,9 +36,45 @@ CGltfViewer is a port of GltfViewer that replaces SharpGLTF with the native cglt
 | KHR_materials_variants | ✅ `cgltf_material_variant` | Supported |
 | KHR_texture_transform | ✅ `cgltf_texture_transform` | Supported |
 | KHR_lights_punctual | ✅ `cgltf_light` | Supported |
-| **KHR_animation_pointer** | ❌ Not in cgltf | **Not supported** — PotOfCoalsAnimationPointer loads but material animations don't play |
-| OMI_physics_body/shape | ❌ Vendor ext | **Ignored** — no rendering impact |
+| **KHR_animation_pointer** | ❌ Not in cgltf natively | **Hook-ready** — raw JSON in `channel.extensions[]`; register a handler via `CGltfExtensionRegistry.RegisterAnimationChannelHandler("KHR_animation_pointer", ...)` |
+| OMI_physics_body/shape | ❌ Vendor ext | **Hook-ready** — use `CGltfExtensionRegistry.RegisterNodeHandler(...)` to intercept |
 | GODOT_single_root | ❌ Vendor ext | **Ignored** — no rendering impact |
+
+---
+
+## Extension Hook System (`CGltfExtensionRegistry`)
+
+cgltf stores the raw JSON of every extension it does not natively parse in the
+`extensions[]` array of each object. `CGltfExtensionRegistry` provides a
+C#-side dispatch layer on top of that data.
+
+### Registration (call in `Init.cs` before loading any model)
+
+```csharp
+// Animation channels with null target_node (KHR_animation_pointer, etc.)
+CGltfExtensionRegistry.RegisterAnimationChannelHandler(
+    "KHR_animation_pointer",
+    ctx => {
+        // ctx.ExtensionJson  == {"pointer":"/materials/0/pbrMetallicRoughness/baseColorFactor"}
+        // ctx.ReadTimes()    — float[] keyframe times
+        // ctx.ReadOutputFloats(4) — flat RGBA output values
+        // ctx.Animation      — CGltfAnimation being built; add MaterialPropertyAnimation here
+        // ctx.Data           — full cgltf_data* for material/node lookups
+    });
+
+// Node extensions
+CGltfExtensionRegistry.RegisterNodeHandler("OMI_physics_body", ctx => { ... });
+
+// Material extensions
+CGltfExtensionRegistry.RegisterMaterialHandler("MY_custom_ext", ctx => { ... });
+```
+
+### Dispatch points
+| Hook type | When fired |
+|---|---|
+| `RegisterAnimationChannelHandler` | For every channel where `target_node == null`, in `ProcessAnimationsForCharacter` + `ProcessNodeAnimations` |
+| `RegisterNodeHandler` | For every node in `data->nodes[]`, at end of `ProcessModel` |
+| `RegisterMaterialHandler` | For every material in `data->materials[]`, at end of `ProcessModel` |
 
 ---
 

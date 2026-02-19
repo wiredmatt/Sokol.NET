@@ -346,6 +346,12 @@ namespace Sokol
             AnimationsReady = true;
             ExtractLightNodes(data);
 
+            // -----------------------------------------------------------------
+            // Step 8 – dispatch node/material extension hooks
+            // -----------------------------------------------------------------
+            if (CGltfExtensionRegistry.HasAnyNodeHandler || CGltfExtensionRegistry.HasAnyMaterialHandler)
+                DispatchObjectExtensions(data);
+
             Info($"CGltfModel ready: {Nodes.Count} nodes, {Meshes.Count} meshes ({Characters.Count} chars, {StaticMeshes.Count} static), {TotalBoneCount} bones, {ModelLights.Count} lights", "CGltf");
         }
 
@@ -860,7 +866,12 @@ namespace Sokol
                 for (int ci = 0; ci < (int)anim->channels_count; ci++)
                 {
                     cgltf_animation_channel* ch = &anim->channels[ci];
-                    if (ch->target_node == null) continue;
+                    if (ch->target_node == null)
+                    {
+                        // Pointer-based channel (e.g. KHR_animation_pointer) — hand off to registry
+                        CGltfExtensionRegistry.DispatchAnimationChannel(ch, data, animation, ai, ci);
+                        continue;
+                    }
 
                     string? targetName = PtrToStr(ch->target_node->name);
                     if (targetName == null) continue;
@@ -892,7 +903,7 @@ namespace Sokol
                     else        nodeChannelCount++;
                 }
 
-                if (animation.GetBones().Count > 0 || animation.MorphAnimations.Count > 0)
+                if (animation.GetBones().Count > 0 || animation.MorphAnimations.Count > 0 || animation.MaterialAnimations.Count > 0)
                 {
                     result.Add(animation);
                     Info($"  Anim '{animName}' [char '{characterName}']: {boneChannelCount} bone ch, {nodeChannelCount} node ch, {duration:F2}s", "CGltf");
@@ -922,7 +933,12 @@ namespace Sokol
                 for (int ci = 0; ci < (int)anim->channels_count; ci++)
                 {
                     cgltf_animation_channel* ch = &anim->channels[ci];
-                    if (ch->target_node == null) continue;
+                    if (ch->target_node == null)
+                    {
+                        // Pointer-based channel (e.g. KHR_animation_pointer) — hand off to registry
+                        CGltfExtensionRegistry.DispatchAnimationChannel(ch, data, animation, ai, ci);
+                        continue;
+                    }
 
                     string? targetName = PtrToStr(ch->target_node->name);
                     if (targetName == null) continue;
@@ -942,7 +958,7 @@ namespace Sokol
                     ParseBoneChannel(ch, bone, ConvertInterpolation(ch->sampler->interpolation));
                 }
 
-                if (animation.GetBones().Count > 0 || animation.MorphAnimations.Count > 0)
+                if (animation.GetBones().Count > 0 || animation.MorphAnimations.Count > 0 || animation.MaterialAnimations.Count > 0)
                 {
                     result.Add(animation);
                     Info($"  Node anim '{animName}': {animation.GetBones().Count} animated nodes, {duration:F2}s", "CGltf");
@@ -1227,7 +1243,66 @@ namespace Sokol
         private static string? PtrToStr(IntPtr p) =>
             p != IntPtr.Zero ? Marshal.PtrToStringUTF8(p) : null;
 
-        private static float[] UnpackAccessorFloats(cgltf_accessor* acc, int totalFloats, int elemSize)
+        // ====================================================================
+        //  TryParseMaterialPointerPath — decode KHR_animation_pointer paths
+        // ====================================================================
+        /// <summary>
+        /// Parse a KHR_animation_pointer pointer path of the form
+        /// "/materials/N/&lt;textureType&gt;/extensions/KHR_texture_transform/&lt;property&gt;"
+        /// and return the material index and animation target.
+        /// </summary>
+        public static bool TryParseMaterialPointerPath(
+            string pointerPath,
+            out int materialIndex,
+            out MaterialAnimationTarget target)
+        {
+            materialIndex = -1;
+            target = MaterialAnimationTarget.NormalTextureRotation;
+            if (string.IsNullOrEmpty(pointerPath)) return false;
+
+            // Extract material index: find "materials" followed by an integer
+            var parts = pointerPath.Split('/');
+            for (int i = 0; i < parts.Length - 1; i++)
+            {
+                if (parts[i] == "materials" && int.TryParse(parts[i + 1], out int matIdx))
+                { materialIndex = matIdx; break; }
+            }
+            if (materialIndex < 0) return false;
+
+            if (pointerPath.Contains("normalTexture"))
+            {
+                if      (pointerPath.EndsWith("/rotation")) target = MaterialAnimationTarget.NormalTextureRotation;
+                else if (pointerPath.EndsWith("/offset"))   target = MaterialAnimationTarget.NormalTextureOffset;
+                else if (pointerPath.EndsWith("/scale"))    target = MaterialAnimationTarget.NormalTextureScale;
+                else return false;
+            }
+            else if (pointerPath.Contains("thicknessTexture"))
+            {
+                if      (pointerPath.EndsWith("/rotation")) target = MaterialAnimationTarget.ThicknessTextureRotation;
+                else if (pointerPath.EndsWith("/offset"))   target = MaterialAnimationTarget.ThicknessTextureOffset;
+                else if (pointerPath.EndsWith("/scale"))    target = MaterialAnimationTarget.ThicknessTextureScale;
+                else return false;
+            }
+            else return false;
+
+            return true;
+        }
+        // ====================================================================
+        private void DispatchObjectExtensions(cgltf_data* data)
+        {
+            if (CGltfExtensionRegistry.HasAnyNodeHandler)
+            {
+                for (int ni = 0; ni < (int)data->nodes_count; ni++)
+                    CGltfExtensionRegistry.DispatchNode(&data->nodes[ni], data, ni);
+            }
+            if (CGltfExtensionRegistry.HasAnyMaterialHandler)
+            {
+                for (int mi = 0; mi < (int)data->materials_count; mi++)
+                    CGltfExtensionRegistry.DispatchMaterial(&data->materials[mi], data, mi);
+            }
+        }
+
+        internal static float[] UnpackAccessorFloats(cgltf_accessor* acc, int totalFloats, int elemSize)
         {
             if (acc == null || totalFloats <= 0) return Array.Empty<float>();
             var buf = new float[totalFloats];

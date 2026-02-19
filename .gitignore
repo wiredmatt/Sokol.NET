@@ -11,3 +11,5 @@ examples/*/android/
 !examples/*/shaders/compiled/ios/
 !examples/*/shaders/compiled/android/
 
+# Build outputs (APKs, AABs, IPAs, etc.)
+examples/*/output/

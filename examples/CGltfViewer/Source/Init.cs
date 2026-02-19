@@ -15,7 +15,43 @@ public static unsafe partial class GltfViewer
 
         // Initialize FileSystem
         FileSystem.Instance.Initialize();
-        
+
+        // Register KHR_animation_pointer handler so cgltf extension channels
+        // (target_node == null) are decoded into MaterialPropertyAnimation entries.
+        // Must come before any model is loaded.
+        CGltfExtensionRegistry.RegisterAnimationChannelHandler(
+            "KHR_animation_pointer",
+            ctx =>
+            {
+                using var json = System.Text.Json.JsonDocument.Parse(ctx.ExtensionJson);
+                if (!json.RootElement.TryGetProperty("pointer", out var pointerElem)) return;
+                string? pointer = pointerElem.GetString();
+                if (pointer == null) return;
+                if (!CGltfModel.TryParseMaterialPointerPath(pointer, out int matIdx, out var animTarget)) return;
+
+                var matAnim = new Sokol.MaterialPropertyAnimation
+                {
+                    MaterialIndex = matIdx,
+                    Target        = animTarget,
+                    PropertyPath  = pointer,
+                };
+
+                float[] times = ctx.ReadTimes();
+                if (matAnim.IsFloatType)
+                {
+                    float[] vals = ctx.ReadOutputFloats(1);
+                    for (int i = 0; i < times.Length && i < vals.Length; i++)
+                        matAnim.FloatKeyframes.Add((times[i], vals[i]));
+                }
+                else
+                {
+                    float[] vals = ctx.ReadOutputFloats(2);
+                    for (int i = 0; i < times.Length; i++)
+                        matAnim.Vector2Keyframes.Add((times[i], new Vector2(vals[i * 2], vals[i * 2 + 1])));
+                }
+                ctx.Animation.MaterialAnimations.Add(matAnim);
+            });
+
         sg_setup(new sg_desc()
         {
             environment = sglue_environment(),

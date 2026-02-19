@@ -188,7 +188,8 @@ namespace Sokol
             {
                 switch (target)
                 {
-                    case MaterialAnimationTarget.NormalTextureRotation: mesh.NormalTexRotation = value; break;
+                    case MaterialAnimationTarget.NormalTextureRotation:     mesh.NormalTexRotation     = value; break;
+                    case MaterialAnimationTarget.ThicknessTextureRotation:  mesh.ThicknessTexRotation  = value; break;
                 }
             }
         }
@@ -200,8 +201,10 @@ namespace Sokol
             {
                 switch (target)
                 {
-                    case MaterialAnimationTarget.NormalTextureOffset: mesh.NormalTexOffset = value; break;
-                    case MaterialAnimationTarget.NormalTextureScale:  mesh.NormalTexScale  = value; break;
+                    case MaterialAnimationTarget.NormalTextureOffset:    mesh.NormalTexOffset    = value; break;
+                    case MaterialAnimationTarget.NormalTextureScale:     mesh.NormalTexScale     = value; break;
+                    case MaterialAnimationTarget.ThicknessTextureOffset: mesh.ThicknessTexOffset = value; break;
+                    case MaterialAnimationTarget.ThicknessTextureScale:  mesh.ThicknessTexScale  = value; break;
                 }
             }
         }

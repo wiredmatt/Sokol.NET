@@ -54,6 +54,10 @@ layout(binding=1) uniform metallic_params {
     vec2 emissive_tex_offset;
     float emissive_tex_rotation;
     vec2 emissive_tex_scale;
+    // Thickness texture transforms - KHR_texture_transform for KHR_materials_volume thickness texture
+    vec2 thickness_tex_offset;
+    float thickness_tex_rotation;
+    vec2 thickness_tex_scale;
     // Normal map scale (strength of normal perturbation)
     float normal_map_scale;     // 1.0 = full strength, 0.2 = subtle
     // Texture coordinate set indices (which UV channel each texture uses)
