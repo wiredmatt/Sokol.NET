@@ -23,3 +23,6 @@
 	path = ext/SharpGLTF
 	url = https://github.com/elix22/SharpGLTF.git
 	branch = sokol-dotnet
+[submodule "ext/cgltf"]
+	path = ext/cgltf
+	url = https://github.com/elix22/cgltf.git

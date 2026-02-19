@@ -40,7 +40,7 @@ public struct cgltf_memory_options
 public struct cgltf_file_options
 {
     public delegate* unmanaged<void *, void *, byte*, nuint*, IntPtr, void*> read;
-    public delegate* unmanaged<void *, void *, void*, void> release;
+    public delegate* unmanaged<void *, void *, void*, nuint, void> release;
     public void* user_data;
 }
 [StructLayout(LayoutKind.Sequential)]
@@ -190,6 +190,7 @@ public enum cgltf_meshopt_compression_filter
     cgltf_meshopt_compression_filter_octahedral,
     cgltf_meshopt_compression_filter_quaternion,
     cgltf_meshopt_compression_filter_exponential,
+    cgltf_meshopt_compression_filter_color,
     cgltf_meshopt_compression_filter_max_enum,
 }
 [StructLayout(LayoutKind.Sequential)]
@@ -202,6 +203,7 @@ public struct cgltf_meshopt_compression
     public nuint count;
     public cgltf_meshopt_compression_mode mode;
     public cgltf_meshopt_compression_filter filter;
+    public int is_khr;
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct cgltf_buffer_view
@@ -858,6 +860,7 @@ public struct cgltf_data
 {
     public cgltf_file_type file_type;
     public void* file_data;
+    public nuint file_size;
     public cgltf_asset asset;
     public cgltf_mesh* meshes;
     public nuint meshes_count;

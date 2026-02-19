@@ -416,8 +416,12 @@ def as_csharp_arg_type(arg_prefix, arg_type, prefix):
     elif is_string_ptr(arg_type):
         return "string" + pre
     elif is_const_struct_ptr(arg_type):
-        # not a bug, pass const structs by value
-        return f"in {as_csharp_struct_type(extract_ptr_type(arg_type), prefix)}" + pre
+        if arg_prefix is None:
+            # Return type: use pointer syntax (C# 'in' is only valid as a parameter modifier)
+            return f"{as_csharp_struct_type(extract_ptr_type(arg_type), prefix)}*" + pre
+        else:
+            # Parameter: pass const structs by value using 'in'
+            return f"in {as_csharp_struct_type(extract_ptr_type(arg_type), prefix)}" + pre
     elif is_struct_ptr(arg_type):
         # For struct pointers, use pointer syntax (cgltf_data*) not ref
         return f"{as_csharp_struct_type(extract_ptr_type(arg_type), prefix)}*" + pre
