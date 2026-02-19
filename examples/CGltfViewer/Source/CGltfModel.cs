@@ -1211,6 +1211,10 @@ namespace Sokol
             foreach (var h in _pinnedBuffers)
                 if (h.IsAllocated) h.Free();
             _pinnedBuffers.Clear();
+            foreach (var mesh in Meshes) mesh.Dispose();
+            Meshes.Clear();
+            foreach (var mesh in StaticMeshes) mesh.Dispose();
+            StaticMeshes.Clear();
             foreach (var c in Characters) c.Dispose();
             GC.SuppressFinalize(this);
         }

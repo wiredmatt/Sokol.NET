@@ -6,7 +6,7 @@ using static Sokol.CGltf;
 
 namespace Sokol
 {
-    public class Mesh
+    public class Mesh : IDisposable
     {
         public sg_buffer VertexBuffer;
         public sg_buffer IndexBuffer;
@@ -104,6 +104,7 @@ namespace Sokol
         private static sg_view _defaultWhiteCubemapView;
         private static sg_sampler _defaultCubemapSampler;
         private static bool _firstDrawCall = true;  // Debug flag
+        private bool _disposed = false;
 
         // Constructor for 16-bit indices (up to 65535 vertices)
         public Mesh(Vertex[] vertices, ushort[] indices, bool hasSkinning = false)
@@ -599,6 +600,9 @@ namespace Sokol
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
+
             if (VertexBuffer.id != 0)
                 sg_destroy_buffer(VertexBuffer);
             if (IndexBuffer.id != 0)
@@ -608,6 +612,9 @@ namespace Sokol
                 texture?.Dispose();
 
             Textures.Clear();
+            GC.SuppressFinalize(this);
         }
+
+        ~Mesh() => Dispose();
     }
 }
