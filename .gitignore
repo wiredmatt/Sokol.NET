@@ -10,3 +10,4 @@ examples/*/ios/
 examples/*/android/
 !examples/*/shaders/compiled/ios/
 !examples/*/shaders/compiled/android/
+
