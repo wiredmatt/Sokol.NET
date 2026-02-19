@@ -1549,6 +1549,64 @@ set_target_properties({libraryName} PROPERTIES
             Log.LogMessage(MessageImportance.High, "  RELEASE KEYSTORE SETUP REQUIRED");
             Log.LogMessage(MessageImportance.High, "==============================================");
             Log.LogMessage(MessageImportance.High, "");
+
+            // In CI environments there is no interactive terminal.
+            // Auto-generate a temporary keystore so the APK can be built and
+            // the native .so libraries extracted.  The resulting APK is never
+            // published, so proper Google Play signing is not required here.
+            bool isCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI"))
+                     || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+            if (isCi)
+            {
+                Log.LogMessage(MessageImportance.High, "CI environment detected — generating temporary keystore for library extraction build.");
+                string ciKeystoreDir = Path.Combine(Path.GetTempPath(), "sokol_ci_keystore");
+                Directory.CreateDirectory(ciKeystoreDir);
+                string ciKeystorePath = Path.Combine(ciKeystoreDir, "ci-release.keystore");
+                string ciStorePass    = "cikeystorepass";
+                string ciKeyAlias     = "releasekey";
+                string ciKeyPass      = "cikeystorepass";
+
+                if (!File.Exists(ciKeystorePath))
+                {
+                    Log.LogMessage(MessageImportance.High, $"Generating temporary CI keystore at: {ciKeystorePath}");
+                    var keytoolResult = Cli.Wrap("keytool")
+                        .WithArguments(new[]
+                        {
+                            "-genkeypair", "-v",
+                            "-keystore",   ciKeystorePath,
+                            "-alias",      ciKeyAlias,
+                            "-keyalg",     "RSA",
+                            "-keysize",    "2048",
+                            "-validity",   "1",
+                            "-storepass",  ciStorePass,
+                            "-keypass",    ciKeyPass,
+                            "-dname",      "CN=CI Build, OU=CI, O=CI, L=CI, S=CI, C=US",
+                            "-noprompt"
+                        })
+                        .WithStandardOutputPipe(PipeTarget.ToDelegate(s => Log.LogMessage(MessageImportance.Normal, s)))
+                        .WithStandardErrorPipe(PipeTarget.ToDelegate(s => Log.LogMessage(MessageImportance.Normal, s)))
+                        .WithValidation(CommandResultValidation.None)
+                        .ExecuteAsync()
+                        .GetAwaiter()
+                        .GetResult();
+
+                    if (keytoolResult.ExitCode != 0 || !File.Exists(ciKeystorePath))
+                    {
+                        Log.LogError("CI: Failed to generate temporary keystore with keytool.");
+                        return null;
+                    }
+                }
+
+                Log.LogMessage(MessageImportance.High, "✅ CI temporary keystore ready.");
+                return new KeystoreInfo
+                {
+                    KeystorePath  = ciKeystorePath,
+                    StorePassword = ciStorePass,
+                    KeyPassword   = ciKeyPass,
+                    KeyAlias      = ciKeyAlias
+                };
+            }
+
             Log.LogMessage(MessageImportance.High, "To sign your app for Google Play release, you need a release keystore.");
             Log.LogMessage(MessageImportance.High, "");
             Log.LogMessage(MessageImportance.High, "Options:");
