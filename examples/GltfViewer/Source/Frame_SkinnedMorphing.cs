@@ -172,6 +172,13 @@ public static unsafe partial class GltfViewer
             metallicParams.emissive_tex_scale[1] = mesh.EmissiveTexScale.Y;
             metallicParams.emissive_tex_rotation = mesh.EmissiveTexRotation;
             metallicParams.emissive_texcoord = mesh.EmissiveTexCoord;
+            
+            // Thickness texture transforms
+            metallicParams.thickness_tex_offset[0] = mesh.ThicknessTexOffset.X;
+            metallicParams.thickness_tex_offset[1] = mesh.ThicknessTexOffset.Y;
+            metallicParams.thickness_tex_scale[0] = mesh.ThicknessTexScale.X;
+            metallicParams.thickness_tex_scale[1] = mesh.ThicknessTexScale.Y;
+            metallicParams.thickness_tex_rotation = mesh.ThicknessTexRotation;
         }
 
         // Debug view uniforms

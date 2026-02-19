@@ -396,8 +396,10 @@ float getThickness() {
     float thickness = thickness_factor;
     
     if (has_thickness_tex > 0.5) {
-        // Select UV channel based on thickness_texcoord (0 = TEXCOORD_0, 1 = TEXCOORD_1)
-        vec2 baseUV = (thickness_texcoord < 0.5) ? v_TexCoord0 : v_TexCoord1;
+        // Select UV channel and apply KHR_texture_transform
+        vec2 baseUV = applyTextureTransform(
+            (thickness_texcoord < 0.5) ? v_TexCoord0 : v_TexCoord1,
+            thickness_tex_offset, thickness_tex_rotation, thickness_tex_scale);
         
         // Sample from the dynamically-assigned texture slot based on thickness_tex_index
         // The C# code finds the first available slot (0-11) and binds thickness there

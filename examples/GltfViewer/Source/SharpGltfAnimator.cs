@@ -274,7 +274,7 @@ namespace Sokol
                         mesh.NormalTexRotation = value;
                         break;
                     case MaterialAnimationTarget.ThicknessTextureRotation:
-                        // TODO: Add thickness texture rotation property to Mesh if needed
+                        mesh.ThicknessTexRotation = value;
                         break;
                 }
             }
@@ -299,10 +299,10 @@ namespace Sokol
                         mesh.NormalTexScale = value;
                         break;
                     case MaterialAnimationTarget.ThicknessTextureOffset:
-                        // TODO: Add thickness texture offset property to Mesh if needed
+                        mesh.ThicknessTexOffset = value;
                         break;
                     case MaterialAnimationTarget.ThicknessTextureScale:
-                        // TODO: Add thickness texture scale property to Mesh if needed
+                        mesh.ThicknessTexScale = value;
                         break;
                 }
             }

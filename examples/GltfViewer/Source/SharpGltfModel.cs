@@ -862,6 +862,19 @@ namespace Sokol
                     // Set to a temp value, will be updated after loading
                     mesh.ThicknessTextureIndex = 999;  // Temp marker that thickness texture exists
                     Info($"Material {material.LogicalIndex}: VolumeThickness texture found, using TEXCOORD_{mesh.ThicknessTexCoord}", "SharpGLTF");
+                    
+                    // Extract KHR_texture_transform for thickness texture
+                    var thicknessTransform = volumeThicknessChannel.Value.TextureTransform;
+                    if (thicknessTransform != null)
+                    {
+                        mesh.ThicknessTexOffset = thicknessTransform.Offset;
+                        mesh.ThicknessTexRotation = thicknessTransform.Rotation;
+                        mesh.ThicknessTexScale = thicknessTransform.Scale;
+                        Info($"Material {material.LogicalIndex}: Thickness texture transform - " +
+                            $"Offset=({mesh.ThicknessTexOffset.X:F2}, {mesh.ThicknessTexOffset.Y:F2}), " +
+                            $"Rotation={mesh.ThicknessTexRotation:F2}rad, " +
+                            $"Scale=({mesh.ThicknessTexScale.X:F2}, {mesh.ThicknessTexScale.Y:F2})", "SharpGLTF");
+                    }
                 }
                 else
                 {
