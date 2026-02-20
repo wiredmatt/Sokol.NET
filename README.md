@@ -112,7 +112,8 @@ The `examples/` folder contains 38 sample applications demonstrating various fea
 - **[assimp_animation](examples/assimp_animation)** - Skeletal animation with Assimp
 - **[assimp_scene](examples/assimp_scene)** - Complex scene loading
 - **[cgltf](examples/cgltf)** - glTF 2.0 model loading
-- **[GltfViewer](examples/GltfViewer)** - Full-featured glTF viewer
+- **[CGltfViewer](examples/CGltfViewer)** - Full-featured glTF 2.0 viewer using the native **[cgltf](https://github.com/jkuhlmann/cgltf)** C library — zero-allocation loading, full PBR pipeline, skinning, morphing, IBL, bloom, and 11+ material extensions; runs on Desktop, Web, iOS, and Android
+- **[GltfViewer](examples/GltfViewer)** - Full-featured glTF 2.0 viewer using the managed **[SharpGLTF](https://github.com/vpenades/SharpGLTF)** C# library — PBR rendering, animations, and advanced material support; best suited for Desktop and Web
 - **[ozz_shdfeatures](examples/ozz_shdfeatures)** - Ozz animation system with shader features
 
 ### 2D Animation
