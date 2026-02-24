@@ -63,6 +63,7 @@ typedef void            (*pfn_ACaptureSessionOutput_free)(ACaptureSessionOutput*
 typedef camera_status_t (*pfn_ACameraDevice_createCaptureSession)(ACameraDevice*, const ACaptureSessionOutputContainer*, const ACameraCaptureSession_stateCallbacks*, ACameraCaptureSession**);
 typedef void            (*pfn_ACameraCaptureSession_close)(ACameraCaptureSession*);
 typedef camera_status_t (*pfn_ACameraCaptureSession_setRepeatingRequest)(ACameraCaptureSession*, ACameraCaptureSession_captureCallbacks*, int, ACaptureRequest**, int*);
+typedef camera_status_t (*pfn_ACaptureRequest_setEntry_i32)(ACaptureRequest*, uint32_t, uint32_t, const int32_t*);
 
 typedef media_status_t (*pfn_AImageReader_new)(int32_t, int32_t, int32_t, int32_t, AImageReader**);
 typedef void           (*pfn_AImageReader_delete)(AImageReader*);
@@ -100,6 +101,7 @@ DECL_FN(ACaptureSessionOutput_free);
 DECL_FN(ACameraDevice_createCaptureSession);
 DECL_FN(ACameraCaptureSession_close);
 DECL_FN(ACameraCaptureSession_setRepeatingRequest);
+DECL_FN(ACaptureRequest_setEntry_i32);
 DECL_FN(AImageReader_new);
 DECL_FN(AImageReader_delete);
 DECL_FN(AImageReader_getWindow);
@@ -147,6 +149,7 @@ static bool load_camera_libs(void)
     LOAD_FN(s_libcamera, ACameraDevice_createCaptureSession);
     LOAD_FN(s_libcamera, ACameraCaptureSession_close);
     LOAD_FN(s_libcamera, ACameraCaptureSession_setRepeatingRequest);
+    LOAD_FN(s_libcamera, ACaptureRequest_setEntry_i32);
 
     LOAD_FN(s_libmedia, AImageReader_new);
     LOAD_FN(s_libmedia, AImageReader_delete);
@@ -315,8 +318,9 @@ static bool ANDROIDCAMERA_OpenDevice(camDevice_t *device, const camSpec *spec)
 {
     const char *id = (const char *)device->handle;
 
-    int w  = spec ? spec->width  : 1280;
-    int h  = spec ? spec->height : 720;
+    int w   = spec ? spec->width          : 1280;
+    int h   = spec ? spec->height         : 720;
+    int fps = spec ? spec->fps_numerator  : 30;
 
     AndroidPrivateData *priv =
         (AndroidPrivateData *)calloc(1, sizeof(AndroidPrivateData));
@@ -350,11 +354,21 @@ static bool ANDROIDCAMERA_OpenDevice(camDevice_t *device, const camSpec *spec)
         return cam_set_error("ACameraManager_openCamera failed");
     }
 
-    /* Create capture request */
+    /* Create capture request – TEMPLATE_RECORD delivers full-rate frames;
+     * TEMPLATE_PREVIEW allows the HAL to throttle to ~15 fps for power. */
     pACameraDevice_createCaptureRequest(priv->cam_device,
-        TEMPLATE_PREVIEW, &priv->request);
+        TEMPLATE_RECORD, &priv->request);
     pACameraOutputTarget_create(priv->window, &priv->output_target);
     pACaptureRequest_addTarget(priv->request, priv->output_target);
+
+    /* Lock the AE FPS range to [fps, fps] so the HAL cannot drop below the
+     * requested rate.  Without this Camera2 defaults to a variable range
+     * such as [15, 30] and typically delivers only ~15 fps on preview. */
+    if (fps > 0) {
+        int32_t fps_range[2] = { fps, fps };
+        pACaptureRequest_setEntry_i32(priv->request,
+            ACAMERA_CONTROL_AE_TARGET_FPS_RANGE, 2, fps_range);
+    }
 
     /* Create session */
     pACaptureSessionOutputContainer_create(&priv->session_output_container);
@@ -374,9 +388,11 @@ static bool ANDROIDCAMERA_OpenDevice(camDevice_t *device, const camSpec *spec)
     pACameraCaptureSession_setRepeatingRequest(priv->capture_session,
         NULL, 1, &priv->request, NULL);
 
-    device->actual_spec.width  = w;
-    device->actual_spec.height = h;
-    device->actual_spec.format = CAM_PIXEL_FORMAT_NV12;
+    device->actual_spec.width           = w;
+    device->actual_spec.height          = h;
+    device->actual_spec.format          = CAM_PIXEL_FORMAT_NV12;
+    device->actual_spec.fps_numerator   = fps;
+    device->actual_spec.fps_denominator = 1;
     device->hidden = priv;
 
     /* Android permission is handled by the Java layer before this is called */
