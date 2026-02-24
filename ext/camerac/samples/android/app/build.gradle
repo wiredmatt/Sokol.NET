@@ -1,0 +1,66 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Path to the camerac library root (two levels above samples/android/).
+def cameracRoot = rootProject.rootDir.parentFile.parentFile.absolutePath
+
+android {
+    namespace 'com.camerac.sample'
+    compileSdk 35
+    // Pass -PndkVersion=X.Y.Z on the Gradle command line (done by build.sh),
+    // or edit this default to match your installed NDK.
+    ndkVersion project.findProperty('ndkVersion') ?: '29.0.14033849'
+
+    defaultConfig {
+        applicationId "com.camerac.sample"
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        }
+
+        externalNativeBuild {
+            cmake {
+                // Tell the CMakeLists where the camerac root is; build shared .so
+                arguments "-DCAMERAC_ROOT=${cameracRoot}", "-DBUILD_SHARED_LIBS=ON"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            jniDebuggable true
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    packaging {
+        jniLibs {
+            // Keep .so files uncompressed so the dynamic linker can mmap them.
+            useLegacyPackaging false
+        }
+    }
+}
+
+dependencies {
+    // No extra deps – this is a pure JNI/Logcat test app
+}

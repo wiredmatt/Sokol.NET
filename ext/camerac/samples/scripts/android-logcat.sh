@@ -1,0 +1,1 @@
+adb logcat -c && adb logcat -s CameracSample:V DEBUG:E AndroidRuntime:E linker:W > logcat.txt
