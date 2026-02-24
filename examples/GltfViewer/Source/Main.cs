@@ -97,6 +97,15 @@ public static unsafe partial class GltfViewer
         public sg_image dummy_depth_img;     // 1x1 dummy depth for WebGL compatibility
         
         public sg_sampler sampler;           // Linear sampler for all passes
+
+        // Texture views for bindings (alloc-once, reinit on resize — avoids sg_make_view leaks)
+        public sg_view bright_input_view;         // scene_color_img → bright pass input
+        public sg_view blur_h_input_view;         // bright_img      → blur-h pass input
+        public sg_view blur_v_input_view;         // blur_h_img      → blur-v pass input
+        public sg_view composite_scene_view;      // scene_color_img → composite input 0
+        public sg_view composite_bloom_view;      // blur_v_img      → composite input 1
+
+        public sg_buffer fullscreen_vbuf;        // Fullscreen-triangle vertex buffer (size-independent)
     }
 
     struct TransmissionPass

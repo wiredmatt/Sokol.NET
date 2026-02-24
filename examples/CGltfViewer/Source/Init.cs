@@ -181,7 +181,7 @@ public static unsafe partial class GltfViewer
             sg_uninit_image(state.bloom.blur_v_img);
             sg_uninit_image(state.bloom.dummy_depth_img);
 
-            // Uninitialize bloom views
+            // Uninitialize bloom attachment views
             sg_uninit_view(state.bloom.scene_pass.attachments.colors[0]);
             sg_uninit_view(state.bloom.scene_pass.attachments.depth_stencil);
             sg_uninit_view(state.bloom.bright_pass.attachments.colors[0]);
@@ -190,6 +190,13 @@ public static unsafe partial class GltfViewer
             sg_uninit_view(state.bloom.blur_h_pass.attachments.depth_stencil);
             sg_uninit_view(state.bloom.blur_v_pass.attachments.colors[0]);
             sg_uninit_view(state.bloom.blur_v_pass.attachments.depth_stencil);
+
+            // Uninitialize binding texture views (these were leaking on every resize)
+            if (state.bloom.bright_input_view.id != 0)      sg_uninit_view(state.bloom.bright_input_view);
+            if (state.bloom.blur_h_input_view.id != 0)      sg_uninit_view(state.bloom.blur_h_input_view);
+            if (state.bloom.blur_v_input_view.id != 0)      sg_uninit_view(state.bloom.blur_v_input_view);
+            if (state.bloom.composite_scene_view.id != 0)   sg_uninit_view(state.bloom.composite_scene_view);
+            if (state.bloom.composite_bloom_view.id != 0)   sg_uninit_view(state.bloom.composite_bloom_view);
 
             // Uninitialize sampler
             if (state.bloom.sampler.id != 0)
@@ -498,20 +505,22 @@ public static unsafe partial class GltfViewer
                 PipelineType.SkinnedMorphingMask, colorFormat: sg_pixel_format.SG_PIXELFORMAT_RGBA8, depthFormat: sg_pixel_format.SG_PIXELFORMAT_DEPTH, sampleCount: 1);
         }
 
-        // Create fullscreen quad vertices for post-processing passes
-        float[] fullscreen_quad_vertices = {
-            // Triangle 1: Full-screen triangle (covers entire NDC)
-            -1.0f, -1.0f,   // Bottom-left
-             3.0f, -1.0f,   // Bottom-right (extends past screen)
-            -1.0f,  3.0f    // Top-left (extends past screen)
-        };
-
-        // Create vertex buffer for fullscreen quad
-        var fullscreen_vbuf = sg_make_buffer(new sg_buffer_desc()
+        // Create fullscreen quad vertices for post-processing passes (size-independent, create once)
+        if (state.bloom.fullscreen_vbuf.id == 0)
         {
-            data = SG_RANGE(fullscreen_quad_vertices),
-            label = "bloom-fullscreen-vbuf"
-        });
+            float[] fullscreen_quad_vertices = {
+                // Full-screen triangle (covers entire NDC)
+                -1.0f, -1.0f,   // Bottom-left
+                 3.0f, -1.0f,   // Bottom-right (extends past screen)
+                -1.0f,  3.0f    // Top-left (extends past screen)
+            };
+            state.bloom.fullscreen_vbuf = sg_make_buffer(new sg_buffer_desc()
+            {
+                data = SG_RANGE(fullscreen_quad_vertices),
+                label = "bloom-fullscreen-vbuf"
+            });
+        }
+        var fullscreen_vbuf = state.bloom.fullscreen_vbuf;
 
         // Create pipelines for bloom post-processing passes (only if not already created)
         // These don't depend on framebuffer size, so we only create them once
@@ -553,18 +562,53 @@ public static unsafe partial class GltfViewer
             state.bloom.composite_pipeline = PipeLineManager.GetOrCreatePipeline(PipelineType.BloomComposite,cullMode: sg_cull_mode.SG_CULLMODE_NONE);
         }
 
+        // Create/reinit binding texture views using alloc-once pattern to avoid pool leaks on resize
+        if (state.bloom.bright_input_view.id == 0)
+            state.bloom.bright_input_view = sg_alloc_view();
+        sg_init_view(state.bloom.bright_input_view, new sg_view_desc
+        {
+            texture = { image = state.bloom.scene_color_img },
+            label = "bright-scene-texture-view"
+        });
+
+        if (state.bloom.blur_h_input_view.id == 0)
+            state.bloom.blur_h_input_view = sg_alloc_view();
+        sg_init_view(state.bloom.blur_h_input_view, new sg_view_desc
+        {
+            texture = { image = state.bloom.bright_img },
+            label = "blur-h-input-view"
+        });
+
+        if (state.bloom.blur_v_input_view.id == 0)
+            state.bloom.blur_v_input_view = sg_alloc_view();
+        sg_init_view(state.bloom.blur_v_input_view, new sg_view_desc
+        {
+            texture = { image = state.bloom.blur_h_img },
+            label = "blur-v-input-view"
+        });
+
+        if (state.bloom.composite_scene_view.id == 0)
+            state.bloom.composite_scene_view = sg_alloc_view();
+        sg_init_view(state.bloom.composite_scene_view, new sg_view_desc
+        {
+            texture = { image = state.bloom.scene_color_img },
+            label = "composite-scene-view"
+        });
+
+        if (state.bloom.composite_bloom_view.id == 0)
+            state.bloom.composite_bloom_view = sg_alloc_view();
+        sg_init_view(state.bloom.composite_bloom_view, new sg_view_desc
+        {
+            texture = { image = state.bloom.blur_v_img },
+            label = "composite-bloom-view"
+        });
+
         // Create resource bindings
         // Bright pass bindings (scene texture -> bright pass)
         state.bloom.bright_bindings = new sg_bindings()
         {
             vertex_buffers = { [0] = fullscreen_vbuf },
-            views = {
-                [0] = sg_make_view(new sg_view_desc
-                {
-                    texture = { image = state.bloom.scene_color_img },
-                    label = "bright-scene-texture-view"
-                })
-            },
+            views = { [0] = state.bloom.bright_input_view },
             samplers = { [0] = state.bloom.sampler }
         };
 
@@ -572,13 +616,7 @@ public static unsafe partial class GltfViewer
         state.bloom.blur_h_bindings = new sg_bindings()
         {
             vertex_buffers = { [0] = fullscreen_vbuf },
-            views = {
-                [0] = sg_make_view(new sg_view_desc
-                {
-                    texture = { image = state.bloom.bright_img },
-                    label = "blur-h-input-view"
-                })
-            },
+            views = { [0] = state.bloom.blur_h_input_view },
             samplers = { [0] = state.bloom.sampler }
         };
 
@@ -586,13 +624,7 @@ public static unsafe partial class GltfViewer
         state.bloom.blur_v_bindings = new sg_bindings()
         {
             vertex_buffers = { [0] = fullscreen_vbuf },
-            views = {
-                [0] = sg_make_view(new sg_view_desc
-                {
-                    texture = { image = state.bloom.blur_h_img },
-                    label = "blur-v-input-view"
-                })
-            },
+            views = { [0] = state.bloom.blur_v_input_view },
             samplers = { [0] = state.bloom.sampler }
         };
 
@@ -600,18 +632,7 @@ public static unsafe partial class GltfViewer
         state.bloom.composite_bindings = new sg_bindings()
         {
             vertex_buffers = { [0] = fullscreen_vbuf },
-            views = {
-                [0] = sg_make_view(new sg_view_desc
-                {
-                    texture = { image = state.bloom.scene_color_img },
-                    label = "composite-scene-view"
-                }),
-                [1] = sg_make_view(new sg_view_desc
-                {
-                    texture = { image = state.bloom.blur_v_img },
-                    label = "composite-bloom-view"
-                })
-            },
+            views = { [0] = state.bloom.composite_scene_view, [1] = state.bloom.composite_bloom_view },
             samplers = { [0] = state.bloom.sampler, [1] = state.bloom.sampler }
         };
 
