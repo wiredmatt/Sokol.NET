@@ -379,6 +379,19 @@ SOKOL_API_IMPL void sshape_mat4_transpose_internal(sshape_mat4_t* result, const 
     *result = sshape_mat4_transpose(m);
 }
 
+#if defined(SOKOL_GP_INCLUDED)
+// ========== SGP (sgp_) ==========
+
+SOKOL_API_IMPL void sgp_query_desc_internal(sgp_desc* result) {
+    *result = sgp_query_desc();
+}
+
+SOKOL_API_IMPL void sgp_make_texture_view_from_image_internal(sg_view* result, sg_image img, const char * label) {
+    *result = sgp_make_texture_view_from_image(img, label);
+}
+
+#endif // SOKOL_GP_INCLUDED
+
 #if defined(SOKOL_BASISU_INCLUDED)
 // ========== SBasisu (sbasisu_) ==========
 

@@ -22,7 +22,7 @@ module_names = {
     'sglue_':   'SGlue',
     'sfetch_':  'SFetch',
     'simgui_':  'SImgui',
-    # 'sgp_':     'SGP',
+    'sgp_':     'SGP',
     'sspine_':  'SSpine',
     'cgltf_':   'CGltf',
     'sbasisu_': 'SBasisu',

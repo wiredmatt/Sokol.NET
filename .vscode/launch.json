@@ -49,6 +49,12 @@
             "type": "pickString",
             "description": "Select an example to launch",
             "options": [
+                "sokol_gp_sdf",
+                "sokol_gp_primitives",
+                "sokol_gp_framebuffer",
+                "sokol_gp_effect",
+                "sokol_gp_blend",
+                "sokol_gp_bench",
                 "CGltfViewer",
                 "SampleBrowser",
                 "SkiaSokolApp",

@@ -12,7 +12,7 @@ tasks = [
     [ '../ext/sokol/util/sokol_debugtext.h', 'sdtx_',     ['sg_'] ],
     [ '../ext/sokol/util/sokol_shape.h',     'sshape_',   ['sg_'] ],
     [ '../ext/sokol/util/sokol_spine.h',     'sspine_',   ['sg_'] ],
-    # [ '../ext/sokol_gp/sokol_gp.h',          'sgp_',      ['sg_'] ],
+    [ '../ext/sokol_gp/sokol_gp.h',          'sgp_',      ['sg_'] ],
     [ '../ext/cgltf/cgltf.h',                'cgltf_',    [] ],
     [ '../ext/basisu/sokol_basisu.h',        'sbasisu_',  ['sg_'] ],
     [ '../ext/sokol/util/sokol_imgui.h',     'simgui_',   ['sg_','sapp_'] ],

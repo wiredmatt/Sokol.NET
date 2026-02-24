@@ -72,7 +72,8 @@ extern "C"
 #include "sokol_fetch.h"
 #define SOKOL_DEBUGTEXT_IMPL
 #include "sokol_debugtext.h"
-// TBD ELI #include "sokol_gp.h"
+#define SOKOL_GP_IMPL
+#include "sokol_gp/sokol_gp.h"
 #define PL_MPEG_IMPLEMENTATION
 #include "pl_mpeg/pl_mpeg.h"
 

@@ -862,6 +862,90 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-sokol_gp_bench",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/sokol_gp_bench"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_bench-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/sokol_gp_bench"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_blend",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/sokol_gp_blend"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_blend-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/sokol_gp_blend"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_effect",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/sokol_gp_effect"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_effect-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/sokol_gp_effect"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_framebuffer",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/sokol_gp_framebuffer"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_framebuffer-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/sokol_gp_framebuffer"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_primitives",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/sokol_gp_primitives"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_primitives-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/sokol_gp_primitives"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_sdf",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/sokol_gp_sdf"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-sokol_gp_sdf-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/sokol_gp_sdf"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "Create New Example",
 			"type": "shell",
 			"command": "dotnet",
@@ -945,6 +1029,12 @@
 			"type": "pickString",
 			"description": "Select an example",
 			"options": [
+				"sokol_gp_sdf",
+				"sokol_gp_primitives",
+				"sokol_gp_framebuffer",
+				"sokol_gp_effect",
+				"sokol_gp_blend",
+				"sokol_gp_bench",
 				"CGltfViewer",
 				"SampleBrowser",
 				"SkiaSokolApp",
@@ -997,6 +1087,12 @@
 			"type": "pickString",
 			"description": "Select an example to build",
 			"options": [
+				"examples/sokol_gp_sdf",
+				"examples/sokol_gp_primitives",
+				"examples/sokol_gp_framebuffer",
+				"examples/sokol_gp_effect",
+				"examples/sokol_gp_blend",
+				"examples/sokol_gp_bench",
 				"examples/CGltfViewer",
 				"examples/SampleBrowser",
 				"examples/SkiaSokolApp",
@@ -1083,6 +1179,12 @@
 			"type": "pickString",
 			"description": "⚠️ WARNING: Select an example to PERMANENTLY DELETE",
 			"options": [
+				"sokol_gp_sdf",
+				"sokol_gp_primitives",
+				"sokol_gp_framebuffer",
+				"sokol_gp_effect",
+				"sokol_gp_blend",
+				"sokol_gp_bench",
 				"CGltfViewer",
 				"SampleBrowser",
 				"SkiaSokolApp",
