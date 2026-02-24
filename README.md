@@ -78,7 +78,7 @@ See example projects (`assimp_simple`, `spine_simple`, `ozz_shdfeatures`) and th
 
 ## 🎮 Example Applications
 
-The `examples/` folder contains 38 sample applications demonstrating various features:
+The `examples/` folder contains 44 sample applications demonstrating various features:
 
 ### Graphics Fundamentals
 - **[clear](examples/clear)** - Basic window and clear color
@@ -100,6 +100,17 @@ The `examples/` folder contains 38 sample applications demonstrating various fea
 - **[sgl_lines](examples/sgl_lines)** - Line rendering techniques
 - **[shapes_transform](examples/shapes_transform)** - 2D transformations
 - **[dyntex](examples/dyntex)** - Dynamic texture updates
+
+### Sokol GP (2D Painter)
+
+Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, efficient cross-platform 2D graphics painter built on top of sokol_gfx.
+
+- **[sokol_gp_bench](examples/sokol_gp_bench)** - Benchmark measuring throughput across 8 different draw patterns (rectangles, lines, points, triangles)
+- **[sokol_gp_blend](examples/sokol_gp_blend)** - Side-by-side comparison of all 7 blend modes on overlapping colored rectangles
+- **[sokol_gp_effect](examples/sokol_gp_effect)** - Custom shader effect blending two textures (tileset + Perlin noise) with per-frame uniforms
+- **[sokol_gp_framebuffer](examples/sokol_gp_framebuffer)** - Off-screen MSAA framebuffer rendering, resolved and tiled across the screen with rotation
+- **[sokol_gp_primitives](examples/sokol_gp_primitives)** - All drawing primitives (points, lines, strip, triangles, rects) with transforms across four viewports
+- **[sokol_gp_sdf](examples/sokol_gp_sdf)** - Real-time Signed Distance Field animation via a fully custom sokol_gp shader pipeline
 
 ### Text & Fonts
 - **[debugtext](examples/debugtext)** - Debug text overlay
