@@ -31,7 +31,9 @@ public class SokolNativeActivity extends NativeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
+        // @TEMPLATE_RUNTIME_PERMISSIONS_REQUEST@
+
         // Get InputMethodManager for keyboard control
         inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         
@@ -175,4 +177,6 @@ public class SokolNativeActivity extends NativeActivity {
     // Native methods to forward keyboard events
     private native void nativeOnKeyboardChar(int codepoint);
     private native void nativeOnKeyboardKey(int keycode, boolean down);
+
+    // @TEMPLATE_RUNTIME_PERMISSIONS_CALLBACK@
 }

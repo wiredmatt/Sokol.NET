@@ -679,6 +679,9 @@ namespace SokolApplicationBuilder
 
             // Process Android icon if specified
             ProcessAndroidIcon(androidPath, androidProperties);
+
+            // Inject runtime permission requests for any declared dangerous permissions
+            ConfigureJavaRuntimePermissions(androidPath, androidProperties);
         }
 
         void ProcessAndroidIcon(string androidPath, Dictionary<string, string> androidProperties)
@@ -1365,6 +1368,122 @@ set_target_properties({libraryName} PROPERTIES
             {
                 Log.LogMessage(MessageImportance.Normal, "⚠️  Could not find library loading pattern in SokolNativeActivity.java");
             }
+        }
+
+        // Map of Android dangerous permissions that require runtime requests (API 23+)
+        // Key: full permission name, Value: java Manifest constant (fully qualified, no import needed)
+        static readonly Dictionary<string, string> DangerousPermissions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "android.permission.CAMERA",                    "android.Manifest.permission.CAMERA" },
+            { "android.permission.RECORD_AUDIO",              "android.Manifest.permission.RECORD_AUDIO" },
+            { "android.permission.ACCESS_FINE_LOCATION",      "android.Manifest.permission.ACCESS_FINE_LOCATION" },
+            { "android.permission.ACCESS_COARSE_LOCATION",    "android.Manifest.permission.ACCESS_COARSE_LOCATION" },
+            { "android.permission.ACCESS_BACKGROUND_LOCATION","android.Manifest.permission.ACCESS_BACKGROUND_LOCATION" },
+            { "android.permission.READ_EXTERNAL_STORAGE",     "android.Manifest.permission.READ_EXTERNAL_STORAGE" },
+            { "android.permission.WRITE_EXTERNAL_STORAGE",    "android.Manifest.permission.WRITE_EXTERNAL_STORAGE" },
+            { "android.permission.READ_MEDIA_IMAGES",         "android.Manifest.permission.READ_MEDIA_IMAGES" },
+            { "android.permission.READ_MEDIA_VIDEO",          "android.Manifest.permission.READ_MEDIA_VIDEO" },
+            { "android.permission.READ_MEDIA_AUDIO",          "android.Manifest.permission.READ_MEDIA_AUDIO" },
+            { "android.permission.READ_CONTACTS",             "android.Manifest.permission.READ_CONTACTS" },
+            { "android.permission.WRITE_CONTACTS",            "android.Manifest.permission.WRITE_CONTACTS" },
+            { "android.permission.GET_ACCOUNTS",              "android.Manifest.permission.GET_ACCOUNTS" },
+            { "android.permission.CALL_PHONE",                "android.Manifest.permission.CALL_PHONE" },
+            { "android.permission.READ_PHONE_STATE",          "android.Manifest.permission.READ_PHONE_STATE" },
+            { "android.permission.READ_CALL_LOG",             "android.Manifest.permission.READ_CALL_LOG" },
+            { "android.permission.WRITE_CALL_LOG",            "android.Manifest.permission.WRITE_CALL_LOG" },
+            { "android.permission.SEND_SMS",                  "android.Manifest.permission.SEND_SMS" },
+            { "android.permission.RECEIVE_SMS",               "android.Manifest.permission.RECEIVE_SMS" },
+            { "android.permission.READ_SMS",                  "android.Manifest.permission.READ_SMS" },
+            { "android.permission.BODY_SENSORS",              "android.Manifest.permission.BODY_SENSORS" },
+            { "android.permission.ACTIVITY_RECOGNITION",      "android.Manifest.permission.ACTIVITY_RECOGNITION" },
+            { "android.permission.BLUETOOTH_SCAN",            "android.Manifest.permission.BLUETOOTH_SCAN" },
+            { "android.permission.BLUETOOTH_CONNECT",         "android.Manifest.permission.BLUETOOTH_CONNECT" },
+            { "android.permission.NEARBY_WIFI_DEVICES",       "android.Manifest.permission.NEARBY_WIFI_DEVICES" },
+            { "android.permission.POST_NOTIFICATIONS",        "android.Manifest.permission.POST_NOTIFICATIONS" },
+            { "android.permission.UWB_RANGING",               "android.Manifest.permission.UWB_RANGING" },
+        };
+
+        /// <summary>
+        /// Dynamically injects runtime permission request code into SokolNativeActivity.java for any
+        /// "dangerous" permissions declared in AndroidPermissions (Directory.Build.props).
+        /// Normal/install-time permissions need only a manifest entry and are skipped.
+        /// </summary>
+        void ConfigureJavaRuntimePermissions(string androidPath, Dictionary<string, string> androidProperties)
+        {
+            string javaActivityPath = Path.Combine(androidPath, "app", "src", "main", "java", "com", "sokol", "app", "SokolNativeActivity.java");
+
+            if (!File.Exists(javaActivityPath))
+            {
+                Log.LogMessage(MessageImportance.Normal, "⚠️  SokolNativeActivity.java not found, skipping runtime permissions configuration");
+                return;
+            }
+
+            string content = File.ReadAllText(javaActivityPath);
+
+            // Verify placeholders are present (they come from the template)
+            bool hasRequestPlaceholder  = content.Contains("// @TEMPLATE_RUNTIME_PERMISSIONS_REQUEST@");
+            bool hasCallbackPlaceholder = content.Contains("// @TEMPLATE_RUNTIME_PERMISSIONS_CALLBACK@");
+
+            if (!hasRequestPlaceholder && !hasCallbackPlaceholder)
+            {
+                Log.LogMessage(MessageImportance.Normal, "ℹ️  Runtime permission placeholders not found in SokolNativeActivity.java (pre-template file?)");
+                return;
+            }
+
+            // Determine which declared permissions are dangerous (need runtime request)
+            var declaredPermissions = GetAndroidPermissions(androidProperties);
+            var runtimePermissions = declaredPermissions
+                .Where(p => DangerousPermissions.ContainsKey(p))
+                .ToList();
+
+            if (runtimePermissions.Count == 0)
+            {
+                // No dangerous permissions – remove placeholders cleanly
+                content = content.Replace("\n        // @TEMPLATE_RUNTIME_PERMISSIONS_REQUEST@\n", "\n");
+                content = content.Replace("\n    // @TEMPLATE_RUNTIME_PERMISSIONS_CALLBACK@\n", "\n");
+                File.WriteAllText(javaActivityPath, content);
+                Log.LogMessage(MessageImportance.Normal, "ℹ️  No dangerous permissions declared – no runtime permission request needed");
+                return;
+            }
+
+            // ── Build the permission request block ──────────────────────────────────
+            var requestLines = new List<string>();
+            requestLines.Add("        // Request dangerous permissions at runtime (Activity.requestPermissions, API 23+)");
+            requestLines.Add("        {");
+            requestLines.Add("            java.util.ArrayList<String> _permsToRequest = new java.util.ArrayList<>();");
+            foreach (string perm in runtimePermissions)
+            {
+                string manifestConst = DangerousPermissions[perm];
+                requestLines.Add($"            if (checkSelfPermission({manifestConst}) != android.content.pm.PackageManager.PERMISSION_GRANTED) {{");
+                requestLines.Add($"                _permsToRequest.add({manifestConst});");
+                requestLines.Add("            }");
+            }
+            requestLines.Add("            if (!_permsToRequest.isEmpty()) {");
+            requestLines.Add("                requestPermissions(_permsToRequest.toArray(new String[0]), 1001);");
+            requestLines.Add("            }");
+            requestLines.Add("        }");
+
+            string requestCode = string.Join("\n", requestLines);
+
+            // ── Build the onRequestPermissionsResult callback ───────────────────────
+            var callbackLines = new List<string>();
+            callbackLines.Add("    @Override");
+            callbackLines.Add("    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {");
+            callbackLines.Add("        super.onRequestPermissionsResult(requestCode, permissions, grantResults);");
+            callbackLines.Add("        // Permission result received; native code will react on the next cam_update() / sensor poll cycle");
+            callbackLines.Add("    }");
+
+            string callbackCode = string.Join("\n", callbackLines);
+
+            // Replace placeholders
+            if (hasRequestPlaceholder)
+                content = content.Replace("        // @TEMPLATE_RUNTIME_PERMISSIONS_REQUEST@", requestCode);
+
+            if (hasCallbackPlaceholder)
+                content = content.Replace("    // @TEMPLATE_RUNTIME_PERMISSIONS_CALLBACK@", callbackCode);
+
+            File.WriteAllText(javaActivityPath, content);
+            Log.LogMessage(MessageImportance.High, $"✅ Injected runtime permission requests for: {string.Join(", ", runtimePermissions)}");
         }
 
         void BuildAndroidApp(string appName, string buildType)

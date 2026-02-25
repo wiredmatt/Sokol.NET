@@ -64,6 +64,8 @@ namespace SokolApplicationBuilder
         private string iOSIcon = string.Empty;
         private string appVersion = "1.0"; // Application version (common across all platforms)
         private Dictionary<string, string> iOSNativeLibraries = new Dictionary<string, string>(); // iOS native library paths
+        // Arbitrary Info.plist key/value pairs from IOSInfoPlistKey_* properties in Directory.Build.props
+        private Dictionary<string, string> iOSInfoPlistKeys = new Dictionary<string, string>();
 
         private string CLANG_CMD = string.Empty;
         private string AR_CMD = string.Empty;
@@ -515,7 +517,17 @@ namespace SokolApplicationBuilder
                         ? "\n    <key>UIRequiresFullScreen</key>\n    <true/>"
                         : "";
                     plistContent = plistContent.Replace("@TEMPLATE_REQUIRES_FULLSCREEN@", requiresFullScreenPlist);
-                    
+
+                    // Inject arbitrary Info.plist key/value pairs from IOSInfoPlistKey_* properties.
+                    // Each entry becomes:  <key>KeyName</key>\n    <string>value</string>
+                    var extraPlistSb = new System.Text.StringBuilder();
+                    foreach (var kv in iOSInfoPlistKeys)
+                    {
+                        extraPlistSb.Append($"\n    <key>{System.Security.SecurityElement.Escape(kv.Key)}</key>");
+                        extraPlistSb.Append($"\n    <string>{System.Security.SecurityElement.Escape(kv.Value)}</string>");
+                    }
+                    plistContent = plistContent.Replace("@TEMPLATE_IOS_PLIST_EXTRA_KEYS@", extraPlistSb.ToString());
+
                     File.WriteAllText(plistDest, plistContent);
                 }
 
@@ -1114,6 +1126,7 @@ namespace SokolApplicationBuilder
                     }
 
                     // Detect iOS native libraries (IOSNativeLibrary_*Path properties)
+                    // and arbitrary Info.plist key/value pairs (IOSInfoPlistKey_* properties)
                     foreach (var element in propertyGroup.Elements())
                     {
                         string elementName = element.Name.LocalName;
@@ -1130,6 +1143,16 @@ namespace SokolApplicationBuilder
                                     : Path.Combine(projectPath, element.Value);
                                     
                                 iOSNativeLibraries[libraryName] = absolutePath;
+                                propertyCount++;
+                            }
+                        }
+                        else if (elementName.StartsWith("IOSInfoPlistKey_"))
+                        {
+                            // Extract the plist key name from IOSInfoPlistKey_[PlistKeyName]
+                            string plistKey = elementName.Substring("IOSInfoPlistKey_".Length);
+                            if (!string.IsNullOrEmpty(plistKey) && !string.IsNullOrEmpty(element.Value))
+                            {
+                                iOSInfoPlistKeys[plistKey] = element.Value;
                                 propertyCount++;
                             }
                         }
@@ -1158,6 +1181,11 @@ namespace SokolApplicationBuilder
                     foreach (var library in iOSNativeLibraries)
                     {
                         Log.LogMessage(MessageImportance.High, $"   - IOSNativeLibrary_{library.Key}Path: {library.Value}");
+                    }
+                    // Log extra plist keys
+                    foreach (var kv in iOSInfoPlistKeys)
+                    {
+                        Log.LogMessage(MessageImportance.High, $"   - IOSInfoPlistKey_{kv.Key}: {kv.Value}");
                     }
                 }
             }
