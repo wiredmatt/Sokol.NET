@@ -157,7 +157,7 @@ static void MEDIAFOUNDATION_DetectDevices(void)
 
         /* Enumerate formats by opening source reader briefly */
         IMFMediaSource *source = NULL;
-        IMFAttributes_ActivateObject(activate, &IID_IMFMediaSource, (void **)&source);
+        IMFActivate_ActivateObject(activate, &IID_IMFMediaSource, (void **)&source);
 
         camSpec *specs = NULL;
         int num_specs = 0;
