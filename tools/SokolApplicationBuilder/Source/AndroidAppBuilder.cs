@@ -2345,7 +2345,6 @@ KeyAlias={keystoreInfo.KeyAlias}
             {
                 permissions.AddRange(new[]
                 {
-                    "android.permission.RECORD_AUDIO",
                     "android.permission.WAKE_LOCK",
                     "android.permission.INTERNET",
                     "android.permission.WRITE_EXTERNAL_STORAGE"
