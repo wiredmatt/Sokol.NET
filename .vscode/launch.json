@@ -49,6 +49,7 @@
             "type": "pickString",
             "description": "Select an example to launch",
             "options": [
+                "camera_hardware",
                 "sokol_gp_sdf",
                 "sokol_gp_primitives",
                 "sokol_gp_framebuffer",

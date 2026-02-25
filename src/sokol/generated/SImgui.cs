@@ -220,12 +220,19 @@ public static extern void simgui_add_input_characters_utf8([M(U.LPUTF8Str)] stri
 #endif
 public static extern void simgui_add_touch_button_event(int mouse_button, bool down);
 
+#if WEB
+[DllImport("sokol", EntryPoint = "simgui_handle_event", CallingConvention = CallingConvention.Cdecl)]
+private static extern int simgui_handle_event_native(in sapp_event ev);
+public static bool simgui_handle_event(in sapp_event ev) => simgui_handle_event_native(ev) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "simgui_handle_event", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "simgui_handle_event", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool simgui_handle_event(in sapp_event ev);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "simgui_map_keycode", CallingConvention = CallingConvention.Cdecl)]

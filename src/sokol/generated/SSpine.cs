@@ -849,40 +849,75 @@ public static extern sspine_resource_state sspine_get_skinset_resource_state(ssp
 #endif
 public static extern sspine_resource_state sspine_get_instance_resource_state(sspine_instance instance);
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_context_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_context_valid_native(sspine_context context);
+public static bool sspine_context_valid(sspine_context context) => sspine_context_valid_native(context) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_context_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_context_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_context_valid(sspine_context context);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_atlas_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_atlas_valid_native(sspine_atlas atlas);
+public static bool sspine_atlas_valid(sspine_atlas atlas) => sspine_atlas_valid_native(atlas) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_atlas_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_atlas_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_atlas_valid(sspine_atlas atlas);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_skeleton_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_skeleton_valid_native(sspine_skeleton skeleton);
+public static bool sspine_skeleton_valid(sspine_skeleton skeleton) => sspine_skeleton_valid_native(skeleton) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_skeleton_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_skeleton_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_skeleton_valid(sspine_skeleton skeleton);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_instance_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_instance_valid_native(sspine_instance instance);
+public static bool sspine_instance_valid(sspine_instance instance) => sspine_instance_valid_native(instance) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_instance_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_instance_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_instance_valid(sspine_instance instance);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_skinset_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_skinset_valid_native(sspine_skinset skinset);
+public static bool sspine_skinset_valid(sspine_skinset skinset) => sspine_skinset_valid_native(skinset) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_skinset_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_skinset_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_skinset_valid(sspine_skinset skinset);
+#endif
 
 #if WEB
 public static sspine_atlas sspine_get_skeleton_atlas(sspine_skeleton skeleton)
@@ -939,19 +974,33 @@ public static sspine_image sspine_image_by_index(sspine_atlas atlas, int index)
 public static extern sspine_image sspine_image_by_index(sspine_atlas atlas, int index);
 #endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_image_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_image_valid_native(sspine_image image);
+public static bool sspine_image_valid(sspine_image image) => sspine_image_valid_native(image) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_image_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_image_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_image_valid(sspine_image image);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_image_equal", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_image_equal_native(sspine_image first, sspine_image second);
+public static bool sspine_image_equal(sspine_image first, sspine_image second) => sspine_image_equal_native(first, second) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_image_equal", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_image_equal", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_image_equal(sspine_image first, sspine_image second);
+#endif
 
 #if WEB
 public static sspine_image_info sspine_get_image_info(sspine_image image)
@@ -992,19 +1041,33 @@ public static sspine_atlas_page sspine_atlas_page_by_index(sspine_atlas atlas, i
 public static extern sspine_atlas_page sspine_atlas_page_by_index(sspine_atlas atlas, int index);
 #endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_atlas_page_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_atlas_page_valid_native(sspine_atlas_page page);
+public static bool sspine_atlas_page_valid(sspine_atlas_page page) => sspine_atlas_page_valid_native(page) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_atlas_page_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_atlas_page_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_atlas_page_valid(sspine_atlas_page page);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_atlas_page_equal", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_atlas_page_equal_native(sspine_atlas_page first, sspine_atlas_page second);
+public static bool sspine_atlas_page_equal(sspine_atlas_page first, sspine_atlas_page second) => sspine_atlas_page_equal_native(first, second) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_atlas_page_equal", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_atlas_page_equal", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_atlas_page_equal(sspine_atlas_page first, sspine_atlas_page second);
+#endif
 
 #if WEB
 public static sspine_atlas_page_info sspine_get_atlas_page_info(sspine_atlas_page page)
@@ -1121,19 +1184,33 @@ public static sspine_anim sspine_anim_by_index(sspine_skeleton skeleton, int ind
 public static extern sspine_anim sspine_anim_by_index(sspine_skeleton skeleton, int index);
 #endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_anim_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_anim_valid_native(sspine_anim anim);
+public static bool sspine_anim_valid(sspine_anim anim) => sspine_anim_valid_native(anim) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_anim_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_anim_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_anim_valid(sspine_anim anim);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_anim_equal", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_anim_equal_native(sspine_anim first, sspine_anim second);
+public static bool sspine_anim_equal(sspine_anim first, sspine_anim second) => sspine_anim_equal_native(first, second) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_anim_equal", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_anim_equal", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_anim_equal(sspine_anim first, sspine_anim second);
+#endif
 
 #if WEB
 public static sspine_anim_info sspine_get_anim_info(sspine_anim anim)
@@ -1232,19 +1309,33 @@ public static sspine_bone sspine_bone_by_index(sspine_skeleton skeleton, int ind
 public static extern sspine_bone sspine_bone_by_index(sspine_skeleton skeleton, int index);
 #endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_bone_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_bone_valid_native(sspine_bone bone);
+public static bool sspine_bone_valid(sspine_bone bone) => sspine_bone_valid_native(bone) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_bone_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_bone_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_bone_valid(sspine_bone bone);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_bone_equal", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_bone_equal_native(sspine_bone first, sspine_bone second);
+public static bool sspine_bone_equal(sspine_bone first, sspine_bone second) => sspine_bone_equal_native(first, second) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_bone_equal", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_bone_equal", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_bone_equal(sspine_bone first, sspine_bone second);
+#endif
 
 #if WEB
 public static sspine_bone_info sspine_get_bone_info(sspine_bone bone)
@@ -1455,19 +1546,33 @@ public static sspine_slot sspine_slot_by_index(sspine_skeleton skeleton, int ind
 public static extern sspine_slot sspine_slot_by_index(sspine_skeleton skeleton, int index);
 #endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_slot_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_slot_valid_native(sspine_slot slot);
+public static bool sspine_slot_valid(sspine_slot slot) => sspine_slot_valid_native(slot) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_slot_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_slot_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_slot_valid(sspine_slot slot);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_slot_equal", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_slot_equal_native(sspine_slot first, sspine_slot second);
+public static bool sspine_slot_equal(sspine_slot first, sspine_slot second) => sspine_slot_equal_native(first, second) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_slot_equal", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_slot_equal", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_slot_equal(sspine_slot first, sspine_slot second);
+#endif
 
 #if WEB
 public static sspine_slot_info sspine_get_slot_info(sspine_slot slot)
@@ -1538,19 +1643,33 @@ public static sspine_event sspine_event_by_index(sspine_skeleton skeleton, int i
 public static extern sspine_event sspine_event_by_index(sspine_skeleton skeleton, int index);
 #endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_event_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_event_valid_native(sspine_event _event);
+public static bool sspine_event_valid(sspine_event _event) => sspine_event_valid_native(_event) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_event_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_event_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_event_valid(sspine_event _event);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_event_equal", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_event_equal_native(sspine_event first, sspine_event second);
+public static bool sspine_event_equal(sspine_event first, sspine_event second) => sspine_event_equal_native(first, second) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_event_equal", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_event_equal", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_event_equal(sspine_event first, sspine_event second);
+#endif
 
 #if WEB
 public static sspine_event_info sspine_get_event_info(sspine_event _event)
@@ -1607,19 +1726,33 @@ public static sspine_iktarget sspine_iktarget_by_index(sspine_skeleton skeleton,
 public static extern sspine_iktarget sspine_iktarget_by_index(sspine_skeleton skeleton, int index);
 #endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_iktarget_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_iktarget_valid_native(sspine_iktarget iktarget);
+public static bool sspine_iktarget_valid(sspine_iktarget iktarget) => sspine_iktarget_valid_native(iktarget) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_iktarget_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_iktarget_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_iktarget_valid(sspine_iktarget iktarget);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_iktarget_equal", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_iktarget_equal_native(sspine_iktarget first, sspine_iktarget second);
+public static bool sspine_iktarget_equal(sspine_iktarget first, sspine_iktarget second) => sspine_iktarget_equal_native(first, second) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_iktarget_equal", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_iktarget_equal", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_iktarget_equal(sspine_iktarget first, sspine_iktarget second);
+#endif
 
 #if WEB
 public static sspine_iktarget_info sspine_get_iktarget_info(sspine_iktarget iktarget)
@@ -1683,19 +1816,33 @@ public static sspine_skin sspine_skin_by_index(sspine_skeleton skeleton, int ind
 public static extern sspine_skin sspine_skin_by_index(sspine_skeleton skeleton, int index);
 #endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_skin_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_skin_valid_native(sspine_skin skin);
+public static bool sspine_skin_valid(sspine_skin skin) => sspine_skin_valid_native(skin) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_skin_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_skin_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_skin_valid(sspine_skin skin);
+#endif
 
+#if WEB
+[DllImport("spine-c", EntryPoint = "sspine_skin_equal", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sspine_skin_equal_native(sspine_skin first, sspine_skin second);
+public static bool sspine_skin_equal(sspine_skin first, sspine_skin second) => sspine_skin_equal_native(first, second) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/spine-c.framework/spine-c", EntryPoint = "sspine_skin_equal", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("spine-c", EntryPoint = "sspine_skin_equal", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sspine_skin_equal(sspine_skin first, sspine_skin second);
+#endif
 
 #if WEB
 public static sspine_skin_info sspine_get_skin_info(sspine_skin skin)

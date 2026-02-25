@@ -81,12 +81,19 @@ public static extern void saudio_setup(in saudio_desc desc);
 #endif
 public static extern void saudio_shutdown();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "saudio_isvalid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int saudio_isvalid_native();
+public static bool saudio_isvalid() => saudio_isvalid_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "saudio_isvalid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "saudio_isvalid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool saudio_isvalid();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "saudio_userdata", CallingConvention = CallingConvention.Cdecl)]
@@ -132,12 +139,19 @@ public static extern int saudio_buffer_frames();
 #endif
 public static extern int saudio_channels();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "saudio_suspended", CallingConvention = CallingConvention.Cdecl)]
+private static extern int saudio_suspended_native();
+public static bool saudio_suspended() => saudio_suspended_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "saudio_suspended", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "saudio_suspended", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool saudio_suspended();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "saudio_expect", CallingConvention = CallingConvention.Cdecl)]

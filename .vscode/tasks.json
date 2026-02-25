@@ -946,6 +946,20 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-camera_hardware",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/camera_hardware"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-camera_hardware-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/camera_hardware"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "Create New Example",
 			"type": "shell",
 			"command": "dotnet",
@@ -1029,6 +1043,7 @@
 			"type": "pickString",
 			"description": "Select an example",
 			"options": [
+				"camera_hardware",
 				"sokol_gp_sdf",
 				"sokol_gp_primitives",
 				"sokol_gp_framebuffer",
@@ -1087,6 +1102,7 @@
 			"type": "pickString",
 			"description": "Select an example to build",
 			"options": [
+				"examples/camera_hardware",
 				"examples/sokol_gp_sdf",
 				"examples/sokol_gp_primitives",
 				"examples/sokol_gp_framebuffer",
@@ -1179,6 +1195,7 @@
 			"type": "pickString",
 			"description": "⚠️ WARNING: Select an example to PERMANENTLY DELETE",
 			"options": [
+				"camera_hardware",
 				"sokol_gp_sdf",
 				"sokol_gp_primitives",
 				"sokol_gp_framebuffer",

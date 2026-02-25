@@ -141,19 +141,33 @@ public static sg_buffer ozz_index_buffer(IntPtr ozz)
 public static extern sg_buffer ozz_index_buffer(IntPtr ozz);
 #endif
 
+#if WEB
+[DllImport("ozzutil", EntryPoint = "ozz_all_loaded", CallingConvention = CallingConvention.Cdecl)]
+private static extern int ozz_all_loaded_native(IntPtr ozz);
+public static bool ozz_all_loaded(IntPtr ozz) => ozz_all_loaded_native(ozz) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/ozzutil.framework/ozzutil", EntryPoint = "ozz_all_loaded", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("ozzutil", EntryPoint = "ozz_all_loaded", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool ozz_all_loaded(IntPtr ozz);
+#endif
 
+#if WEB
+[DllImport("ozzutil", EntryPoint = "ozz_load_failed", CallingConvention = CallingConvention.Cdecl)]
+private static extern int ozz_load_failed_native(IntPtr ozz);
+public static bool ozz_load_failed(IntPtr ozz) => ozz_load_failed_native(ozz) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/ozzutil.framework/ozzutil", EntryPoint = "ozz_load_failed", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("ozzutil", EntryPoint = "ozz_load_failed", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool ozz_load_failed(IntPtr ozz);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/ozzutil.framework/ozzutil", EntryPoint = "ozz_load_skeleton", CallingConvention = CallingConvention.Cdecl)]

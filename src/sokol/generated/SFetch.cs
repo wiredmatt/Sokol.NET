@@ -147,12 +147,19 @@ public static extern void sfetch_setup(in sfetch_desc_t desc);
 #endif
 public static extern void sfetch_shutdown();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sfetch_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sfetch_valid_native();
+public static bool sfetch_valid() => sfetch_valid_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sfetch_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sfetch_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sfetch_valid();
+#endif
 
 #if WEB
 public static sfetch_desc_t sfetch_desc()
@@ -200,12 +207,19 @@ public static sfetch_handle_t sfetch_send(in sfetch_request_t request)
 public static extern sfetch_handle_t sfetch_send(in sfetch_request_t request);
 #endif
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sfetch_handle_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sfetch_handle_valid_native(sfetch_handle_t h);
+public static bool sfetch_handle_valid(sfetch_handle_t h) => sfetch_handle_valid_native(h) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sfetch_handle_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sfetch_handle_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sfetch_handle_valid(sfetch_handle_t h);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sfetch_dowork", CallingConvention = CallingConvention.Cdecl)]

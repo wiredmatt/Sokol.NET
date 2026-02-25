@@ -2358,12 +2358,19 @@ public static extern void sg_setup(in sg_desc desc);
 #endif
 public static extern void sg_shutdown();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sg_isvalid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sg_isvalid_native();
+public static bool sg_isvalid() => sg_isvalid_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_isvalid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sg_isvalid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sg_isvalid();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_reset_state_cache", CallingConvention = CallingConvention.Cdecl)]
@@ -2386,19 +2393,33 @@ public static extern void sg_push_debug_group([M(U.LPUTF8Str)] string name);
 #endif
 public static extern void sg_pop_debug_group();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sg_add_commit_listener", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sg_add_commit_listener_native(sg_commit_listener listener);
+public static bool sg_add_commit_listener(sg_commit_listener listener) => sg_add_commit_listener_native(listener) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_add_commit_listener", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sg_add_commit_listener", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sg_add_commit_listener(sg_commit_listener listener);
+#endif
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sg_remove_commit_listener", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sg_remove_commit_listener_native(sg_commit_listener listener);
+public static bool sg_remove_commit_listener(sg_commit_listener listener) => sg_remove_commit_listener_native(listener) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_remove_commit_listener", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sg_remove_commit_listener", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sg_remove_commit_listener(sg_commit_listener listener);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_make_buffer", CallingConvention = CallingConvention.Cdecl)]
@@ -2559,19 +2580,33 @@ public static extern void sg_update_image(sg_image img, in sg_image_data data);
 #endif
 public static extern int sg_append_buffer(sg_buffer buf, in sg_range data);
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sg_query_buffer_overflow", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sg_query_buffer_overflow_native(sg_buffer buf);
+public static bool sg_query_buffer_overflow(sg_buffer buf) => sg_query_buffer_overflow_native(buf) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_query_buffer_overflow", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sg_query_buffer_overflow", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sg_query_buffer_overflow(sg_buffer buf);
+#endif
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sg_query_buffer_will_overflow", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sg_query_buffer_will_overflow_native(sg_buffer buf, nuint size);
+public static bool sg_query_buffer_will_overflow(sg_buffer buf, nuint size) => sg_query_buffer_will_overflow_native(buf, size) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_query_buffer_will_overflow", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sg_query_buffer_will_overflow", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sg_query_buffer_will_overflow(sg_buffer buf, nuint size);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_begin_pass", CallingConvention = CallingConvention.Cdecl)]
@@ -3484,12 +3519,19 @@ public static extern void sg_enable_frame_stats();
 #endif
 public static extern void sg_disable_frame_stats();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sg_frame_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sg_frame_stats_enabled_native();
+public static bool sg_frame_stats_enabled() => sg_frame_stats_enabled_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_frame_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sg_frame_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sg_frame_stats_enabled();
+#endif
 
 #if WEB
 public static sg_frame_stats sg_query_frame_stats()

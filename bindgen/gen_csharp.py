@@ -34,6 +34,33 @@ module_names = {
     'ozz_':     'OzzUtil',
     'EXR':      'TinyEXR',  # TinyEXR uses struct/type names without prefix
     'b2':       'Box2D',
+    'cam_':     'CameraC',
+    'cam':      'CameraC',
+}
+
+# Namespace names per prefix
+namespace_names = {
+    'cam_':     'System.Hardware',
+    'cam':      'System.Hardware',
+}
+default_namespace = 'Sokol'
+
+# Output directories per prefix (relative to bindgen/).  Falls back to ../src/sokol/generated/
+output_dirs = {
+    'cam_':     '../src/System.Hardware',
+    'cam':      '../src/System.Hardware',
+}
+default_output_dir = '../src/sokol/generated'
+
+# Extra hand-written declarations to emit at the top of a generated class, per prefix.
+# Each entry is a list of raw C# lines.
+extra_declarations = {
+    'cam': [
+        '[UnmanagedFunctionPointer(CallingConvention.Cdecl)]',
+        'public unsafe delegate void camFrameCallback(IntPtr device, camFrame* frame, void* userdata);',
+        '[UnmanagedFunctionPointer(CallingConvention.Cdecl)]',
+        'public unsafe delegate void camPermissionCallback(IntPtr device, camPermission result, void* userdata);',
+    ],
 }
 
 # Library names for DllImport statements
@@ -59,6 +86,8 @@ library_names = {
     'ozz_':     'ozzutil',
     'EXR':      'sokol',  # TinyEXR compiled into sokol
     'b2':       'box2d',  # Box2D uses separate library
+    'cam_':     'camerac',  # CameraC uses separate library
+    'cam':      'camerac',  # CameraC uses separate library (no-underscore prefix)
 }
 
 
@@ -86,6 +115,8 @@ c_source_paths = {
     'ozz_':     'c/ozzutil.c',
     'EXR':      'c/tinyexr.c',
     'b2':       'c/box2d.c',
+    'cam_':     'c/camerac.c',
+    'cam':      'c/camerac.c',
 }
 
 name_ignores = [
@@ -98,7 +129,7 @@ name_ignores = [
     'sgimgui_init',
     'sgimgui_t', # struct
     'fonsSetErrorCallback', # function pointer callback not supported
-
+    'camDevice_t_',          # opaque handle, exposed as IntPtr via camDevice typedef
 ]
 
 name_overrides = {
@@ -178,6 +209,10 @@ prim_types = {
     'const char ***': 'IntPtr',
     'const EXRImage *': 'IntPtr',
     'const char **': 'IntPtr',
+    # CameraC opaque handle and callback types
+    'camDevice':               'IntPtr',
+    'camFrameCallback':        'camFrameCallback',
+    'camPermissionCallback':   'camPermissionCallback',
 }
 
 
@@ -627,6 +662,8 @@ def gen_struct(decl, prefix):
             l(f"    public {as_csharp_prim_type(extract_ptr_type(field_type))}* {field_name};")
         elif is_struct_ptr(field_type):
             l(f"    public {as_csharp_struct_type(extract_ptr_type(field_type), prefix)}* {field_name};")
+        elif is_const_struct_ptr(field_type):
+            l(f"    public {as_csharp_struct_type(extract_ptr_type(field_type), prefix)}* {field_name};")
         elif is_struct_ptr_ptr(field_type):
             l(f"    public {as_csharp_struct_type(extract_ptr_type(field_type), prefix)}** {field_name};")
         elif util.is_func_ptr(field_type):
@@ -715,6 +752,9 @@ def gen_enum(decl, prefix):
 def gen_func_c(decl, prefix):
     c_func_name = decl['name']
     if c_func_name not in web_wrapper_struct_return_functions:
+        # bool return types are fully handled in gen_func_csharp (WEB + non-WEB DllImport)
+        if funcdecl_result_csharp(decl, prefix) == "bool":
+            return
         # Use framework path on iOS, library name on all other platforms
         l("#if __IOS__")
         l(f"[DllImport(\"@rpath/{current_library_name}.framework/{current_library_name}\", EntryPoint = \"{decl['name']}\", CallingConvention = CallingConvention.Cdecl)]")
@@ -857,6 +897,31 @@ def gen_func_csharp(decl, prefix):
         l("        return \"\";")
         l("    }")
         l("}")
+    elif csharp_res_type == "bool":
+        # bool is not blittable; use byte on WEB (Emscripten ignores MarshalAs) and
+        # [return: M(U.I1)] on all other platforms.
+        args_decl = funcdecl_args_csharp(decl, prefix)
+        if decl['params']:
+            param_names = [check_name_override(param['name']) for param in decl['params']]
+            param_list = ", ".join(param_names)
+        else:
+            param_list = ""
+        l("#if WEB")
+        l(f"[DllImport(\"{current_library_name}\", EntryPoint = \"{decl['name']}\", CallingConvention = CallingConvention.Cdecl)]")
+        l(f"private static extern int {csharp_func_name}_native({args_decl});")
+        if args_decl:
+            l(f"public static bool {csharp_func_name}({args_decl}) => {csharp_func_name}_native({param_list}) != 0;")
+        else:
+            l(f"public static bool {csharp_func_name}() => {csharp_func_name}_native() != 0;")
+        l("#else")
+        l("#if __IOS__")
+        l(f"[DllImport(\"@rpath/{current_library_name}.framework/{current_library_name}\", EntryPoint = \"{decl['name']}\", CallingConvention = CallingConvention.Cdecl)]")
+        l("#else")
+        l(f"[DllImport(\"{current_library_name}\", EntryPoint = \"{decl['name']}\", CallingConvention = CallingConvention.Cdecl)]")
+        l("#endif")
+        l("[return: M(U.I1)]")
+        l(f"public static extern bool {csharp_func_name}({args_decl});")
+        l("#endif")
     else:
         l(f"public static extern {csharp_res_type} {csharp_func_name}({funcdecl_args_csharp(decl, prefix)});")
     l("")
@@ -1287,13 +1352,18 @@ def gen_module(inp, dep_prefixes):
     gen_imports(inp, dep_prefixes)
     pre_parse(inp)
     prefix = inp['prefix']
-    l("namespace Sokol")
+    ns = namespace_names.get(prefix, default_namespace)
+    l(f"namespace {ns}")
     l("{")
     # TinyEXR is excluded from web builds (CMakeLists.txt excludes tinyexr for Emscripten)
     if inp['module'] == 'TinyEXR':
         l("#if !WEB")
     l(f"public static unsafe partial class {inp['module']}")
     l("{")
+    for extra_line in extra_declarations.get(prefix, []):
+        l(extra_line)
+    if extra_declarations.get(prefix):
+        l("")
     for decl in inp['decls']:
         if not decl['is_dep']:
             kind = decl['kind']
@@ -1327,7 +1397,8 @@ def gen(c_header_path, c_prefix, dep_c_prefixes):
     current_library_name = library_names.get(c_prefix, 'sokol')  # Set library name AFTER reset_globals
     ir = gen_ir.gen(c_header_path, c_source_path, module_name, c_prefix, dep_c_prefixes)
     gen_module(ir, dep_c_prefixes)
-    output_path = f"../src/sokol/generated/{ir['module']}.cs"
+    output_dir = output_dirs.get(c_prefix, default_output_dir)
+    output_path = f"{output_dir}/{ir['module']}.cs"
     with open(output_path, 'w', newline='\n') as f_outp:
         f_outp.write(out_lines)
     return ir  # Return IR for header generation

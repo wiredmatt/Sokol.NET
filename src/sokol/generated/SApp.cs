@@ -625,12 +625,19 @@ public enum sapp_mouse_cursor
     SAPP_MOUSECURSOR_CUSTOM_15,
     _SAPP_MOUSECURSOR_NUM,
 }
+#if WEB
+[DllImport("sokol", EntryPoint = "sapp_isvalid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sapp_is_valid_native();
+public static bool sapp_is_valid() => sapp_is_valid_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_isvalid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_isvalid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sapp_is_valid();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_width", CallingConvention = CallingConvention.Cdecl)]
@@ -681,12 +688,19 @@ public static extern int sapp_depth_format();
 #endif
 public static extern int sapp_sample_count();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sapp_high_dpi", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sapp_high_dpi_native();
+public static bool sapp_high_dpi() => sapp_high_dpi_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_high_dpi", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_high_dpi", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sapp_high_dpi();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_dpi_scale", CallingConvention = CallingConvention.Cdecl)]
@@ -702,19 +716,33 @@ public static extern float sapp_dpi_scale();
 #endif
 public static extern void sapp_show_keyboard(bool show);
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sapp_keyboard_shown", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sapp_keyboard_shown_native();
+public static bool sapp_keyboard_shown() => sapp_keyboard_shown_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_keyboard_shown", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_keyboard_shown", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sapp_keyboard_shown();
+#endif
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sapp_is_fullscreen", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sapp_is_fullscreen_native();
+public static bool sapp_is_fullscreen() => sapp_is_fullscreen_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_is_fullscreen", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_is_fullscreen", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sapp_is_fullscreen();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_toggle_fullscreen", CallingConvention = CallingConvention.Cdecl)]
@@ -730,12 +758,19 @@ public static extern void sapp_toggle_fullscreen();
 #endif
 public static extern void sapp_show_mouse(bool show);
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sapp_mouse_shown", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sapp_mouse_shown_native();
+public static bool sapp_mouse_shown() => sapp_mouse_shown_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_mouse_shown", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_mouse_shown", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sapp_mouse_shown();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_lock_mouse", CallingConvention = CallingConvention.Cdecl)]
@@ -744,12 +779,19 @@ public static extern bool sapp_mouse_shown();
 #endif
 public static extern void sapp_lock_mouse(bool dolock);
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sapp_mouse_locked", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sapp_mouse_locked_native();
+public static bool sapp_mouse_locked() => sapp_mouse_locked_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_mouse_locked", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_mouse_locked", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sapp_mouse_locked();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_set_mouse_cursor", CallingConvention = CallingConvention.Cdecl)]
@@ -1104,12 +1146,19 @@ public static extern int sapp_gl_get_major_version();
 #endif
 public static extern int sapp_gl_get_minor_version();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sapp_gl_is_gles", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sapp_gl_is_gles_native();
+public static bool sapp_gl_is_gles() => sapp_gl_is_gles_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_gl_is_gles", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_gl_is_gles", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sapp_gl_is_gles();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_x11_get_window", CallingConvention = CallingConvention.Cdecl)]

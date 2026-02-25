@@ -23,6 +23,7 @@ tasks = [
     [ '../ext/ozzutil/ozzutil.h',            'ozz_',     ['sg_'] ],
     [ '../ext/tinyexr/tinyexr.h',            'EXR',      [] ],
     [ '../ext/box2d/include/box2d/box2d.h',  'b2',      [] ],
+    [ '../ext/camerac/include/camerac.h',    'cam',      [] ],
     
 ]
 

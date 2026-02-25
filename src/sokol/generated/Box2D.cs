@@ -136,47 +136,89 @@ public struct b2Plane
     public b2Vec2 normal;
     public float offset;
 }
+#if WEB
+[DllImport("box2d", EntryPoint = "b2IsValidFloat", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2IsValidFloat_native(float a);
+public static bool b2IsValidFloat(float a) => b2IsValidFloat_native(a) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2IsValidFloat", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2IsValidFloat", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2IsValidFloat(float a);
+#endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2IsValidVec2", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2IsValidVec2_native(b2Vec2 v);
+public static bool b2IsValidVec2(b2Vec2 v) => b2IsValidVec2_native(v) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2IsValidVec2", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2IsValidVec2", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2IsValidVec2(b2Vec2 v);
+#endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2IsValidRotation", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2IsValidRotation_native(b2Rot q);
+public static bool b2IsValidRotation(b2Rot q) => b2IsValidRotation_native(q) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2IsValidRotation", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2IsValidRotation", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2IsValidRotation(b2Rot q);
+#endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2IsValidTransform", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2IsValidTransform_native(b2Transform t);
+public static bool b2IsValidTransform(b2Transform t) => b2IsValidTransform_native(t) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2IsValidTransform", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2IsValidTransform", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2IsValidTransform(b2Transform t);
+#endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2IsValidAABB", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2IsValidAABB_native(b2AABB aabb);
+public static bool b2IsValidAABB(b2AABB aabb) => b2IsValidAABB_native(aabb) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2IsValidAABB", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2IsValidAABB", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2IsValidAABB(b2AABB aabb);
+#endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2IsValidPlane", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2IsValidPlane_native(b2Plane a);
+public static bool b2IsValidPlane(b2Plane a) => b2IsValidPlane_native(a) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2IsValidPlane", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2IsValidPlane", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2IsValidPlane(b2Plane a);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Atan2", CallingConvention = CallingConvention.Cdecl)]
@@ -365,12 +407,19 @@ public struct b2ChainSegment
     public b2Vec2 ghost2;
     public int chainId;
 }
+#if WEB
+[DllImport("box2d", EntryPoint = "b2IsValidRay", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2IsValidRay_native(in b2RayCastInput input);
+public static bool b2IsValidRay(in b2RayCastInput input) => b2IsValidRay_native(input) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2IsValidRay", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2IsValidRay", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2IsValidRay(in b2RayCastInput input);
+#endif
 
 #if WEB
 public static b2Polygon b2MakePolygon(in b2Hull hull, float radius)
@@ -628,26 +677,47 @@ public static b2AABB b2ComputeSegmentAABB(in b2Segment shape, b2Transform transf
 public static extern b2AABB b2ComputeSegmentAABB(in b2Segment shape, b2Transform transform);
 #endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2PointInCircle", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2PointInCircle_native(in b2Circle shape, b2Vec2 point);
+public static bool b2PointInCircle(in b2Circle shape, b2Vec2 point) => b2PointInCircle_native(shape, point) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PointInCircle", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2PointInCircle", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2PointInCircle(in b2Circle shape, b2Vec2 point);
+#endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2PointInCapsule", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2PointInCapsule_native(in b2Capsule shape, b2Vec2 point);
+public static bool b2PointInCapsule(in b2Capsule shape, b2Vec2 point) => b2PointInCapsule_native(shape, point) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PointInCapsule", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2PointInCapsule", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2PointInCapsule(in b2Capsule shape, b2Vec2 point);
+#endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2PointInPolygon", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2PointInPolygon_native(in b2Polygon shape, b2Vec2 point);
+public static bool b2PointInPolygon(in b2Polygon shape, b2Vec2 point) => b2PointInPolygon_native(shape, point) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PointInPolygon", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2PointInPolygon", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2PointInPolygon(in b2Polygon shape, b2Vec2 point);
+#endif
 
 #if WEB
 public static b2CastOutput b2RayCastCircle(in b2Circle shape, in b2RayCastInput input)
@@ -813,12 +883,19 @@ public static b2Hull b2ComputeHull(in b2Vec2 points, int count)
 public static extern b2Hull b2ComputeHull(in b2Vec2 points, int count);
 #endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2ValidateHull", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2ValidateHull_native(in b2Hull hull);
+public static bool b2ValidateHull(in b2Hull hull) => b2ValidateHull_native(hull) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2ValidateHull", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2ValidateHull", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2ValidateHull(in b2Hull hull);
+#endif
 
 [StructLayout(LayoutKind.Sequential)]
 public struct b2SegmentDistanceResult
@@ -1951,9 +2028,9 @@ public static extern b2ShapeDef b2DefaultShapeDef();
 public struct b2ChainDef
 {
     public void* userData;
-// FIXME: points: const b2Vec2 *;
+    public b2Vec2* points;
     public int count;
-// FIXME: materials: const b2SurfaceMaterial *;
+    public b2SurfaceMaterial* materials;
     public int materialCount;
     public b2Filter filter;
 #if WEB
@@ -2756,12 +2833,19 @@ public static extern b2WorldId b2CreateWorld(in b2WorldDef def);
 #endif
 public static extern void b2DestroyWorld(b2WorldId worldId);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2World_IsValid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2World_IsValid_native(b2WorldId id);
+public static bool b2World_IsValid(b2WorldId id) => b2World_IsValid_native(id) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2World_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2World_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2World_IsValid(b2WorldId id);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2World_Step", CallingConvention = CallingConvention.Cdecl)]
@@ -2942,12 +3026,19 @@ public static extern void b2World_CollideMover(b2WorldId worldId, in b2Capsule m
 #endif
 public static extern void b2World_EnableSleeping(b2WorldId worldId, bool flag);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2World_IsSleepingEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2World_IsSleepingEnabled_native(b2WorldId worldId);
+public static bool b2World_IsSleepingEnabled(b2WorldId worldId) => b2World_IsSleepingEnabled_native(worldId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2World_IsSleepingEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2World_IsSleepingEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2World_IsSleepingEnabled(b2WorldId worldId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2World_EnableContinuous", CallingConvention = CallingConvention.Cdecl)]
@@ -2956,12 +3047,19 @@ public static extern bool b2World_IsSleepingEnabled(b2WorldId worldId);
 #endif
 public static extern void b2World_EnableContinuous(b2WorldId worldId, bool flag);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2World_IsContinuousEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2World_IsContinuousEnabled_native(b2WorldId worldId);
+public static bool b2World_IsContinuousEnabled(b2WorldId worldId) => b2World_IsContinuousEnabled_native(worldId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2World_IsContinuousEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2World_IsContinuousEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2World_IsContinuousEnabled(b2WorldId worldId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2World_SetRestitutionThreshold", CallingConvention = CallingConvention.Cdecl)]
@@ -3063,12 +3161,19 @@ public static extern float b2World_GetMaximumLinearSpeed(b2WorldId worldId);
 #endif
 public static extern void b2World_EnableWarmStarting(b2WorldId worldId, bool flag);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2World_IsWarmStartingEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2World_IsWarmStartingEnabled_native(b2WorldId worldId);
+public static bool b2World_IsWarmStartingEnabled(b2WorldId worldId) => b2World_IsWarmStartingEnabled_native(worldId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2World_IsWarmStartingEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2World_IsWarmStartingEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2World_IsWarmStartingEnabled(b2WorldId worldId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2World_GetAwakeBodyCount", CallingConvention = CallingConvention.Cdecl)]
@@ -3181,12 +3286,19 @@ public static extern b2BodyId b2CreateBody(b2WorldId worldId, in b2BodyDef def);
 #endif
 public static extern void b2DestroyBody(b2BodyId bodyId);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Body_IsValid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Body_IsValid_native(b2BodyId id);
+public static bool b2Body_IsValid(b2BodyId id) => b2Body_IsValid_native(id) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Body_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Body_IsValid(b2BodyId id);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_GetType", CallingConvention = CallingConvention.Cdecl)]
@@ -3610,12 +3722,19 @@ public static extern void b2Body_SetGravityScale(b2BodyId bodyId, float gravityS
 #endif
 public static extern float b2Body_GetGravityScale(b2BodyId bodyId);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Body_IsAwake", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Body_IsAwake_native(b2BodyId bodyId);
+public static bool b2Body_IsAwake(b2BodyId bodyId) => b2Body_IsAwake_native(bodyId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_IsAwake", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Body_IsAwake", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Body_IsAwake(b2BodyId bodyId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_SetAwake", CallingConvention = CallingConvention.Cdecl)]
@@ -3638,12 +3757,19 @@ public static extern void b2Body_WakeTouching(b2BodyId bodyId);
 #endif
 public static extern void b2Body_EnableSleep(b2BodyId bodyId, bool enableSleep);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Body_IsSleepEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Body_IsSleepEnabled_native(b2BodyId bodyId);
+public static bool b2Body_IsSleepEnabled(b2BodyId bodyId) => b2Body_IsSleepEnabled_native(bodyId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_IsSleepEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Body_IsSleepEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Body_IsSleepEnabled(b2BodyId bodyId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_SetSleepThreshold", CallingConvention = CallingConvention.Cdecl)]
@@ -3659,12 +3785,19 @@ public static extern void b2Body_SetSleepThreshold(b2BodyId bodyId, float sleepT
 #endif
 public static extern float b2Body_GetSleepThreshold(b2BodyId bodyId);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Body_IsEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Body_IsEnabled_native(b2BodyId bodyId);
+public static bool b2Body_IsEnabled(b2BodyId bodyId) => b2Body_IsEnabled_native(bodyId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_IsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Body_IsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Body_IsEnabled(b2BodyId bodyId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_Disable", CallingConvention = CallingConvention.Cdecl)]
@@ -3710,12 +3843,19 @@ public static extern b2MotionLocks b2Body_GetMotionLocks(b2BodyId bodyId);
 #endif
 public static extern void b2Body_SetBullet(b2BodyId bodyId, bool flag);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Body_IsBullet", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Body_IsBullet_native(b2BodyId bodyId);
+public static bool b2Body_IsBullet(b2BodyId bodyId) => b2Body_IsBullet_native(bodyId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_IsBullet", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Body_IsBullet", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Body_IsBullet(b2BodyId bodyId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Body_EnableContactEvents", CallingConvention = CallingConvention.Cdecl)]
@@ -3876,12 +4016,19 @@ public static extern b2ShapeId b2CreatePolygonShape(b2BodyId bodyId, in b2ShapeD
 #endif
 public static extern void b2DestroyShape(b2ShapeId shapeId, bool updateBodyMass);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Shape_IsValid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Shape_IsValid_native(b2ShapeId id);
+public static bool b2Shape_IsValid(b2ShapeId id) => b2Shape_IsValid_native(id) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Shape_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Shape_IsValid(b2ShapeId id);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_GetType", CallingConvention = CallingConvention.Cdecl)]
@@ -3922,12 +4069,19 @@ public static b2WorldId b2Shape_GetWorld(b2ShapeId shapeId)
 public static extern b2WorldId b2Shape_GetWorld(b2ShapeId shapeId);
 #endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Shape_IsSensor", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Shape_IsSensor_native(b2ShapeId shapeId);
+public static bool b2Shape_IsSensor(b2ShapeId shapeId) => b2Shape_IsSensor_native(shapeId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_IsSensor", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Shape_IsSensor", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Shape_IsSensor(b2ShapeId shapeId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_SetUserData", CallingConvention = CallingConvention.Cdecl)]
@@ -4052,12 +4206,19 @@ public static extern void b2Shape_SetFilter(b2ShapeId shapeId, b2Filter filter);
 #endif
 public static extern void b2Shape_EnableSensorEvents(b2ShapeId shapeId, bool flag);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Shape_AreSensorEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Shape_AreSensorEventsEnabled_native(b2ShapeId shapeId);
+public static bool b2Shape_AreSensorEventsEnabled(b2ShapeId shapeId) => b2Shape_AreSensorEventsEnabled_native(shapeId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_AreSensorEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Shape_AreSensorEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Shape_AreSensorEventsEnabled(b2ShapeId shapeId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_EnableContactEvents", CallingConvention = CallingConvention.Cdecl)]
@@ -4066,12 +4227,19 @@ public static extern bool b2Shape_AreSensorEventsEnabled(b2ShapeId shapeId);
 #endif
 public static extern void b2Shape_EnableContactEvents(b2ShapeId shapeId, bool flag);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Shape_AreContactEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Shape_AreContactEventsEnabled_native(b2ShapeId shapeId);
+public static bool b2Shape_AreContactEventsEnabled(b2ShapeId shapeId) => b2Shape_AreContactEventsEnabled_native(shapeId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_AreContactEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Shape_AreContactEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Shape_AreContactEventsEnabled(b2ShapeId shapeId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_EnablePreSolveEvents", CallingConvention = CallingConvention.Cdecl)]
@@ -4080,12 +4248,19 @@ public static extern bool b2Shape_AreContactEventsEnabled(b2ShapeId shapeId);
 #endif
 public static extern void b2Shape_EnablePreSolveEvents(b2ShapeId shapeId, bool flag);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Shape_ArePreSolveEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Shape_ArePreSolveEventsEnabled_native(b2ShapeId shapeId);
+public static bool b2Shape_ArePreSolveEventsEnabled(b2ShapeId shapeId) => b2Shape_ArePreSolveEventsEnabled_native(shapeId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_ArePreSolveEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Shape_ArePreSolveEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Shape_ArePreSolveEventsEnabled(b2ShapeId shapeId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_EnableHitEvents", CallingConvention = CallingConvention.Cdecl)]
@@ -4094,19 +4269,33 @@ public static extern bool b2Shape_ArePreSolveEventsEnabled(b2ShapeId shapeId);
 #endif
 public static extern void b2Shape_EnableHitEvents(b2ShapeId shapeId, bool flag);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Shape_AreHitEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Shape_AreHitEventsEnabled_native(b2ShapeId shapeId);
+public static bool b2Shape_AreHitEventsEnabled(b2ShapeId shapeId) => b2Shape_AreHitEventsEnabled_native(shapeId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_AreHitEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Shape_AreHitEventsEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Shape_AreHitEventsEnabled(b2ShapeId shapeId);
+#endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Shape_TestPoint", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Shape_TestPoint_native(b2ShapeId shapeId, b2Vec2 point);
+public static bool b2Shape_TestPoint(b2ShapeId shapeId, b2Vec2 point) => b2Shape_TestPoint_native(shapeId, point) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Shape_TestPoint", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Shape_TestPoint", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Shape_TestPoint(b2ShapeId shapeId, b2Vec2 point);
+#endif
 
 #if WEB
 public static b2CastOutput b2Shape_RayCast(b2ShapeId shapeId, in b2RayCastInput input)
@@ -4414,12 +4603,19 @@ public static b2SurfaceMaterial b2Chain_GetSurfaceMaterial(b2ChainId chainId, in
 public static extern b2SurfaceMaterial b2Chain_GetSurfaceMaterial(b2ChainId chainId, int materialIndex);
 #endif
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Chain_IsValid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Chain_IsValid_native(b2ChainId id);
+public static bool b2Chain_IsValid(b2ChainId id) => b2Chain_IsValid_native(id) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Chain_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Chain_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Chain_IsValid(b2ChainId id);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2DestroyJoint", CallingConvention = CallingConvention.Cdecl)]
@@ -4428,12 +4624,19 @@ public static extern bool b2Chain_IsValid(b2ChainId id);
 #endif
 public static extern void b2DestroyJoint(b2JointId jointId, bool wakeAttached);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Joint_IsValid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Joint_IsValid_native(b2JointId id);
+public static bool b2Joint_IsValid(b2JointId id) => b2Joint_IsValid_native(id) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Joint_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Joint_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Joint_IsValid(b2JointId id);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Joint_GetType", CallingConvention = CallingConvention.Cdecl)]
@@ -4543,12 +4746,19 @@ public static extern b2Transform b2Joint_GetLocalFrameB(b2JointId jointId);
 #endif
 public static extern void b2Joint_SetCollideConnected(b2JointId jointId, bool shouldCollide);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Joint_GetCollideConnected", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Joint_GetCollideConnected_native(b2JointId jointId);
+public static bool b2Joint_GetCollideConnected(b2JointId jointId) => b2Joint_GetCollideConnected_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Joint_GetCollideConnected", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Joint_GetCollideConnected", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Joint_GetCollideConnected(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Joint_SetUserData", CallingConvention = CallingConvention.Cdecl)]
@@ -4687,12 +4897,19 @@ public static extern float b2DistanceJoint_GetLength(b2JointId jointId);
 #endif
 public static extern void b2DistanceJoint_EnableSpring(b2JointId jointId, bool enableSpring);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2DistanceJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2DistanceJoint_IsSpringEnabled_native(b2JointId jointId);
+public static bool b2DistanceJoint_IsSpringEnabled(b2JointId jointId) => b2DistanceJoint_IsSpringEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2DistanceJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2DistanceJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2DistanceJoint_IsSpringEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2DistanceJoint_SetSpringForceRange", CallingConvention = CallingConvention.Cdecl)]
@@ -4743,12 +4960,19 @@ public static extern float b2DistanceJoint_GetSpringDampingRatio(b2JointId joint
 #endif
 public static extern void b2DistanceJoint_EnableLimit(b2JointId jointId, bool enableLimit);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2DistanceJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2DistanceJoint_IsLimitEnabled_native(b2JointId jointId);
+public static bool b2DistanceJoint_IsLimitEnabled(b2JointId jointId) => b2DistanceJoint_IsLimitEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2DistanceJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2DistanceJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2DistanceJoint_IsLimitEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2DistanceJoint_SetLengthRange", CallingConvention = CallingConvention.Cdecl)]
@@ -4785,12 +5009,19 @@ public static extern float b2DistanceJoint_GetCurrentLength(b2JointId jointId);
 #endif
 public static extern void b2DistanceJoint_EnableMotor(b2JointId jointId, bool enableMotor);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2DistanceJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2DistanceJoint_IsMotorEnabled_native(b2JointId jointId);
+public static bool b2DistanceJoint_IsMotorEnabled(b2JointId jointId) => b2DistanceJoint_IsMotorEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2DistanceJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2DistanceJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2DistanceJoint_IsMotorEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2DistanceJoint_SetMotorSpeed", CallingConvention = CallingConvention.Cdecl)]
@@ -5031,12 +5262,19 @@ public static extern b2JointId b2CreatePrismaticJoint(b2WorldId worldId, in b2Pr
 #endif
 public static extern void b2PrismaticJoint_EnableSpring(b2JointId jointId, bool enableSpring);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2PrismaticJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2PrismaticJoint_IsSpringEnabled_native(b2JointId jointId);
+public static bool b2PrismaticJoint_IsSpringEnabled(b2JointId jointId) => b2PrismaticJoint_IsSpringEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PrismaticJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2PrismaticJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2PrismaticJoint_IsSpringEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PrismaticJoint_SetSpringHertz", CallingConvention = CallingConvention.Cdecl)]
@@ -5087,12 +5325,19 @@ public static extern float b2PrismaticJoint_GetTargetTranslation(b2JointId joint
 #endif
 public static extern void b2PrismaticJoint_EnableLimit(b2JointId jointId, bool enableLimit);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2PrismaticJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2PrismaticJoint_IsLimitEnabled_native(b2JointId jointId);
+public static bool b2PrismaticJoint_IsLimitEnabled(b2JointId jointId) => b2PrismaticJoint_IsLimitEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PrismaticJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2PrismaticJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2PrismaticJoint_IsLimitEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PrismaticJoint_GetLowerLimit", CallingConvention = CallingConvention.Cdecl)]
@@ -5122,12 +5367,19 @@ public static extern void b2PrismaticJoint_SetLimits(b2JointId jointId, float lo
 #endif
 public static extern void b2PrismaticJoint_EnableMotor(b2JointId jointId, bool enableMotor);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2PrismaticJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2PrismaticJoint_IsMotorEnabled_native(b2JointId jointId);
+public static bool b2PrismaticJoint_IsMotorEnabled(b2JointId jointId) => b2PrismaticJoint_IsMotorEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PrismaticJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2PrismaticJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2PrismaticJoint_IsMotorEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2PrismaticJoint_SetMotorSpeed", CallingConvention = CallingConvention.Cdecl)]
@@ -5201,12 +5453,19 @@ public static extern b2JointId b2CreateRevoluteJoint(b2WorldId worldId, in b2Rev
 #endif
 public static extern void b2RevoluteJoint_EnableSpring(b2JointId jointId, bool enableSpring);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2RevoluteJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2RevoluteJoint_IsSpringEnabled_native(b2JointId jointId);
+public static bool b2RevoluteJoint_IsSpringEnabled(b2JointId jointId) => b2RevoluteJoint_IsSpringEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2RevoluteJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2RevoluteJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2RevoluteJoint_IsSpringEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2RevoluteJoint_SetSpringHertz", CallingConvention = CallingConvention.Cdecl)]
@@ -5264,12 +5523,19 @@ public static extern float b2RevoluteJoint_GetAngle(b2JointId jointId);
 #endif
 public static extern void b2RevoluteJoint_EnableLimit(b2JointId jointId, bool enableLimit);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2RevoluteJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2RevoluteJoint_IsLimitEnabled_native(b2JointId jointId);
+public static bool b2RevoluteJoint_IsLimitEnabled(b2JointId jointId) => b2RevoluteJoint_IsLimitEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2RevoluteJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2RevoluteJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2RevoluteJoint_IsLimitEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2RevoluteJoint_GetLowerLimit", CallingConvention = CallingConvention.Cdecl)]
@@ -5299,12 +5565,19 @@ public static extern void b2RevoluteJoint_SetLimits(b2JointId jointId, float low
 #endif
 public static extern void b2RevoluteJoint_EnableMotor(b2JointId jointId, bool enableMotor);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2RevoluteJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2RevoluteJoint_IsMotorEnabled_native(b2JointId jointId);
+public static bool b2RevoluteJoint_IsMotorEnabled(b2JointId jointId) => b2RevoluteJoint_IsMotorEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2RevoluteJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2RevoluteJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2RevoluteJoint_IsMotorEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2RevoluteJoint_SetMotorSpeed", CallingConvention = CallingConvention.Cdecl)]
@@ -5436,12 +5709,19 @@ public static extern b2JointId b2CreateWheelJoint(b2WorldId worldId, in b2WheelJ
 #endif
 public static extern void b2WheelJoint_EnableSpring(b2JointId jointId, bool enableSpring);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2WheelJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2WheelJoint_IsSpringEnabled_native(b2JointId jointId);
+public static bool b2WheelJoint_IsSpringEnabled(b2JointId jointId) => b2WheelJoint_IsSpringEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2WheelJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2WheelJoint_IsSpringEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2WheelJoint_IsSpringEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2WheelJoint_SetSpringHertz", CallingConvention = CallingConvention.Cdecl)]
@@ -5478,12 +5758,19 @@ public static extern float b2WheelJoint_GetSpringDampingRatio(b2JointId jointId)
 #endif
 public static extern void b2WheelJoint_EnableLimit(b2JointId jointId, bool enableLimit);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2WheelJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2WheelJoint_IsLimitEnabled_native(b2JointId jointId);
+public static bool b2WheelJoint_IsLimitEnabled(b2JointId jointId) => b2WheelJoint_IsLimitEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2WheelJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2WheelJoint_IsLimitEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2WheelJoint_IsLimitEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2WheelJoint_GetLowerLimit", CallingConvention = CallingConvention.Cdecl)]
@@ -5513,12 +5800,19 @@ public static extern void b2WheelJoint_SetLimits(b2JointId jointId, float lower,
 #endif
 public static extern void b2WheelJoint_EnableMotor(b2JointId jointId, bool enableMotor);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2WheelJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2WheelJoint_IsMotorEnabled_native(b2JointId jointId);
+public static bool b2WheelJoint_IsMotorEnabled(b2JointId jointId) => b2WheelJoint_IsMotorEnabled_native(jointId) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2WheelJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2WheelJoint_IsMotorEnabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2WheelJoint_IsMotorEnabled(b2JointId jointId);
+#endif
 
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2WheelJoint_SetMotorSpeed", CallingConvention = CallingConvention.Cdecl)]
@@ -5555,12 +5849,19 @@ public static extern float b2WheelJoint_GetMaxMotorTorque(b2JointId jointId);
 #endif
 public static extern float b2WheelJoint_GetMotorTorque(b2JointId jointId);
 
+#if WEB
+[DllImport("box2d", EntryPoint = "b2Contact_IsValid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int b2Contact_IsValid_native(b2ContactId id);
+public static bool b2Contact_IsValid(b2ContactId id) => b2Contact_IsValid_native(id) != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/box2d.framework/box2d", EntryPoint = "b2Contact_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("box2d", EntryPoint = "b2Contact_IsValid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool b2Contact_IsValid(b2ContactId id);
+#endif
 
 #if WEB
 public static b2ContactData b2Contact_GetData(b2ContactId contactId)

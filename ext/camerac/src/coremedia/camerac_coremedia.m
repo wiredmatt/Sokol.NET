@@ -45,6 +45,28 @@ static camPixelFormat fourcc_to_pixel_format(FourCharCode fmt)
     }
 }
 
+/* Reverse: camPixelFormat → the preferred CoreVideo FourCharCode to request
+   from AVCaptureVideoDataOutput.  Returns 0 for unknown/don't-care.       */
+static FourCharCode pixel_format_to_fourcc(camPixelFormat fmt)
+{
+    switch (fmt) {
+        case CAM_PIXEL_FORMAT_XRGB1555: return kCMPixelFormat_16LE555;
+        case CAM_PIXEL_FORMAT_RGB565:   return kCMPixelFormat_16LE565;
+        case CAM_PIXEL_FORMAT_RGB24:    return kCMPixelFormat_24RGB;
+        case CAM_PIXEL_FORMAT_ARGB32:   return kCMPixelFormat_32ARGB;
+        case CAM_PIXEL_FORMAT_BGRA32:   return kCMPixelFormat_32BGRA;
+        case CAM_PIXEL_FORMAT_UYVY:     return kCMPixelFormat_422YpCbCr8;
+        case CAM_PIXEL_FORMAT_YUY2:     return kCMPixelFormat_422YpCbCr8_yuvs;
+        /* Use video-range bi-planar for NV12 – this ensures CoreMedia delivers
+           the buffer as bi-planar (plane_count == 2) so both Y and UV plane
+           pointers are available via CVPixelBufferGetBaseAddressOfPlane.     */
+        case CAM_PIXEL_FORMAT_NV12:     return kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
+        case CAM_PIXEL_FORMAT_NV21:     return kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
+        case CAM_PIXEL_FORMAT_P010:     return kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange;
+        default: return 0;
+    }
+}
+
 /* Forward declaration so CamPrivateCameraData can hold a delegate pointer
    before the full @interface CamCaptureDelegate is defined.             */
 @class CamCaptureDelegate;
@@ -133,13 +155,13 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
     size_t plane_count = CVPixelBufferGetPlaneCount(imageBuffer);
     if (plane_count >= 2) {
-        /* Bi-planar format (e.g. NV12 / P010): deliver both planes. */
-        frame.data  = CVPixelBufferGetBaseAddressOfPlane(imageBuffer, 0);
-        frame.pitch = (int)CVPixelBufferGetBytesPerRowOfPlane(imageBuffer, 0);
+        /* Bi-planar format (e.g. NV12 / P010): deliver both planes via plane API. */
+        frame.data   = CVPixelBufferGetBaseAddressOfPlane(imageBuffer, 0);
+        frame.pitch  = (int)CVPixelBufferGetBytesPerRowOfPlane(imageBuffer, 0);
         frame.data2  = CVPixelBufferGetBaseAddressOfPlane(imageBuffer, 1);
         frame.pitch2 = (int)CVPixelBufferGetBytesPerRowOfPlane(imageBuffer, 1);
     } else {
-        /* Packed / single-plane format. */
+        /* Packed / single-plane format (BGRA, UYVY, YUY2, etc.). */
         frame.data  = CVPixelBufferGetBaseAddress(imageBuffer);
         frame.pitch = (int)CVPixelBufferGetBytesPerRow(imageBuffer);
     }
@@ -304,6 +326,19 @@ static bool COREMEDIA_OpenDevice(camDevice_t *device, const camSpec *spec)
     /* Pick pixel format */
     camSpec actual = (spec && spec->format != CAM_PIXEL_FORMAT_UNKNOWN) ?
         *spec : (device->num_specs > 0 ? device->all_specs[0] : *spec);
+
+    /* Force the output to deliver the requested pixel format.
+       Without this, AVCaptureSession delivers its own default (often BGRA or
+       packed UYVY), regardless of which spec the caller selected.
+       Setting kCVPixelBufferPixelFormatTypeKey ensures NV12 is delivered as
+       bi-planar (CVPixelBufferGetPlaneCount == 2) so both planes are
+       accessible via CVPixelBufferGetBaseAddressOfPlane().               */
+    FourCharCode fourcc = pixel_format_to_fourcc(actual.format);
+    if (fourcc != 0) {
+        output.videoSettings = @{
+            (id)kCVPixelBufferPixelFormatTypeKey: @(fourcc)
+        };
+    }
 
     /* Choose session preset */
     if (actual.width >= 3840) {

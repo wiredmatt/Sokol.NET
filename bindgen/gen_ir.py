@@ -125,6 +125,10 @@ def parse_func(decl, source):
             if param['kind'] == 'FullComment':
                 outp['comment'] = extract_comment(param, source)
                 continue
+            # Skip attribute nodes (VisibilityAttr, UnusedAttr, etc.) that
+            # appear when API macros expand to __attribute__((...)).
+            if param['kind'].endswith('Attr'):
+                continue
             if param['kind'] != 'ParmVarDecl':
                 print(f"  >> warning: ignoring func {decl['name']} (unsupported parameter type)")
                 return None

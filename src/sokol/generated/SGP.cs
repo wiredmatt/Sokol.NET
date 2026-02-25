@@ -294,12 +294,19 @@ public static extern void sgp_setup(in sgp_desc desc);
 #endif
 public static extern void sgp_shutdown();
 
+#if WEB
+[DllImport("sokol", EntryPoint = "sgp_is_valid", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sgp_is_valid_native();
+public static bool sgp_is_valid() => sgp_is_valid_native() != 0;
+#else
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sgp_is_valid", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sgp_is_valid", CallingConvention = CallingConvention.Cdecl)]
 #endif
+[return: M(U.I1)]
 public static extern bool sgp_is_valid();
+#endif
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sgp_get_last_error", CallingConvention = CallingConvention.Cdecl)]
