@@ -22,7 +22,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 2
+        fetch-depth: 0
 
     - name: Check for source changes
       id: check_sources
@@ -38,8 +38,16 @@ jobs:
           echo "First commit - building all libraries"
           SHOULD_BUILD=true
         else
-          # Get changed files
-          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          # Use full push range (covers all commits in a branch merge/push)
+          # Fall back to HEAD~1..HEAD if before SHA is unavailable or unknown
+          BEFORE="${{ github.event.before }}"
+          if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "No valid before SHA - using HEAD~1..HEAD range"
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          else
+            echo "Using full push range: $BEFORE..${{ github.sha }}"
+            CHANGED_FILES=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+          fi
 
           # Check if camerac source files changed
           while IFS= read -r file; do
