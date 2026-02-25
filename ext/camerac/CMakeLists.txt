@@ -99,6 +99,11 @@ elseif(EMSCRIPTEN)
         src/emscripten/camerac_emscripten.c
     )
     list(APPEND CAMERAC_COMPILE_DEFS CAMERAC_BACKEND_EMSCRIPTEN)
+    # EM_ASM / MAIN_THREAD_EM_ASM require GNU extensions (-std=gnu11).
+    # Override only for the Emscripten source file so other files are unaffected.
+    set_source_files_properties(src/emscripten/camerac_emscripten.c
+        PROPERTIES COMPILE_FLAGS "-std=gnu11"
+    )
 
 elseif(UNIX)
     # ---- Linux: V4L2 --------------------------------------------------
@@ -148,7 +153,6 @@ endif()
 if(EMSCRIPTEN)
     target_link_options(camerac PRIVATE
         "SHELL:-s EXPORTED_FUNCTIONS=['_camerac_emscripten_permission_outcome']"
-        "SHELL:-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
     )
 endif()
 

@@ -41,10 +41,12 @@ static void inject_js(void)
 
     EM_ASM({
         if (typeof Module['_camerac'] === 'undefined') {
-            Module['_camerac'] = {
-                devices: [],
-                streams: {}
-            };
+            /* Avoid JS object literals with commas: C pre-processor treats
+             * commas inside {} as macro argument separators.           */
+            var c = {};
+            c.devices = [];
+            c.streams = {};
+            Module['_camerac'] = c;
         }
     });
 }
@@ -120,31 +122,42 @@ static bool EMSCRIPTENCAMERA_OpenDevice(camDevice_t *device,
     device->actual_spec.height = h;
     device->actual_spec.format = CAM_PIXEL_FORMAT_RGBA32;
 
-    /* Kick off getUserMedia in JS */
+    /* Kick off getUserMedia in JS.
+     * Rules for EM_ASM: the C pre-processor treats commas inside {} as
+     * macro argument separators (only () and [] protect commas).  So we
+     * must NOT use multi-property JS object literals {a:1, b:2} at the
+     * top level of an EM_ASM block – build objects with property assignment
+     * instead, and keep all commas inside function-call parentheses.    */
     MAIN_THREAD_EM_ASM({
-        const dev_ptr = $0;
-        const w       = $1;
-        const h       = $2;
+        var devPtr = $0;
+        var w      = $1;
+        var h      = $2;
 
         if (typeof Module['_camerac'] === 'undefined') {
-            Module['_camerac'] = { devices: [], streams: {} };
+            var c = {};
+            c.devices = [];
+            c.streams = {};
+            Module['_camerac'] = c;
         }
 
-        const constraints = {
-            video: { width: { ideal: w }, height: { ideal: h } },
-            audio: false
-        };
+        /* Build constraints without top-level commas in {} */
+        var vc = {};
+        vc.width  = {ideal: w};
+        vc.height = {ideal: h};
+        var constraints = {};
+        constraints.video = vc;
+        constraints.audio = false;
 
         navigator.mediaDevices.getUserMedia(constraints)
             .then(function(stream) {
-                const video = document.createElement('video');
+                var video = document.createElement('video');
                 video.srcObject = stream;
                 video.play();
 
-                const canvas = document.createElement('canvas');
+                var canvas = document.createElement('canvas');
                 canvas.width  = w;
                 canvas.height = h;
-                const ctx = canvas.getContext('2d');
+                var ctx = canvas.getContext('2d');
 
                 Module['_camerac'].stream = stream;
                 Module['_camerac'].video  = video;
@@ -152,18 +165,13 @@ static bool EMSCRIPTENCAMERA_OpenDevice(camDevice_t *device,
                 Module['_camerac'].ctx2d  = ctx;
 
                 video.addEventListener('loadedmetadata', function() {
-                    Module['_ccall']('camerac_emscripten_permission_outcome',
-                        null,
-                        ['number','number','number','number'],
-                        [dev_ptr, 1, video.videoWidth, video.videoHeight]);
+                    Module['_camerac_emscripten_permission_outcome'](
+                        devPtr, 1, video.videoWidth, video.videoHeight);
                 });
             })
             .catch(function(err) {
                 console.error('[camerac] getUserMedia error:', err);
-                Module['_ccall']('camerac_emscripten_permission_outcome',
-                    null,
-                    ['number','number','number','number'],
-                    [dev_ptr, 0, 0, 0]);
+                Module['_camerac_emscripten_permission_outcome'](devPtr, 0, 0, 0);
             });
     }, (int)(uintptr_t)device, w, h);
 

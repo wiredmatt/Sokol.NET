@@ -104,5 +104,11 @@
     },
     "java.configuration.updateBuildConfiguration": "disabled",
     "liveServer.settings.port": 5504,
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "chat.tools.terminal.autoApprove": {
+        "/^cd /Users/elialoni/Development/Graphics/Sokol\\.NET/ext/camerac && rm -rf build-emscripten && cd scripts && bash build-camerac-web\\.sh Release 2>&1 \\| tail -10$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
 }

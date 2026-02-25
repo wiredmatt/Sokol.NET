@@ -532,12 +532,14 @@ CAMERAC_API camPosition cam_get_device_position(camDevice device)
 
 /* ------------------------------------------------------------------ */
 /* cam_update – dispatch pending permission callbacks (main thread)    */
+/*              and pump frames for single-threaded backends           */
 /* ------------------------------------------------------------------ */
 
 CAMERAC_API void cam_update(void)
 {
     if (!s_initialized) return;
 
+    /* Dispatch pending permission callbacks */
     cam_mutex_lock(&g_cam_driver.pending_perms_lock);
     camPendingPermission *list = g_cam_driver.pending_perms;
     g_cam_driver.pending_perms = NULL;
@@ -555,6 +557,36 @@ CAMERAC_API void cam_update(void)
         }
 
         list = next;
+    }
+
+    /* For backends that do NOT use a background thread (e.g. Emscripten),
+     * we must pump frames here on the main thread, mirroring what
+     * cam_capture_thread_run() does in the threaded case.              */
+    if (g_cam_driver.impl.ProvidesOwnCallbackThread) {
+        camDevice_t *dev = g_cam_driver.devices;
+        while (dev) {
+            if (!dev->shutdown &&
+                dev->permission == CAM_PERMISSION_APPROVED &&
+                dev->frame_cb != NULL)
+            {
+                camFrame frame;
+                memset(&frame, 0, sizeof(frame));
+
+                camFrameResult result =
+                    g_cam_driver.impl.AcquireFrame(dev, &frame);
+
+                if (result == CAM_FRAME_READY) {
+                    frame.width  = dev->actual_spec.width;
+                    frame.height = dev->actual_spec.height;
+                    frame.format = dev->actual_spec.format;
+                    cam_deliver_frame(dev, &frame);
+                    if (g_cam_driver.impl.ReleaseFrame) {
+                        g_cam_driver.impl.ReleaseFrame(dev, &frame);
+                    }
+                }
+            }
+            dev = dev->next;
+        }
     }
 }
 

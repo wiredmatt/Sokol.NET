@@ -57,8 +57,8 @@ mkdir -p "$OUTPUT_DIR"
 
 LIB_PATH=$(find "$BUILD_DIR" -name "libcamerac.a" | head -n 1)
 if [ -n "$LIB_PATH" ]; then
-    cp "$LIB_PATH" "$OUTPUT_DIR/libcamerac.a"
-    echo "✓ Copied to $OUTPUT_DIR/libcamerac.a"
+    cp "$LIB_PATH" "$OUTPUT_DIR/camerac.a"
+    echo "✓ Copied to $OUTPUT_DIR/camerac.a"
 else
     echo "✗ libcamerac.a not found"
     exit 1
