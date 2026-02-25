@@ -46,6 +46,10 @@ static const GUID CAM_MF_MT_FRAME_RATE =
     { 0xc459a2e8,0x3d2c,0x4e44,
       { 0xb1,0x32,0xfe,0xe5,0x15,0x6c,0x7b,0xb0 } };
 
+static const GUID CAM_MF_MT_DEFAULT_STRIDE =
+    { 0x644b4e48,0x1e02,0x4516,
+      { 0xb0,0xeb,0xc0,0x1c,0xa9,0xd4,0x9a,0xc6 } };
+
 static const GUID CAM_MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE =
     { 0xc60ac5fe,0x252a,0x478f,
       { 0xa0,0xef,0xbc,0x8f,0xa5,0xf7,0xca,0xd3 } };
@@ -117,6 +121,8 @@ typedef struct MFPrivateData {
     IMFSourceReader *reader;
     void            *frame_buf;
     DWORD            frame_buf_size;
+    LONG             stride;   /* bytes per row (Y plane, may be negative for bottom-up) */
+    int              height;   /* frame height in pixels */
 } MFPrivateData;
 
 /* ------------------------------------------------------------------ */
@@ -289,11 +295,39 @@ static bool MEDIAFOUNDATION_OpenDevice(camDevice_t *device, const camSpec *spec)
         IMFMediaType_Release(type);
     }
 
+    /* Get the actual stride and height from the current media type.
+     * This is necessary for bi-planar formats like NV12 where the stride
+     * is not simply width * bytes_per_pixel (and bytes_per_pixel is 0). */
+    LONG actual_stride = spec ? (LONG)spec->width : 0;
+    int  actual_height = spec ? spec->height       : 0;
+    {
+        IMFMediaType *current = NULL;
+        if (SUCCEEDED(IMFSourceReader_GetCurrentMediaType(
+                reader, MF_SOURCE_READER_FIRST_VIDEO_STREAM, &current))) {
+            /* Try the cached default-stride attribute first */
+            UINT32 ds = 0;
+            if (SUCCEEDED(IMFMediaType_GetUINT32(current, &CAM_MF_MT_DEFAULT_STRIDE, &ds)) && ds != 0) {
+                actual_stride = (LONG)(INT32)ds; /* preserves sign for bottom-up frames */
+            } else if (spec) {
+                /* Fall back to width (correct for NV12 / most top-down YUV) */
+                actual_stride = (LONG)spec->width;
+            }
+            /* Re-read height in case the reader rounded it */
+            UINT64 fs = 0;
+            if (SUCCEEDED(IMFMediaType_GetUINT64(current, &CAM_MF_MT_FRAME_SIZE, &fs))) {
+                actual_height = (int)(UINT32)(fs & 0xFFFFFFFF);
+            }
+            IMFMediaType_Release(current);
+        }
+    }
+
     /* On Windows permission is always granted (user is prompted by system) */
     cam_permission_outcome(device, CAM_PERMISSION_APPROVED);
 
     MFPrivateData *priv = (MFPrivateData *)calloc(1, sizeof(MFPrivateData));
     priv->reader = reader;
+    priv->stride = actual_stride;
+    priv->height = actual_height;
     device->hidden = priv;
 
     return true;
@@ -351,10 +385,24 @@ static camFrameResult MEDIAFOUNDATION_AcquireFrame(camDevice_t *device,
         memcpy(priv->frame_buf, data, cur_length);
         IMFMediaBuffer_Unlock(buffer);
 
+        /* Use the absolute stride (negative means bottom-up, rare for cameras) */
+        LONG abs_stride = priv->stride < 0 ? -priv->stride : priv->stride;
+        if (abs_stride == 0) abs_stride = device->actual_spec.width;
+
         frame->data         = priv->frame_buf;
+        frame->width        = device->actual_spec.width;
+        frame->height       = device->actual_spec.height;
+        frame->format       = device->actual_spec.format;
         frame->timestamp_ns = (uint64_t)(timestamp * 100); /* 100-ns units -> ns */
-        frame->pitch        = device->actual_spec.width *
-                              cam_bytes_per_pixel(device->actual_spec.format);
+        frame->pitch        = (int)abs_stride;
+
+        /* For bi-planar formats (NV12): the UV plane immediately follows the
+         * Y plane in the contiguous buffer at offset stride * height. */
+        if (device->actual_spec.format == CAM_PIXEL_FORMAT_NV12) {
+            int h = priv->height > 0 ? priv->height : device->actual_spec.height;
+            frame->data2  = (BYTE *)priv->frame_buf + abs_stride * h;
+            frame->pitch2 = (int)abs_stride; /* UV stride == Y stride for NV12 */
+        }
     }
 
     IMFMediaBuffer_Release(buffer);
