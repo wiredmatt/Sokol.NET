@@ -2347,7 +2347,6 @@ KeyAlias={keystoreInfo.KeyAlias}
                 {
                     "android.permission.WAKE_LOCK",
                     "android.permission.INTERNET",
-                    "android.permission.WRITE_EXTERNAL_STORAGE"
                 });
             }
 

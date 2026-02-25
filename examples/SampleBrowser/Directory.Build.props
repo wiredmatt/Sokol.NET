@@ -120,7 +120,7 @@
       <AndroidTargetSdkVersion>35</AndroidTargetSdkVersion>
       
       <!-- Permissions (semicolon-separated) -->
-      <AndroidPermissions>android.permission.WAKE_LOCK;android.permission.WRITE_EXTERNAL_STORAGE</AndroidPermissions>
+      <AndroidPermissions>android.permission.WAKE_LOCK</AndroidPermissions>
       
       <!-- Features (semicolon-separated, append :not-required for optional features) -->
       <!-- <AndroidFeatures>android.hardware.microphone:not-required</AndroidFeatures> -->
