@@ -11,11 +11,7 @@ A cross-platform camera capture library with a clean C API, supporting:
 | Android    | Camera2 NDK      | API level 24+ (Android 7.0+) |
 | Emscripten | getUserMedia     | Modern browsers              |
 
-**camerac** is closely modelled on / based upon the [SDL3 camera subsystem](https://wiki.libsdl.org/SDL3/CategoryCamera)
-(`SDL_Camera` / `SDL_CameraSpec` / `SDL_AcquireCameraFrame`). The API design, device-enumeration
-pattern, and per-platform backend structure all follow that reference implementation.
-camerac is a standalone C library with no SDL dependency — it lifts the same clean API surface
-into a single-header-style build that integrates directly with any C/C++ project.
+**camerac** is a standalone C library with no external dependencies, designed to integrate directly into any C/C++ project.
 
 ---
 
@@ -89,6 +85,11 @@ Runtime permission must be granted before calling `cam_open()`.
 The browser's permission prompt fires automatically when `cam_open()` is called.
 Set a permission callback via `cam_set_permission_callback()` to react to the outcome.
 
+> **Note:** Emscripten runs single-threaded — there is no separate capture thread.
+> `cam_update()` (called each frame from the main thread) pumps `AcquireFrame`
+> internally, so frames arrive as if from a background thread on other platforms.
+> Frames are delivered as `CAM_PIXEL_FORMAT_RGBA32` (not NV12) on this backend.
+
 ---
 
 ## Building
@@ -97,8 +98,8 @@ Set a permission callback via `cam_set_permission_callback()` to react to the ou
 
 ```bash
 cd scripts
-./build-camerac-macos.sh arm64  Release   # Apple Silicon
-./build-camerac-macos.sh x86_64 Release   # Intel
+./build-camerac-macos.sh Release
+# Builds arm64, X64, and a lipo-merged universal binary in one step.
 ```
 
 ### iOS
@@ -150,6 +151,7 @@ libs/
   macos/
     arm64/release/libcamerac.dylib
     X64/release/libcamerac.dylib
+    universal/release/libcamerac.dylib   (lipo-merged)
   ios/
     release/camerac.framework   (or libcamerac.dylib)
   linux/
@@ -162,7 +164,7 @@ libs/
     x64/release/camerac.dll
     x64/release/camerac.lib
   emscripten/
-    x86/release/libcamerac.a
+    x86/release/camerac.a
 ```
 
 ---
