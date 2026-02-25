@@ -45,7 +45,7 @@ public static unsafe class CameraHardwareApp
         public int pendingRgbaPitch;
         public bool pendingIsRgba;
         // RGBA camera texture rendering
-        public FaceFlowTexture? rgbaTexture = null;
+        public StreamableTexture? rgbaTexture = null;
         public sg_pipeline camTexRgbaPip;
         public sg_bindings camTexRgbaBind;
         // Camera picker UI
@@ -510,7 +510,7 @@ public static unsafe class CameraHardwareApp
                 if (state.rgbaTexture == null || state.rgbaTexture.width != texW || state.rgbaTexture.height != fh)
                 {
                     state.rgbaTexture?.Dispose();
-                    state.rgbaTexture = new FaceFlowTexture(null, texW, fh, "camera-rgba",
+                    state.rgbaTexture = new StreamableTexture(null, texW, fh, "camera-rgba",
                         sg_pixel_format.SG_PIXELFORMAT_RGBA8, stream_update: true);
                     InitCameraTextureRGBAPipeline(uMax);
                 }

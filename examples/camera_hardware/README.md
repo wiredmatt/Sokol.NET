@@ -30,7 +30,7 @@ A cross-platform camera capture demo built with **Sokol.NET**, the **camerac** n
 | Platform | Format | Texture layout |
 |----------|--------|----------------|
 | macOS / iOS / Android | NV12 (YUV 4:2:0) | Dual-plane: Y (R8) + UV (RG8) via `NV12Texture` |
-| Web (Emscripten) | RGBA32 | Single-plane via `FaceFlowTexture` |
+| Web (Emscripten) | RGBA32 | Single-plane via `StreamableTexture` |
 
 NV12 is converted to RGB in the fragment shader (`shaders/camera-texture.glsl`) using BT.601 coefficients.
 
@@ -40,7 +40,7 @@ NV12 is converted to RGB in the fragment shader (`shaders/camera-texture.glsl`) 
 Source/
   camera_hardware-app.cs   — main app: init, frame loop, camera state, ImGui GUI
   NV12Texture.cs           — dual-plane Y+UV texture helper (macOS/iOS/Android)
-  FaceFlowTexture.cs       — single-plane RGBA texture helper (Web)
+  StreamableTexture.cs     — single-plane GPU texture helper (image + view + sampler); used for RGBA camera feed (Web) and as individual planes inside NV12Texture
   SamplerSettings.cs       — shared sampler configuration
   Program.cs               — entry point (calls sokol_main)
 shaders/
