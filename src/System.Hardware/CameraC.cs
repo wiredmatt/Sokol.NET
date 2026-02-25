@@ -8,11 +8,6 @@ namespace System.Hardware
 {
 public static unsafe partial class CameraC
 {
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public unsafe delegate void camFrameCallback(IntPtr device, camFrame* frame, void* userdata);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public unsafe delegate void camPermissionCallback(IntPtr device, camPermission result, void* userdata);
-
 public enum camPixelFormat
 {
     CAM_PIXEL_FORMAT_UNKNOWN = 0,
@@ -677,21 +672,18 @@ public static extern bool cam_get_device_info(int index, camDeviceInfo* out_info
 #endif
 public static extern void cam_free_device_info(camDeviceInfo* info);
 
+#if WEB
+[DllImport("camerac", EntryPoint = "cam_open", CallingConvention = CallingConvention.Cdecl)]
+private static extern IntPtr cam_open_native(int device_index, in camSpec requested, IntPtr frame_cb, void* userdata);
+public static IntPtr cam_open(int device_index, in camSpec requested, delegate* unmanaged<IntPtr, camFrame*, void*, void> frame_cb, void* userdata) => cam_open_native(device_index, requested, (IntPtr)frame_cb, userdata);
+#else
 #if __IOS__
 [DllImport("@rpath/camerac.framework/camerac", EntryPoint = "cam_open", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("camerac", EntryPoint = "cam_open", CallingConvention = CallingConvention.Cdecl)]
 #endif
-public static extern IntPtr cam_open(int device_index, in camSpec requested, camFrameCallback frame_cb, void* userdata);
-
-// Overload accepting a raw function pointer (IntPtr) – required for [UnmanagedCallersOnly] callbacks
-// used by NativeAOT / WebAssembly targets where managed delegate thunks are not supported.
-#if __IOS__
-[DllImport("@rpath/camerac.framework/camerac", EntryPoint = "cam_open", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("camerac", EntryPoint = "cam_open", CallingConvention = CallingConvention.Cdecl)]
+public static extern IntPtr cam_open(int device_index, in camSpec requested, delegate* unmanaged<IntPtr, camFrame*, void*, void> frame_cb, void* userdata);
 #endif
-public static extern IntPtr cam_open(int device_index, in camSpec requested, IntPtr frame_cb, void* userdata);
 
 #if __IOS__
 [DllImport("@rpath/camerac.framework/camerac", EntryPoint = "cam_close", CallingConvention = CallingConvention.Cdecl)]
@@ -707,20 +699,18 @@ public static extern void cam_close(IntPtr device);
 #endif
 public static extern camPermission cam_get_permission(IntPtr device);
 
+#if WEB
+[DllImport("camerac", EntryPoint = "cam_set_permission_callback", CallingConvention = CallingConvention.Cdecl)]
+private static extern void cam_set_permission_callback_native(IntPtr device, IntPtr cb, void* userdata);
+public static void cam_set_permission_callback(IntPtr device, delegate* unmanaged<IntPtr, camPermission, void*, void> cb, void* userdata) => cam_set_permission_callback_native(device, (IntPtr)cb, userdata);
+#else
 #if __IOS__
 [DllImport("@rpath/camerac.framework/camerac", EntryPoint = "cam_set_permission_callback", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("camerac", EntryPoint = "cam_set_permission_callback", CallingConvention = CallingConvention.Cdecl)]
 #endif
-public static extern void cam_set_permission_callback(IntPtr device, camPermissionCallback cb, void* userdata);
-
-// Overload accepting a raw function pointer – required for [UnmanagedCallersOnly] callbacks.
-#if __IOS__
-[DllImport("@rpath/camerac.framework/camerac", EntryPoint = "cam_set_permission_callback", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("camerac", EntryPoint = "cam_set_permission_callback", CallingConvention = CallingConvention.Cdecl)]
+public static extern void cam_set_permission_callback(IntPtr device, delegate* unmanaged<IntPtr, camPermission, void*, void> cb, void* userdata);
 #endif
-public static extern void cam_set_permission_callback(IntPtr device, IntPtr cb, void* userdata);
 
 #if WEB
 [DllImport("camerac", EntryPoint = "cam_get_actual_spec", CallingConvention = CallingConvention.Cdecl)]

@@ -55,12 +55,6 @@ default_output_dir = '../src/sokol/generated'
 # Extra hand-written declarations to emit at the top of a generated class, per prefix.
 # Each entry is a list of raw C# lines.
 extra_declarations = {
-    'cam': [
-        '[UnmanagedFunctionPointer(CallingConvention.Cdecl)]',
-        'public unsafe delegate void camFrameCallback(IntPtr device, camFrame* frame, void* userdata);',
-        '[UnmanagedFunctionPointer(CallingConvention.Cdecl)]',
-        'public unsafe delegate void camPermissionCallback(IntPtr device, camPermission result, void* userdata);',
-    ],
 }
 
 # Library names for DllImport statements
@@ -211,8 +205,8 @@ prim_types = {
     'const char **': 'IntPtr',
     # CameraC opaque handle and callback types
     'camDevice':               'IntPtr',
-    'camFrameCallback':        'camFrameCallback',
-    'camPermissionCallback':   'camPermissionCallback',
+    'camFrameCallback':        'delegate* unmanaged<IntPtr, camFrame*, void*, void>',
+    'camPermissionCallback':   'delegate* unmanaged<IntPtr, camPermission, void*, void>',
 }
 
 
@@ -607,6 +601,50 @@ def funcdecl_args_csharp(decl, prefix):
         s += f"{as_csharp_arg_type(f' {param_name}', param_type, prefix)}"
     return s
 
+def is_funcptr_prim_type(s):
+    """Return True if the C# prim type for this C type is a function pointer (delegate* unmanaged<>)."""
+    return is_prim_type(s) and as_csharp_prim_type(s).startswith('delegate* unmanaged')
+
+def func_has_funcptr_params(decl, prefix):
+    """Return True if any parameter resolves to a delegate* unmanaged<> function pointer."""
+    func_name = decl.get('name', '')
+    for param_decl in decl.get('params', []):
+        param_name = check_name_override(param_decl['name'])
+        param_type = check_type_override(func_name, param_name, param_decl['type'])
+        if is_funcptr_prim_type(param_type) or util.is_func_ptr(param_type):
+            return True
+    return False
+
+def funcdecl_args_csharp_intptr(decl, prefix):
+    """Like funcdecl_args_csharp but replaces delegate* unmanaged<> params with IntPtr (for WEB P/Invoke)."""
+    s = ""
+    func_name = decl['name']
+    for param_decl in decl['params']:
+        if s != "":
+            s += ", "
+        param_name = check_name_override(param_decl['name'])
+        param_type = check_type_override(func_name, param_name, param_decl['type'])
+        if is_funcptr_prim_type(param_type) or util.is_func_ptr(param_type):
+            s += f"IntPtr {param_name}"
+        else:
+            if is_string_ptr(param_type):
+                s += "[M(U.LPUTF8Str)] "
+            s += f"{as_csharp_arg_type(f' {param_name}', param_type, prefix)}"
+    return s
+
+def funcdecl_call_args_with_intptr_cast(decl, prefix):
+    """Generate call argument list, casting delegate* unmanaged<> params to IntPtr."""
+    parts = []
+    func_name = decl['name']
+    for param_decl in decl['params']:
+        param_name = check_name_override(param_decl['name'])
+        param_type = check_type_override(func_name, param_name, param_decl['type'])
+        if is_funcptr_prim_type(param_type) or util.is_func_ptr(param_type):
+            parts.append(f"(IntPtr){param_name}")
+        else:
+            parts.append(param_name)
+    return ", ".join(parts)
+
 def funcdecl_result_c(decl, prefix):
     func_name = decl['name']
     decl_type = decl['type']
@@ -754,6 +792,9 @@ def gen_func_c(decl, prefix):
     if c_func_name not in web_wrapper_struct_return_functions:
         # bool return types are fully handled in gen_func_csharp (WEB + non-WEB DllImport)
         if funcdecl_result_csharp(decl, prefix) == "bool":
+            return
+        # funcptr params are fully handled in gen_func_csharp (WEB + non-WEB DllImport)
+        if func_has_funcptr_params(decl, prefix):
             return
         # Use framework path on iOS, library name on all other platforms
         l("#if __IOS__")
@@ -921,6 +962,24 @@ def gen_func_csharp(decl, prefix):
         l("#endif")
         l("[return: M(U.I1)]")
         l(f"public static extern bool {csharp_func_name}({args_decl});")
+        l("#endif")
+    elif func_has_funcptr_params(decl, prefix):
+        # delegate* unmanaged<> params cannot be marshalled directly via P/Invoke on WASM NativeAOT.
+        # Generate a #if WEB wrapper that uses IntPtr for function pointer params.
+        args_decl = funcdecl_args_csharp(decl, prefix)
+        args_intptr = funcdecl_args_csharp_intptr(decl, prefix)
+        call_args = funcdecl_call_args_with_intptr_cast(decl, prefix)
+        l("#if WEB")
+        l(f"[DllImport(\"{current_library_name}\", EntryPoint = \"{decl['name']}\", CallingConvention = CallingConvention.Cdecl)]")
+        l(f"private static extern {csharp_res_type} {csharp_func_name}_native({args_intptr});")
+        l(f"public static {csharp_res_type} {csharp_func_name}({args_decl}) => {csharp_func_name}_native({call_args});")
+        l("#else")
+        l("#if __IOS__")
+        l(f"[DllImport(\"@rpath/{current_library_name}.framework/{current_library_name}\", EntryPoint = \"{decl['name']}\", CallingConvention = CallingConvention.Cdecl)]")
+        l("#else")
+        l(f"[DllImport(\"{current_library_name}\", EntryPoint = \"{decl['name']}\", CallingConvention = CallingConvention.Cdecl)]")
+        l("#endif")
+        l(f"public static extern {csharp_res_type} {csharp_func_name}({args_decl});")
         l("#endif")
     else:
         l(f"public static extern {csharp_res_type} {csharp_func_name}({funcdecl_args_csharp(decl, prefix)});")
