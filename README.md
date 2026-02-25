@@ -147,7 +147,7 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 - **[imgui_usercallback](examples/imgui_usercallback)** - Custom ImGui rendering
 
 ### Camera & Hardware
-- **[camera_hardware](examples/camera_hardware)** - ⚠️ *Work in progress* — Live camera feed viewer with ImGui camera picker. Enumerate and switch between devices at runtime. Verified on macOS, iOS, Android, and Web.
+- **[camera_hardware](examples/camera_hardware)** - ⚠️ *Work in progress* — Live camera feed viewer with ImGui camera picker. Enumerate and switch between devices at runtime. Verified on macOS, iOS, Android, Web, and Windows.
 
 ### Physics
 - **[JoltPhysics](examples/JoltPhysics)** - 10,000 dynamic physics bodies with GPU instancing and multithreading

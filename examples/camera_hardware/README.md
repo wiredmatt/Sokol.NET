@@ -12,7 +12,7 @@ A cross-platform camera capture demo built with **Sokol.NET**, the **camerac** n
 | iOS      | ✅ Verified working |
 | Android  | ✅ Verified working |
 | Web (Emscripten) | ✅ Verified working |
-| Windows  | 🔬 Built via CI, not yet verified at runtime |
+| Windows  | ✅ Verified working |
 | Linux    | 🔬 Built via CI, not yet verified at runtime |
 
 ## Features
