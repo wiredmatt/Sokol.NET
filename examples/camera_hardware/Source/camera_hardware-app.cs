@@ -54,6 +54,10 @@ public static unsafe class CameraHardwareApp
         public sg_buffer vbufMirrored;
         public sg_buffer vbufRgbaNormal;
         public sg_buffer vbufRgbaMirrored;
+        // Camera rotation (degrees CW to make image upright; from frame.rotation)
+        public float pendingRotation;
+        public float currentRotation;
+        public float rotationOffset = 0f;  // manual rotation added on top of auto-rotation
         // Camera picker UI
         public string[] cameraNames = Array.Empty<string>();
         public int cameraCount;
@@ -68,6 +72,7 @@ public static unsafe class CameraHardwareApp
         public int    activeFpsDen;
         public string activeFormat       = "";
         public string permissionStatus   = "pending...";
+        public camPosition activeCameraPosition = camPosition.CAM_POSITION_UNKNOWN;
     }
 
     static _state state = new _state();
@@ -118,6 +123,7 @@ public static unsafe class CameraHardwareApp
                 state.pendingRgbaPitch = pitch;
                 state.pendingIsRgba    = true;
                 state.pendingFrame     = true;
+                state.pendingRotation  = frame->rotation;
             }
             return;
         }
@@ -152,6 +158,7 @@ public static unsafe class CameraHardwareApp
                 state.pendingPitch2 = pitch2;
                 state.pendingIsRgba = false;
                 state.pendingFrame  = true;
+                state.pendingRotation = frame->rotation;
             }
         }
     }
@@ -284,10 +291,12 @@ public static unsafe class CameraHardwareApp
             camDeviceInfo dinfo;
             if (cam_get_device_info(cameraIndex, &dinfo))
             {
-                state.activeCameraPos = cam_position_name(dinfo.position);
+                state.activeCameraPos      = cam_position_name(dinfo.position);
+                state.activeCameraPosition = dinfo.position;
                 cam_free_device_info(&dinfo);
             }
         }
+        ApplyDefaultMirror();
     }
 
     // Called once the first camera frame arrives so sg is already initialised.
@@ -493,10 +502,25 @@ public static unsafe class CameraHardwareApp
             camDeviceInfo dinfo;
             if (cam_get_device_info(newIndex, &dinfo))
             {
-                state.activeCameraPos = cam_position_name(dinfo.position);
+                state.activeCameraPos      = cam_position_name(dinfo.position);
+                state.activeCameraPosition = dinfo.position;
                 cam_free_device_info(&dinfo);
             }
         }
+        ApplyDefaultMirror();
+    }
+
+    static void ApplyDefaultMirror()
+    {
+        // Back cameras need no mirror; front cameras default to mirrored (selfie convention)
+        bool def = state.activeCameraPosition != camPosition.CAM_POSITION_BACK_FACING;
+        state.mirrorX = def;
+        _mirrorX = def ? (byte)1 : (byte)0;
+        // Sync vertex buffer bindings if pipelines already exist
+        if (state.vbufNormal.id != 0)
+            state.camTexBind.vertex_buffers[0] = def ? state.vbufMirrored : state.vbufNormal;
+        if (state.vbufRgbaNormal.id != 0)
+            state.camTexRgbaBind.vertex_buffers[0] = def ? state.vbufRgbaMirrored : state.vbufRgbaNormal;
     }
 
     [UnmanagedCallersOnly]
@@ -537,7 +561,8 @@ public static unsafe class CameraHardwareApp
                     state.pendingY  = null;
                     state.pendingUV = null;
                 }
-                state.pendingFrame = false;
+                state.pendingFrame    = false;
+                state.currentRotation = state.pendingRotation;
             }
         }
 
@@ -607,6 +632,8 @@ public static unsafe class CameraHardwareApp
             }
 
             igSeparator();
+            bool isBackCamera = state.activeCameraPosition == camPosition.CAM_POSITION_BACK_FACING;
+            if (isBackCamera) igBeginDisabled(true);
             if (igCheckbox("Mirror", ref _mirrorX))
             {
                 state.mirrorX = _mirrorX != 0;
@@ -616,6 +643,17 @@ public static unsafe class CameraHardwareApp
                 if (state.vbufRgbaNormal.id != 0)
                     state.camTexRgbaBind.vertex_buffers[0] = state.mirrorX ? state.vbufRgbaMirrored : state.vbufRgbaNormal;
             }
+            if (isBackCamera) igEndDisabled();
+            igSeparator();
+            igText("Rotation offset");
+            if (igButton("  0°  ", Vector2.Zero)) state.rotationOffset =   0f;
+            igSameLine(0, 4);
+            if (igButton(" 90°  ", Vector2.Zero)) state.rotationOffset =  90f;
+            igSameLine(0, 4);
+            if (igButton("180°  ", Vector2.Zero)) state.rotationOffset = 180f;
+            igSameLine(0, 4);
+            if (igButton("270°  ", Vector2.Zero)) state.rotationOffset = 270f;
+            igText($"Offset     : {state.rotationOffset:F0}°");
             igSeparator();
             igText("Active Camera");
             igSeparator();
@@ -626,16 +664,20 @@ public static unsafe class CameraHardwareApp
             igText($"Format     : {state.activeFormat}");
             igText($"Permission : {state.permissionStatus}");
             igText($"Frame #    : {state.frameCount}");
+            igText($"Rotation   : {state.currentRotation:F0}°");
             igEnd();
         }
 
         sg_begin_pass(new sg_pass { action = state.pass_action, swapchain = sglue_swapchain() });
 
+
+        var vsParams = new vs_params_t { rotation = state.currentRotation + state.rotationOffset };
         if (state.rgbaTexture != null && state.rgbaTexture.IsValid && state.camTexRgbaPip.id != 0)
         {
             state.camTexRgbaBind.views[VIEW_tex_rgba] = state.rgbaTexture.View;
             sg_apply_pipeline(state.camTexRgbaPip);
             sg_apply_bindings(state.camTexRgbaBind);
+            sg_apply_uniforms(UB_vs_params, SG_RANGE<vs_params_t>(ref vsParams));
             sg_draw(0, 6, 1);
         }
         else if (state.nv12Texture != null && state.nv12Texture.IsValid && state.camTexPip.id != 0)
@@ -645,6 +687,7 @@ public static unsafe class CameraHardwareApp
 
             sg_apply_pipeline(state.camTexPip);
             sg_apply_bindings(state.camTexBind);
+            sg_apply_uniforms(UB_vs_params, SG_RANGE<vs_params_t>(ref vsParams));
             sg_draw(0, 6, 1);
         }
 

@@ -7,8 +7,20 @@ in vec2 position;
 in vec2 texcoord0;
 out vec2 uv;
 
+layout(binding=0) uniform vs_params {
+    float rotation; // degrees CCW to rotate image content for display (quad rotated CW = image appears CCW)
+};
+
 void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
+    float rad = radians(rotation);
+    float c = cos(rad);
+    float s = sin(rad);
+    // 2-D CW rotation: x' = x*cos + y*sin, y' = -x*sin + y*cos
+    vec2 pos = vec2(
+        position.x * c + position.y * s,
+       -position.x * s + position.y * c
+    );
+    gl_Position = vec4(pos, 0.0, 1.0);
     uv = texcoord0;
 }
 @end

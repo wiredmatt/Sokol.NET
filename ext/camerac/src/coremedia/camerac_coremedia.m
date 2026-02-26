@@ -81,6 +81,9 @@ static FourCharCode pixel_format_to_fourcc(camPixelFormat fmt)
 @property (nonatomic, retain) AVCaptureVideoDataOutput     *output;
 @property (nonatomic, strong) dispatch_queue_t              queue;
 @property (nonatomic, assign) BOOL                          permFired;
+#ifdef USE_UIKIT_ROTATION
+@property (nonatomic, assign) UIDeviceOrientation           lastDeviceOrientation;
+#endif
 @end
 
 @implementation CamPrivateCameraData
@@ -167,12 +170,41 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     }
 
 #ifdef USE_UIKIT_ROTATION
-    UIDeviceOrientation orient = [[UIDevice currentDevice] orientation];
-    switch (orient) {
-        case UIDeviceOrientationLandscapeLeft:  frame.rotation = 90.0f;  break;
-        case UIDeviceOrientationLandscapeRight: frame.rotation = -90.0f; break;
-        case UIDeviceOrientationPortraitUpsideDown: frame.rotation = 180.0f; break;
-        default: frame.rotation = 0.0f; break;
+    /* Use the same 2D lookup table as SDL3 (SDL_camera_coremedia.m):
+     * rotation = rotations[ui_orientation-1][device_orientation-1]
+     * Rotating the quad CW by `rotation` degrees makes the image appear
+     * rotated CCW by that amount, which is what SDL callers expect.     */
+    UIDeviceOrientation device_orientation = [[UIDevice currentDevice] orientation];
+    if (!UIDeviceOrientationIsValidInterfaceOrientation(device_orientation)) {
+        device_orientation = hidden.lastDeviceOrientation;
+    } else {
+        hidden.lastDeviceOrientation = device_orientation;
+    }
+    UIInterfaceOrientation ui_orientation = [UIApplication sharedApplication].statusBarOrientation;
+    if (ui_orientation >= UIInterfaceOrientationPortrait &&
+        ui_orientation <= UIInterfaceOrientationLandscapeRight &&
+        device_orientation >= UIDeviceOrientationPortrait &&
+        device_orientation <= UIDeviceOrientationLandscapeRight)
+    {
+        if (device->position == CAM_POSITION_BACK_FACING) {
+            static const uint16_t back_rotations[4][4] = {
+                {  90,  90,  90,  90 },  /* ui portrait               */
+                { 270, 270, 270, 270 },  /* ui portrait upside down   */
+                {   0,   0,   0,   0 },  /* ui landscape left         */
+                { 180, 180, 180, 180 }   /* ui landscape right        */
+            };
+            frame.rotation = (float)back_rotations[ui_orientation - 1][device_orientation - 1];
+        } else {
+            static const uint16_t front_rotations[4][4] = {
+                {  90,  90, 270, 270 },  /* ui portrait               */
+                { 270, 270,  90,  90 },  /* ui portrait upside down   */
+                {   0,   0, 180, 180 },  /* ui landscape left         */
+                { 180, 180,   0,   0 }   /* ui landscape right        */
+            };
+            frame.rotation = (float)front_rotations[ui_orientation - 1][device_orientation - 1];
+        }
+    } else {
+        frame.rotation = 0.0f;
     }
 #endif
 
