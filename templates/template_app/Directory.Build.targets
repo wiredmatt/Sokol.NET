@@ -1,4 +1,9 @@
 <Project>
+
+  <ItemGroup>
+    <Compile Remove="Source/**/obj/**/*.*" />
+    <Compile Remove="Source/**/bin/**/*.*" />
+  </ItemGroup>
   <!-- Common Android Build Tasks for All IDEs -->
   
   <!-- Make Android targets visible in Visual Studio Task Runner Explorer -->
