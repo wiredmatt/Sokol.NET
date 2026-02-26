@@ -48,6 +48,12 @@ public static unsafe class CameraHardwareApp
         public StreamableTexture? rgbaTexture = null;
         public sg_pipeline camTexRgbaPip;
         public sg_bindings camTexRgbaBind;
+        // Mirror toggle
+        public bool mirrorX = true; // front cameras are mirrored by default
+        public sg_buffer vbufNormal;
+        public sg_buffer vbufMirrored;
+        public sg_buffer vbufRgbaNormal;
+        public sg_buffer vbufRgbaMirrored;
         // Camera picker UI
         public string[] cameraNames = Array.Empty<string>();
         public int cameraCount;
@@ -66,6 +72,7 @@ public static unsafe class CameraHardwareApp
 
     static _state state = new _state();
     static byte _camWindowOpen = 1;
+    static byte _mirrorX = 1;
 
     // -------------------------------------------------------------------------
     // Camera callbacks
@@ -296,6 +303,12 @@ public static unsafe class CameraHardwareApp
              1f,  1f,  uMax,  0f,
             -1f,  1f,  0f,    0f,
         };
+        float[] vertsMirrored = {
+            -1f, -1f,  uMax, 1f,
+             1f, -1f,  0f,   1f,
+             1f,  1f,  0f,   0f,
+            -1f,  1f,  uMax, 0f,
+        };
         ushort[] indices = { 0, 1, 2,  0, 2, 3 };
 
         sg_buffer vbuf;
@@ -305,6 +318,17 @@ public static unsafe class CameraHardwareApp
                 data = new sg_range { ptr = p, size = (nuint)(verts.Length * sizeof(float)) },
                 label = "cam-quad-vb"
             });
+
+        sg_buffer vbufMirrored;
+        fixed (float* p = vertsMirrored)
+            vbufMirrored = sg_make_buffer(new sg_buffer_desc
+            {
+                data = new sg_range { ptr = p, size = (nuint)(vertsMirrored.Length * sizeof(float)) },
+                label = "cam-quad-vb-mirror"
+            });
+
+        state.vbufNormal   = vbuf;
+        state.vbufMirrored = vbufMirrored;
 
         sg_buffer ibuf;
         fixed (ushort* p = indices)
@@ -329,7 +353,7 @@ public static unsafe class CameraHardwareApp
         state.camTexPip = sg_make_pipeline(pip_desc);
 
         state.camTexBind = default;
-        state.camTexBind.vertex_buffers[0] = vbuf;
+        state.camTexBind.vertex_buffers[0] = state.mirrorX ? vbufMirrored : vbuf;
         state.camTexBind.index_buffer      = ibuf;
         state.camTexBind.views[VIEW_tex_y]  = state.nv12Texture!.YFaceFlowTexture.View;
         state.camTexBind.views[VIEW_tex_uv] = state.nv12Texture!.UvFaceFlowTexture.View;
@@ -346,6 +370,12 @@ public static unsafe class CameraHardwareApp
              1f,  1f,  uMax,  0f,
             -1f,  1f,  0f,    0f,
         };
+        float[] vertsMirrored = {
+            -1f, -1f,  uMax, 1f,
+             1f, -1f,  0f,   1f,
+             1f,  1f,  0f,   0f,
+            -1f,  1f,  uMax, 0f,
+        };
         ushort[] indices = { 0, 1, 2,  0, 2, 3 };
 
         sg_buffer vbuf, ibuf;
@@ -355,6 +385,17 @@ public static unsafe class CameraHardwareApp
                 data  = new sg_range { ptr = p, size = (nuint)(verts.Length * sizeof(float)) },
                 label = "cam-rgba-vb"
             });
+
+        sg_buffer vbufMirrored;
+        fixed (float* p = vertsMirrored)
+            vbufMirrored = sg_make_buffer(new sg_buffer_desc
+            {
+                data  = new sg_range { ptr = p, size = (nuint)(vertsMirrored.Length * sizeof(float)) },
+                label = "cam-rgba-vb-mirror"
+            });
+
+        state.vbufRgbaNormal   = vbuf;
+        state.vbufRgbaMirrored = vbufMirrored;
         fixed (ushort* p = indices)
             ibuf = sg_make_buffer(new sg_buffer_desc
             {
@@ -377,7 +418,7 @@ public static unsafe class CameraHardwareApp
         state.camTexRgbaPip = sg_make_pipeline(pip_desc);
 
         state.camTexRgbaBind = default;
-        state.camTexRgbaBind.vertex_buffers[0]       = vbuf;
+        state.camTexRgbaBind.vertex_buffers[0]       = state.mirrorX ? vbufMirrored : vbuf;
         state.camTexRgbaBind.index_buffer            = ibuf;
         state.camTexRgbaBind.views[VIEW_tex_rgba]    = state.rgbaTexture!.View;
         state.camTexRgbaBind.samplers[SMP_smp_rgba]  = state.rgbaTexture!.Sampler;
@@ -565,6 +606,16 @@ public static unsafe class CameraHardwareApp
                 }
             }
 
+            igSeparator();
+            if (igCheckbox("Mirror", ref _mirrorX))
+            {
+                state.mirrorX = _mirrorX != 0;
+                // Update vertex buffer binding for both pipelines
+                if (state.vbufNormal.id != 0)
+                    state.camTexBind.vertex_buffers[0] = state.mirrorX ? state.vbufMirrored : state.vbufNormal;
+                if (state.vbufRgbaNormal.id != 0)
+                    state.camTexRgbaBind.vertex_buffers[0] = state.mirrorX ? state.vbufRgbaMirrored : state.vbufRgbaNormal;
+            }
             igSeparator();
             igText("Active Camera");
             igSeparator();
