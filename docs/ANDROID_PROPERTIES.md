@@ -316,6 +316,68 @@ If you don't include any Android properties in `Directory.Build.props`, SokolApp
 4. **Flexible**: Override any setting per project
 5. **Safe Defaults**: Works out of the box without configuration
 
+## Native Library Configuration (`AndroidNativeLibrary_*`)
+
+Use these properties to bundle third-party prebuilt shared libraries (`.so` files) alongside your application. This is needed when your native code depends on a library that is distributed as a prebuilt binary (e.g., a vendor SDK, `c++_shared`, a physics engine, etc.).
+
+### `AndroidNativeLibrary_[Name]Path`
+
+**Required.** Path (relative to your project's `Directory.Build.props` file, or absolute) to the directory that contains ABI subdirectories with the prebuilt `.so` files.
+
+Expected directory layout:
+```
+<path>/
+  arm64-v8a/
+    lib<name>.so          ← or release/lib<name>.so / debug/lib<name>.so
+  armeabi-v7a/
+    lib<name>.so
+  x86_64/
+    lib<name>.so
+```
+
+The build system searches each ABI folder and, optionally, `release/` and `debug/` subdirectories within it.
+
+### `AndroidNativeLibrary_[Name]LibraryName`
+
+**Optional.** Override the actual `.so` filename when the library name cannot be used directly as a C identifier (e.g. `c++_shared` contains `+` characters). Specify the name **without** the `lib` prefix and `.so` suffix.
+
+If omitted, the `[Name]` part of the property key is lower-cased and used as the library name.
+
+### What the build system does automatically
+
+When one or more `AndroidNativeLibrary_*Path` properties are present:
+
+1. **Copies** the `.so` files to `app/src/main/jniLibs/<ABI>/` — Gradle automatically packages anything in this directory into the APK.
+2. **Updates `CMakeLists.txt`** — adds `link_directories` pointing to the `jniLibs/<ABI>/` folder and appends the library names to `target_link_libraries(sokol ...)`.
+3. **Switches the STL** in `build.gradle` from `c++_static` to `c++_shared` (required when linking a shared STL).
+4. **Injects `System.loadLibrary()`** calls into `SokolNativeActivity.java` so the libraries are loaded in order before `sokol`.
+
+### Example
+
+```xml
+<PropertyGroup>
+  <!-- Simple case: library name == key name (lower-cased) -->
+  <!-- Looks for  ../../ext/camerac/libs/android/arm64-v8a/libcamerac.so  etc. -->
+  <AndroidNativeLibrary_cameracPath>../../ext/camerac/libs/android</AndroidNativeLibrary_cameracPath>
+
+  <!-- Name-override case: key cannot contain '+', so use LibraryName override -->
+  <!-- Looks for  ext/mediapipe/android/arm64-v8a/libc++_shared.so  etc. -->
+  <AndroidNativeLibrary_cppsharedPath>ext/mediapipe/android</AndroidNativeLibrary_cppsharedPath>
+  <AndroidNativeLibrary_cppsharedLibraryName>c++_shared</AndroidNativeLibrary_cppsharedLibraryName>
+</PropertyGroup>
+```
+
+### Build output
+
+```
+📦 Copying native libraries to jniLibs directory...
+   ✅ Copied libcamerac.so → app/src/main/jniLibs/arm64-v8a/libcamerac.so
+   ✅ Copied libc++_shared.so → app/src/main/jniLibs/arm64-v8a/libc++_shared.so
+🔧 Updated CMakeLists.txt for native libraries: camerac, c++_shared
+```
+
+---
+
 ## See Also
 
 - [Android Permissions Documentation](https://developer.android.com/reference/android/Manifest.permission)

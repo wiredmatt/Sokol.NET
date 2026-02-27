@@ -210,6 +210,61 @@ dotnet run --project tools/SokolApplicationBuilder -- \
    - Otherwise, `IOSScreenOrientation` from Directory.Build.props is used
    - Default is `both` if neither is specified
 
+## Native Library Configuration (`IOSNativeLibrary_*`)
+
+Use these properties to embed third-party prebuilt iOS frameworks alongside your application. This is needed when your native code depends on a vendor-supplied `.framework` bundle (e.g. a camera SDK, a machine-learning framework, etc.).
+
+### `IOSNativeLibrary_[Name]Path`
+
+**Required.** Path (relative to your project's `Directory.Build.props` file, or absolute) to a directory that contains one or more `.framework` bundles.
+
+Expected directory layout:
+```
+<path>/
+  MyLibrary.framework/
+    MyLibrary          ← Mach-O binary (thin or universal)
+    Info.plist
+    ...
+  AnotherLib.framework/
+    ...
+```
+
+All `.framework` directories found inside `<path>` are processed.
+
+The `[Name]` part of the property key is used as an identifier in log output; the framework name itself is taken from the `.framework` directory name.
+
+### What the build system does automatically
+
+When one or more `IOSNativeLibrary_*Path` properties are present:
+
+1. **Copies** the `.framework` bundles into the Xcode project's `Frameworks/` directory.
+2. **Updates `CMakeLists.txt`** — adds each framework to the embed-frameworks list (`TEMPLATE_EMBED_FRAMEWORKS_LIST`) and appends `-framework <Name>` link flags (`TEMPLATE_FRAMEWORK_LINKS`), so Xcode links and embeds them during the app bundle build.
+
+> **Note:** Unlike Android, there is no `LibraryName` override property for iOS. The framework name is determined by the `.framework` directory name, not the property key.
+
+### Example
+
+```xml
+<PropertyGroup>
+  <!-- The build system will look for *.framework dirs inside
+       ../../ext/camerac/libs/ios/release/ and embed them. -->
+  <IOSNativeLibrary_cameracPath>../../ext/camerac/libs/ios/release</IOSNativeLibrary_cameracPath>
+</PropertyGroup>
+```
+
+### Build output
+
+```
+📦 Copying iOS native libraries to frameworks directory...
+   Processing camerac from /path/to/ext/camerac/libs/ios/release
+   ✅ Copying camerac.framework framework
+📦 iOS native libraries copied successfully
+📋 Configured 1 iOS native libraries in CMakeLists.txt
+   - camerac
+```
+
+---
+
 ## See Also
 
 - [ANDROID_PROPERTIES.md](./ANDROID_PROPERTIES.md) - Android configuration properties

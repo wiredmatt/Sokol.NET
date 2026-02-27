@@ -1004,9 +1004,11 @@ namespace SokolApplicationBuilder
                     {
                         Log.LogMessage(MessageImportance.High, $"Publishing for {arch} completed successfully");
                         
-                        // Copy the published library to the Android libs directory
+                        // Copy the published library to the Android libs directory.
+                        // The CMakeLists.txt template uses PREBUILT_LIB_PATH = ../../../libs (relative to
+                        // app/src/main/cpp/) which resolves to app/libs/ - so we must copy here.
                         string publishDir = Path.Combine(opts.ProjectPath, "bin", configuration, "net10.0", arch, "publish");
-                        string libsDir = Path.Combine(opts.ProjectPath, "Android", "native-activity", "app", "src", "main", "libs");
+                        string libsDir = Path.Combine(opts.ProjectPath, "Android", "native-activity", "app", "libs");
                         string abiName = arch switch
                         {
                             "linux-bionic-arm64" => "arm64-v8a",
@@ -1046,7 +1048,9 @@ namespace SokolApplicationBuilder
         {
             Log.LogMessage(MessageImportance.High, "📚 Processing native libraries configuration...");
             
-            string libsDir = Path.Combine(opts.ProjectPath, "Android", "native-activity", "app", "libs");
+            // jniLibs is the standard Gradle source set that gets packaged into the APK automatically.
+            // Using app/libs/ would NOT package the .so files into the APK.
+            string libsDir = Path.Combine(opts.ProjectPath, "Android", "native-activity", "app", "src", "main", "jniLibs");
             
             // Architectures to process
             var architectures = new[]
@@ -1068,7 +1072,12 @@ namespace SokolApplicationBuilder
                     // AndroidNativeLibrary_OzzUtilPath -> OzzUtil -> ozzutil
                     string libraryNamePart = property.Key.Substring("AndroidNativeLibrary_".Length);
                     libraryNamePart = libraryNamePart.Substring(0, libraryNamePart.Length - "Path".Length);
-                    string libraryName = libraryNamePart.ToLowerInvariant();
+                    
+                    // Check if there's an explicit library name override (for names with special characters like c++)
+                    string libraryNamePropertyKey = $"AndroidNativeLibrary_{libraryNamePart}LibraryName";
+                    string libraryName = androidProperties.ContainsKey(libraryNamePropertyKey)
+                        ? androidProperties[libraryNamePropertyKey]
+                        : libraryNamePart.ToLowerInvariant();
                     
                     string libraryBasePath = property.Value;
                     
@@ -1168,9 +1177,10 @@ namespace SokolApplicationBuilder
 
             string cmakeContent = File.ReadAllText(cmakeListsPath);
             
-            // Build the additional library configurations
-            var additionalLibraries = new List<string>();
+            // Build the library directory addition and link library names
+            var libraryNames = new List<string>();
             var additionalLinkLibraries = new List<string>();
+            bool hasLinkDirectories = false;
 
             foreach (var property in androidProperties)
             {
@@ -1180,49 +1190,55 @@ namespace SokolApplicationBuilder
                     // Extract library name
                     string libraryNamePart = property.Key.Substring("AndroidNativeLibrary_".Length);
                     libraryNamePart = libraryNamePart.Substring(0, libraryNamePart.Length - "Path".Length);
-                    string libraryName = libraryNamePart.ToLowerInvariant();
                     
-                    additionalLibraries.Add($@"
-# Add {libraryName} library
-add_library({libraryName} SHARED IMPORTED)
-set_target_properties({libraryName} PROPERTIES 
-    IMPORTED_LOCATION ${{PREBUILT_LIB_PATH}}/${{ANDROID_ABI}}/lib{libraryName}.so
-    IMPORTED_SONAME ""lib{libraryName}.so"")");
+                    // Check if there's an explicit library name override (for names with special characters like c++)
+                    string libraryNamePropertyKey = $"AndroidNativeLibrary_{libraryNamePart}LibraryName";
+                    string libraryName = androidProperties.ContainsKey(libraryNamePropertyKey)
+                        ? androidProperties[libraryNamePropertyKey]
+                        : libraryNamePart.ToLowerInvariant();
                     
+                    libraryNames.Add(libraryName);
+                    
+                    // For linking, use just the library name (without lib prefix or .so suffix)
+                    // CMake will add -l<name> which will use runtime library search paths
                     additionalLinkLibraries.Add($"    {libraryName}");
+                    
+                    if (!hasLinkDirectories)
+                    {
+                        hasLinkDirectories = true;
+                    }
                 }
             }
 
-            if (additionalLibraries.Count > 0)
+            if (libraryNames.Count > 0)
             {
-                // Insert additional libraries after the main app library definition
-                string insertionPoint = "set_target_properties(";
-                int lastSetTargetProps = cmakeContent.LastIndexOf(insertionPoint);
+                // Add link_directories command BEFORE add_library(sokol ...) so it takes effect
+                // link_directories only affects targets defined AFTER it's called
+                string insertionPoint = "set(CMAKE_SHARED_LINKER_FLAGS";
+                int insertIndex = cmakeContent.IndexOf(insertionPoint);
                 
-                if (lastSetTargetProps >= 0)
+                if (insertIndex >= 0)
                 {
-                    // Find the closing ) for this set_target_properties
-                    int openParen = cmakeContent.IndexOf('(', lastSetTargetProps);
-                    int closeParen = -1;
-                    int parenCount = 0;
-                    for (int i = openParen; i < cmakeContent.Length; i++)
+                    // Find the end of the next line (after the closing parenthesis)
+                    int searchStart = cmakeContent.IndexOf(')', insertIndex) + 1;
+                    int lineEnd = cmakeContent.IndexOf('\n', searchStart);
+                    if (lineEnd >= 0)
                     {
-                        if (cmakeContent[i] == '(') parenCount++;
-                        else if (cmakeContent[i] == ')')
-                        {
-                            parenCount--;
-                            if (parenCount == 0)
-                            {
-                                closeParen = i;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (closeParen >= 0)
-                    {
-                        string additionalLibsText = string.Join("", additionalLibraries);
-                        cmakeContent = cmakeContent.Insert(closeParen + 1, additionalLibsText);
+                        string linkDirectoriesText = $@"
+
+# Define library path for prebuilt libraries - points to jniLibs which Gradle packages into the APK.
+# CMakeLists.txt is at app/src/main/cpp/, so ../jniLibs = app/src/main/jniLibs/
+set(PREBUILT_LIB_PATH ${{CMAKE_CURRENT_SOURCE_DIR}}/../jniLibs)
+
+# Add search directory for native libraries so they are linked with -l instead of absolute paths
+# This prevents absolute build paths from being embedded in the .so file
+# IMPORTANT: This must come BEFORE add_library(sokol ...) to take effect
+link_directories(${{PREBUILT_LIB_PATH}}/${{ANDROID_ABI}})
+
+# Note: Libraries will be linked by name (e.g., -lcamerac) which uses runtime linker
+# The runtime linker will search using RPATH ($ORIGIN) set in target_link_options below
+";
+                        cmakeContent = cmakeContent.Insert(lineEnd + 1, linkDirectoriesText);
                         
                         // Also add to target_link_libraries
                         string linkLibrariesPattern = "target_link_libraries(sokol";
@@ -1240,12 +1256,17 @@ set_target_properties({libraryName} PROPERTIES
                         }
                         
                         File.WriteAllText(cmakeListsPath, cmakeContent);
-                        Log.LogMessage(MessageImportance.Normal, $"📝 Updated CMakeLists.txt with {additionalLibraries.Count} additional native libraries");
+                        Log.LogMessage(MessageImportance.Normal, $"📝 Updated CMakeLists.txt with {libraryNames.Count} additional native libraries using link_directories");
+                        Log.LogMessage(MessageImportance.Normal, $"   Libraries: {string.Join(", ", libraryNames)}");
                     }
                     else
                     {
-                        Log.LogMessage(MessageImportance.Normal, "⚠️  Could not find insertion point in CMakeLists.txt");
+                        Log.LogMessage(MessageImportance.Normal, "⚠️  Could not find line end after CMAKE_SHARED_LINKER_FLAGS");
                     }
+                }
+                else
+                {
+                    Log.LogMessage(MessageImportance.Normal, "⚠️  Could not find CMAKE_SHARED_LINKER_FLAGS in CMakeLists.txt");
                 }
             }
         }
@@ -1302,7 +1323,12 @@ set_target_properties({libraryName} PROPERTIES
                     // AndroidNativeLibrary_OzzUtilPath -> OzzUtil -> ozzutil
                     string libraryNamePart = property.Key.Substring("AndroidNativeLibrary_".Length);
                     libraryNamePart = libraryNamePart.Substring(0, libraryNamePart.Length - "Path".Length);
-                    string libraryName = libraryNamePart.ToLowerInvariant();
+                    
+                    // Check if there's an explicit library name override (for names with special characters like c++)
+                    string libraryNamePropertyKey = $"AndroidNativeLibrary_{libraryNamePart}LibraryName";
+                    string libraryName = androidProperties.ContainsKey(libraryNamePropertyKey)
+                        ? androidProperties[libraryNamePropertyKey]
+                        : libraryNamePart.ToLowerInvariant();
                     nativeLibraries.Add(libraryName);
                 }
             }
@@ -1333,11 +1359,8 @@ set_target_properties({libraryName} PROPERTIES
                 // Build library loading statements dynamically
                 var loadStatements = new List<string>();
                 
-                // Add c++_shared first if we have native libraries (they likely need it)
-                loadStatements.Add("            // Load C++ shared runtime first (dependency for native libraries)");
-                loadStatements.Add("            System.loadLibrary(\"c++_shared\");");
-                
-                // Add each detected native library with comments
+                // Load only explicitly declared native libraries (in declaration order)
+                // c++_shared is only loaded if explicitly listed via AndroidNativeLibrary_*LibraryName
                 foreach (string libName in nativeLibraries)
                 {
                     loadStatements.Add($"            // Load {libName} library");
@@ -1348,14 +1371,22 @@ set_target_properties({libraryName} PROPERTIES
                 loadStatements.Add("            // Load main sokol library last");
                 loadStatements.Add("            System.loadLibrary(\"sokol\");");
                 
-                // Create the new static block with proper error handling
+                // Build fallback statements (try each library individually so sokol still loads)
+                var fallbackStatements = new List<string>();
+                foreach (string libName in nativeLibraries)
+                {
+                    fallbackStatements.Add($"            try {{ System.loadLibrary(\"{libName}\"); }} catch (UnsatisfiedLinkError ignored) {{}}");
+                }
+                fallbackStatements.Add("            System.loadLibrary(\"sokol\");");
+                
+                // Create the new static block with per-library fallback handling
                 string newPattern = $@"    // Load native library early so JNI methods are available
     static {{
         try {{
 {string.Join("\n", loadStatements)}
         }} catch (UnsatisfiedLinkError e) {{
-            // Fallback: try loading just sokol if other libraries are not available
-            System.loadLibrary(""sokol"");
+            // Fallback: attempt each library individually so sokol can still load
+{string.Join("\n", fallbackStatements)}
         }}
     }}";
                 
