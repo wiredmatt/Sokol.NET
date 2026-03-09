@@ -451,20 +451,52 @@ namespace SokolApplicationBuilder
                 content = content.Replace("TEMPLATE_BUNDLE_PREFIX", iOSBundlePrefix);
                 content = content.Replace("TEMPLATE_APP_VERSION", appVersion);
                 
-                // Set orientation based on Directory.Build.props or command line option
-                string orientation = !string.IsNullOrEmpty(opts.Orientation) && opts.Orientation != "both" 
-                    ? opts.ValidatedOrientation 
-                    : iOSScreenOrientation;
+                // Set orientation: Directory.Build.props takes precedence when it has a specific
+                // (non-"both") value; command-line --orientation is a fallback used only when
+                // the props file leaves orientation at the default ("both").
+                string orientation;
+                if (!string.IsNullOrEmpty(iOSScreenOrientation) && iOSScreenOrientation != "both")
+                {
+                    // Props file explicitly specifies a concrete orientation — always respect it.
+                    orientation = iOSScreenOrientation;
+                }
+                else if (!string.IsNullOrEmpty(opts.Orientation) && opts.Orientation != "both")
+                {
+                    // Props says "both" (or unset); honour explicit command-line override.
+                    orientation = opts.ValidatedOrientation;
+                }
+                else
+                {
+                    orientation = iOSScreenOrientation; // "both" / default
+                }
                 
                 string iosOrientations, ipadOrientations;
                 string iosOrientationsPlist, ipadOrientationsPlist;
                 switch (orientation)
                 {
                     case "portrait":
-                        iosOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-                        ipadOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-                        iosOrientationsPlist = "\n        <string>UIInterfaceOrientationPortrait</string>\n        <string>UIInterfaceOrientationPortraitUpsideDown</string>";
-                        ipadOrientationsPlist = "\n        <string>UIInterfaceOrientationPortrait</string>\n        <string>UIInterfaceOrientationPortraitUpsideDown</string>";
+                        iosOrientations = "UIInterfaceOrientationPortrait";
+                        ipadOrientations = "UIInterfaceOrientationPortrait";
+                        iosOrientationsPlist = "\n        <string>UIInterfaceOrientationPortrait</string>";
+                        ipadOrientationsPlist = "\n        <string>UIInterfaceOrientationPortrait</string>";
+                        break;
+                    case "portrait_upside_down":
+                        iosOrientations = "UIInterfaceOrientationPortraitUpsideDown";
+                        ipadOrientations = "UIInterfaceOrientationPortraitUpsideDown";
+                        iosOrientationsPlist = "\n        <string>UIInterfaceOrientationPortraitUpsideDown</string>";
+                        ipadOrientationsPlist = "\n        <string>UIInterfaceOrientationPortraitUpsideDown</string>";
+                        break;
+                    case "landscape_left":
+                        iosOrientations = "UIInterfaceOrientationLandscapeLeft";
+                        ipadOrientations = "UIInterfaceOrientationLandscapeLeft";
+                        iosOrientationsPlist = "\n        <string>UIInterfaceOrientationLandscapeLeft</string>";
+                        ipadOrientationsPlist = "\n        <string>UIInterfaceOrientationLandscapeLeft</string>";
+                        break;
+                    case "landscape_right":
+                        iosOrientations = "UIInterfaceOrientationLandscapeRight";
+                        ipadOrientations = "UIInterfaceOrientationLandscapeRight";
+                        iosOrientationsPlist = "\n        <string>UIInterfaceOrientationLandscapeRight</string>";
+                        ipadOrientationsPlist = "\n        <string>UIInterfaceOrientationLandscapeRight</string>";
                         break;
                     case "landscape":
                         iosOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

@@ -134,9 +134,12 @@ namespace SokolApplicationBuilder
                 string orientation = Orientation?.ToLower() ?? "both";
                 return orientation switch
                 {
-                    "portrait" => "portrait",
-                    "landscape" => "landscape",
-                    "both" => "both",
+                    "portrait"              => "portrait",
+                    "portrait_upside_down"  => "portrait_upside_down",
+                    "landscape"             => "landscape",
+                    "landscape_left"        => "landscape_left",
+                    "landscape_right"       => "landscape_right",
+                    "both"                  => "both",
                     _ => "both" // default fallback
                 };
             }

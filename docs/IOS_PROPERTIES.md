@@ -54,9 +54,12 @@ Organize iOS properties in a dedicated PropertyGroup section in your `Directory.
 ```
 
 **Valid values:**
-- `portrait` - Portrait mode only (UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown)
-- `landscape` - Landscape mode only (UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight)
-- `both` - All orientations allowed (default)
+- `portrait` - Portrait upright only (`UIInterfaceOrientationPortrait`)
+- `portrait_upside_down` - Portrait upside-down only (`UIInterfaceOrientationPortraitUpsideDown`)
+- `landscape` - Both landscape orientations (`UIInterfaceOrientationLandscapeLeft` + `UIInterfaceOrientationLandscapeRight`)
+- `landscape_left` - Landscape left only (`UIInterfaceOrientationLandscapeLeft`)
+- `landscape_right` - Landscape right only (`UIInterfaceOrientationLandscapeRight`)
+- `both` - All orientations (Portrait + UpsideDown + LandscapeLeft + LandscapeRight) — default
 
 **Note:** Command-line `--orientation` parameter overrides this setting.
 
