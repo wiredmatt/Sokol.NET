@@ -158,6 +158,9 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 - **[plmpeg](examples/plmpeg)** - MPEG1 video playback
 - **[ShaderToyApp](examples/ShaderToyApp)** - Multi-shader gallery with 7 fragment shaders
 
+### Games
+- **[Reversi](examples/Reversi)** - Playable Othello/Reversi board game with 3D discs, animated flips, touch + mouse input, adjustable AI depth, and cross-platform support (Desktop, Web, iOS, Android)
+
 ## 📜 Spine License Notice
 
 Some examples in this repository (`spine_simple`, `spine_skinsets`, `spine_inspector`) use the [Spine](http://esotericsoftware.com) runtime library. 
