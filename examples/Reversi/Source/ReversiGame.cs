@@ -55,6 +55,9 @@ namespace Reversi
         // Which side most recently completed a TryApplyMove (for animation callback)
         private CellState _lastMovedSide = CellState.Black;
 
+        // Index of the most recently placed disc (exposed for highlight rendering)
+        public int LastPlacedCell { get; private set; } = -1;
+
         // -------------------------------------------------------------------
         // Construction / reset
         // -------------------------------------------------------------------
@@ -72,6 +75,7 @@ namespace Reversi
             Phase = GamePhase.PlayerTurn;
             FlipAnimations.Clear();
             _history.Clear();
+            LastPlacedCell = -1;
             UpdateScore();
         }
 
@@ -129,6 +133,7 @@ namespace Reversi
 
             UpdateScore();
             _lastMovedSide = side;
+            LastPlacedCell = cellIndex;
             Phase = GamePhase.AnimatingFlip;
             return true;
         }

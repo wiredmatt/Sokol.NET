@@ -44,6 +44,10 @@ public static unsafe class ReversiApp
         // Valid-move marker (small quad at origin – translated per marker)
         public sg_buffer markerVBuf, markerIBuf;
 
+        // Hollow ring for last-placed disc highlight
+        public sg_buffer ringVBuf, ringIBuf;
+        public uint ringIdxCount;
+
         // Disc data (two sub-meshes: 0=black cap, 1=white cap)
         public sg_buffer discVBuf0, discIBuf0;
         public uint discIdxCount0;
@@ -70,6 +74,11 @@ public static unsafe class ReversiApp
 
     // Per-cell rotation angle for disc rendering (0=white-up, π=black-up)
     static float[] _discAngles = new float[64];
+
+    // Highlight the most-recently placed disc for 1.2 seconds
+    static int   _placedHighlightCell    = -1;
+    static float _placedHighlightTimer   =  0f;
+    static byte  _showPlacedHighlight    =  1;  // 1 = enabled
 
     // -----------------------------------------------------------------------
     // Vertex helper: position + normal (24 bytes)
@@ -108,6 +117,7 @@ public static unsafe class ReversiApp
         BuildBoardMesh();
         BuildFrameMesh();
         BuildMarkerMesh();
+        BuildRingMesh();
 
         // Pipelines
         CreateBoardPipeline();
@@ -133,6 +143,14 @@ public static unsafe class ReversiApp
 
         // Poll AI result and update flip animations
         _game.PollAIResult();
+
+        // Track newly placed disc for highlight
+        if (_game.LastPlacedCell >= 0 && _game.LastPlacedCell != _placedHighlightCell)
+        {
+            _placedHighlightCell  = _game.LastPlacedCell;
+            _placedHighlightTimer = 1.2f;
+        }
+        if (_placedHighlightTimer > 0f) _placedHighlightTimer -= dt;
 
         // Sync disc angles every frame so AI moves and resets are always reflected
         SyncDiscAngles();
@@ -195,6 +213,10 @@ public static unsafe class ReversiApp
         // Discs
         if (S.discLoaded)
             DrawDiscs();
+
+        // Highlight the last-placed disc
+        if (S.discLoaded && _showPlacedHighlight != 0 && _placedHighlightTimer > 0f)
+            DrawPlacedHighlight();
 
         // Frame border
         DrawBoardFrame();
@@ -480,6 +502,40 @@ public static unsafe class ReversiApp
     }
 
     // =======================================================================
+    // Ring mesh — flat annulus at origin (y=0) used for the last-placed highlight
+    // =======================================================================
+    static void BuildRingMesh()
+    {
+        const int N    = 48;         // segments
+        const float IR = 0.30f;      // inner radius
+        const float OR = 0.44f;      // outer radius — matches disc edge
+        const float Y  = 0f;
+
+        var verts  = new float[N * 2 * 6];   // N outer + N inner, each (px,py,pz,nx,ny,nz)
+        var idx    = new ushort[N * 6];       // 2 tris per segment
+        for (int i = 0; i < N; i++)
+        {
+            float a = 2f * MathF.PI * i / N;
+            float c = MathF.Cos(a), s = MathF.Sin(a);
+            int vi = i * 12;
+            // outer vertex
+            verts[vi+0]=c*OR; verts[vi+1]=Y; verts[vi+2]=s*OR;
+            verts[vi+3]=0; verts[vi+4]=1; verts[vi+5]=0;
+            // inner vertex
+            verts[vi+6]=c*IR; verts[vi+7]=Y; verts[vi+8]=s*IR;
+            verts[vi+9]=0; verts[vi+10]=1; verts[vi+11]=0;
+
+            int ii = i * 6;
+            int o0 = (ushort)(i * 2),     i0 = (ushort)(i * 2 + 1);
+            int o1 = (ushort)(((i+1)%N)*2), i1 = (ushort)(((i+1)%N)*2+1);
+            idx[ii+0]=(ushort)o0; idx[ii+1]=(ushort)o1; idx[ii+2]=(ushort)i0;
+            idx[ii+3]=(ushort)i0; idx[ii+4]=(ushort)o1; idx[ii+5]=(ushort)i1;
+        }
+        S.ringVBuf    = sg_make_buffer(new sg_buffer_desc { data = SG_RANGE(verts), label = "ring-v" });
+        S.ringIBuf    = sg_make_buffer(new sg_buffer_desc { usage = new sg_buffer_usage { index_buffer=true }, data = SG_RANGE(idx), label = "ring-i" });
+        S.ringIdxCount = (uint)(N * 6);
+    }
+
     // Marker mesh – small flat diamond at origin (y=0.005)
     // =======================================================================
     static void BuildMarkerMesh()
@@ -625,6 +681,45 @@ public static unsafe class ReversiApp
         }
     }
 
+    /// <summary>Draw a pulsing hollow ring above the most recently placed disc.</summary>
+    static void DrawPlacedHighlight()
+    {
+        if (_placedHighlightCell < 0) return;
+
+        // Fade out smoothly over the 1.2 s lifetime; also do a single gentle pulse
+        float t      = _placedHighlightTimer / 1.2f;          // 1 → 0
+        float pulse  = 0.7f + 0.3f * MathF.Sin(t * MathF.PI * 2f);  // one pulse cycle
+        float alpha  = t * pulse;                              // overall brightness
+
+        int   col = _placedHighlightCell % 8;
+        int   row = _placedHighlightCell / 8;
+        float cx  = col - 3.5f;
+        float cz  = row - 3.5f;
+
+        const float discH = 0.13f;
+        float yRing = discH * 2f + 0.012f;  // just above top face of disc
+
+        sg_apply_pipeline(S.boardPip);
+        var bind = default(sg_bindings);
+        bind.vertex_buffers[0] = S.ringVBuf;
+        bind.index_buffer      = S.ringIBuf;
+        sg_apply_bindings(bind);
+
+        var fsP = default(board_fs_params_t);
+        fsP.light_pos   = _lightPos;
+        fsP.light_color = new Vector3(1f, 1f, 0.95f);
+        fsP.base_color  = new Vector3(alpha, alpha * 0.55f, 0f);  // orange, fades out
+        fsP.view_pos    = _cameraPos;
+
+        var trans = Matrix4x4.CreateTranslation(cx, yRing, cz);
+        var vsP = default(board_vs_params_t);
+        vsP.mvp   = trans * VP;
+        vsP.model = trans;
+        sg_apply_uniforms(UB_board_vs_params, SG_RANGE<board_vs_params_t>(ref vsP));
+        sg_apply_uniforms(UB_board_fs_params, SG_RANGE<board_fs_params_t>(ref fsP));
+        sg_draw(0, S.ringIdxCount, 1);
+    }
+
     /// <summary>Draw all discs currently on the board.</summary>
     static void DrawDiscs()
     {
@@ -741,6 +836,8 @@ public static unsafe class ReversiApp
     static void StartNewGame()
     {
         _game.Reset();
+        _placedHighlightCell  = -1;
+        _placedHighlightTimer =  0f;
         SyncDiscAngles();
         _validMoves.Clear();
         // If human plays White, AI (Black) moves first
@@ -840,6 +937,8 @@ public static unsafe class ReversiApp
         int depth = _game.AiDepth;
         igSliderInt("AI depth", ref depth, 1, 10, "%d", 0);
         _game.AiDepth = depth;
+
+        igCheckbox("Show last-move marker", ref _showPlacedHighlight);
 
         byte playWhite = _game.PlayerIsBlack ? (byte)0 : (byte)1;
         if (igCheckbox("Play as White (AI first)", ref playWhite))
