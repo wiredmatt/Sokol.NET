@@ -960,6 +960,20 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-Reversi",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/Reversi"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-Reversi-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/Reversi"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "Create New Example",
 			"type": "shell",
 			"command": "dotnet",
@@ -1043,6 +1057,7 @@
 			"type": "pickString",
 			"description": "Select an example",
 			"options": [
+				"Reversi",
 				"camera_hardware",
 				"sokol_gp_sdf",
 				"sokol_gp_primitives",
@@ -1102,6 +1117,7 @@
 			"type": "pickString",
 			"description": "Select an example to build",
 			"options": [
+				"examples/Reversi",
 				"examples/camera_hardware",
 				"examples/sokol_gp_sdf",
 				"examples/sokol_gp_primitives",
@@ -1195,6 +1211,7 @@
 			"type": "pickString",
 			"description": "⚠️ WARNING: Select an example to PERMANENTLY DELETE",
 			"options": [
+				"Reversi",
 				"camera_hardware",
 				"sokol_gp_sdf",
 				"sokol_gp_primitives",
