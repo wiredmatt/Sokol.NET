@@ -141,10 +141,15 @@ namespace Reversi
             Phase = GamePhase.AIThinking;
             CellState ai   = PlayerIsBlack ? CellState.White : CellState.Black;
             var board = GetBoard(ai);
+#if WEB
+            _pendingPlaceCell = ReversiAI.GetMove(board, AiDepth);
+#else
             ReversiAI.GetMoveAsync(board, AiDepth, (bestIndex) =>
             {
                 _pendingPlaceCell = bestIndex;
             });
+#endif
+
         }
 
         /// <summary>Call each frame to poll for completed async AI result.</summary>

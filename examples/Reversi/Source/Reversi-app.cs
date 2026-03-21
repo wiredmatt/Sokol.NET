@@ -219,6 +219,14 @@ public static unsafe class ReversiApp
                     _mouseClicked = true;
                 }
                 break;
+            case sapp_event_type.SAPP_EVENTTYPE_TOUCHES_ENDED:
+                if (e->num_touches > 0)
+                {
+                    _mouseX = e->touches[0].pos_x;
+                    _mouseY = e->touches[0].pos_y;
+                    _mouseClicked = true;
+                }
+                break;
             case sapp_event_type.SAPP_EVENTTYPE_RESIZED:
                 UpdateCameraMatrices();
                 break;
@@ -744,9 +752,9 @@ public static unsafe class ReversiApp
     // =======================================================================
     static void DrawImGui()
     {
-        igSetNextWindowPos(new Vector2(10, 10), ImGuiCond.Always, Vector2.Zero);
+        igSetNextWindowPos(new Vector2(5, 5), ImGuiCond.Once, Vector2.Zero);
         igSetNextWindowSize(new Vector2(220, 0), ImGuiCond.Always);
-        igBegin("Reversi", ref _uiOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse);
+        igBegin("Reversi", ref _uiOpen, ImGuiWindowFlags.NoResize );
 
         string humanColor = _game.PlayerIsBlack ? "Black" : "White";
         string aiColor    = _game.PlayerIsBlack ? "White" : "Black";
@@ -774,7 +782,7 @@ public static unsafe class ReversiApp
         igSeparator();
 
         int depth = _game.AiDepth;
-        igSliderInt("AI depth", ref depth, 1, 8, "%d", 0);
+        igSliderInt("AI depth", ref depth, 1, 10, "%d", 0);
         _game.AiDepth = depth;
 
         byte playWhite = _game.PlayerIsBlack ? (byte)0 : (byte)1;
