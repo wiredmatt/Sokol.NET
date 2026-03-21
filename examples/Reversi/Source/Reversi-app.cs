@@ -112,9 +112,7 @@ public static unsafe class ReversiApp
         GenerateDiscMeshes();
 
         // Game init
-        _game.Reset();
-        SyncDiscAngles();
-        _validMoves = _game.GetValidMoves(CellState.Black);
+        StartNewGame();
     }
 
     // -----------------------------------------------------------------------
@@ -682,6 +680,16 @@ public static unsafe class ReversiApp
     // =======================================================================
 
     /// <summary>Sync _discAngles[] to the current Cells[] state (no animation).</summary>
+    static void StartNewGame()
+    {
+        _game.Reset();
+        SyncDiscAngles();
+        _validMoves.Clear();
+        // If human plays White, AI (Black) moves first
+        if (!_game.PlayerIsBlack)
+            _game.RequestAIMove();
+    }
+
     static void SyncDiscAngles()
     {
         for (int i = 0; i < 64; i++)
@@ -740,8 +748,10 @@ public static unsafe class ReversiApp
         igSetNextWindowSize(new Vector2(220, 0), ImGuiCond.Always);
         igBegin("Reversi", ref _uiOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse);
 
-        igText($"Black (You): {_game.BlackScore}");
-        igText($"White (AI):  {_game.WhiteScore}");
+        string humanColor = _game.PlayerIsBlack ? "Black" : "White";
+        string aiColor    = _game.PlayerIsBlack ? "White" : "Black";
+        igText($"{humanColor} (You): {(_game.PlayerIsBlack ? _game.BlackScore : _game.WhiteScore)}");
+        igText($"{aiColor} (AI):  {(_game.PlayerIsBlack ? _game.WhiteScore : _game.BlackScore)}");
         igSeparator();
 
         string phaseStr = _game.Phase switch
@@ -767,12 +777,15 @@ public static unsafe class ReversiApp
         igSliderInt("AI depth", ref depth, 1, 8, "%d", 0);
         _game.AiDepth = depth;
 
-        if (igButton("New Game", new Vector2(-1, 0)))
+        byte playWhite = _game.PlayerIsBlack ? (byte)0 : (byte)1;
+        if (igCheckbox("Play as White (AI first)", ref playWhite))
         {
-            _game.Reset();
-            SyncDiscAngles();
-            _validMoves = _game.GetValidMoves(CellState.Black);
+            _game.PlayerIsBlack = (playWhite == 0);
+            StartNewGame();
         }
+
+        if (igButton("New Game", new Vector2(-1, 0)))
+            StartNewGame();
 
         if (_game.Phase != GamePhase.AIThinking && _game.Phase != GamePhase.AnimatingFlip)
         {
