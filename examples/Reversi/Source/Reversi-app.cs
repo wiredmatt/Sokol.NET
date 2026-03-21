@@ -131,6 +131,9 @@ public static unsafe class ReversiApp
         // Poll AI result and update flip animations
         _game.PollAIResult();
 
+        // Sync disc angles every frame so AI moves and resets are always reflected
+        SyncDiscAngles();
+
         // Update flip animations
         UpdateAnimations(dt);
 

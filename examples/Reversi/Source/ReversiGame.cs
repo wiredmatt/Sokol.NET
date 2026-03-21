@@ -52,6 +52,9 @@ namespace Reversi
         // HistoryStack for Undo
         private Stack<CellState[]> _history = new();
 
+        // Which side most recently completed a TryApplyMove (for animation callback)
+        private CellState _lastMovedSide = CellState.Black;
+
         // -------------------------------------------------------------------
         // Construction / reset
         // -------------------------------------------------------------------
@@ -125,6 +128,7 @@ namespace Reversi
                 StartFlipAnimation(fi, side);
 
             UpdateScore();
+            _lastMovedSide = side;
             Phase = GamePhase.AnimatingFlip;
             return true;
         }
@@ -184,10 +188,7 @@ namespace Reversi
 
             if (!anyRunning && Phase == GamePhase.AnimatingFlip)
             {
-                // Determine whose turn was just completed
-                // We figure this out from which side just placed
-                CellState justPlayed = PlayerIsBlack ? CellState.Black : CellState.White;
-                AfterMoveTransition(justPlayed);
+                AfterMoveTransition(_lastMovedSide);
             }
         }
 
