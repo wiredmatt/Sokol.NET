@@ -14,6 +14,7 @@ using static Sokol.SG.sg_cull_mode;
 using static Sokol.SG.sg_compare_func;
 using static Sokol.Utils;
 using static Sokol.SImgui;
+using static Sokol.SDebugText;
 using static Imgui.ImguiNative;
 using static Imgui.ImGuiHelpers;
 using static Sokol.SLog;
@@ -89,6 +90,10 @@ public static unsafe class ReversiApp
         });
 
         simgui_setup(new simgui_desc_t { logger = { func = &slog_func } });
+
+        var sdtxDesc = new sdtx_desc_t();
+        sdtxDesc.fonts[0] = sdtx_font_kc854();
+        sdtx_setup(sdtxDesc);
         FileSystem.Instance.Initialize();
 
         // Pass action – dark background
@@ -174,6 +179,9 @@ public static unsafe class ReversiApp
         });
         DrawImGui();
 
+        // Prepare game-over sdtx text (must be before sg_begin_pass)
+        PrepareGameOverSdtx();
+
         // -- 3-D Render
         sg_begin_pass(new sg_pass { action = S.passAction, swapchain = sglue_swapchain() });
 
@@ -192,6 +200,7 @@ public static unsafe class ReversiApp
         DrawBoardFrame();
 
         simgui_render();
+        sdtx_draw();
         sg_end_pass();
         sg_commit();
     }
@@ -240,6 +249,7 @@ public static unsafe class ReversiApp
     static void Cleanup()
     {
         simgui_shutdown();
+        sdtx_shutdown();
         FileSystem.Instance.Shutdown();
         sg_shutdown();
         if (Debugger.IsAttached) Environment.Exit(0);
@@ -688,6 +698,46 @@ public static unsafe class ReversiApp
     // =======================================================================
 
     /// <summary>Sync _discAngles[] to the current Cells[] state (no animation).</summary>
+    // =======================================================================
+    // Game-over big text (sokol_debugtext)
+    // =======================================================================
+    static void PrepareGameOverSdtx()
+    {
+        if (_game.Phase != GamePhase.GameOver) return;
+
+        float w = sapp_widthf(), h = sapp_heightf();
+
+        bool isDraw   = _game.BlackScore == _game.WhiteScore;
+        bool humanWon = !isDraw && ((_game.PlayerIsBlack  && _game.BlackScore > _game.WhiteScore)
+                                 || (!_game.PlayerIsBlack && _game.WhiteScore > _game.BlackScore));
+
+        string line1 = isDraw ? "D R A W" : (humanWon ? "YOU WIN!" : "AI WINS!");
+        int humanScore = _game.PlayerIsBlack ? _game.BlackScore : _game.WhiteScore;
+        int aiScore    = _game.PlayerIsBlack ? _game.WhiteScore : _game.BlackScore;
+        string line2   = $"You: {humanScore}   AI: {aiScore}";
+
+        // Scale so each character is ~1/10th of screen height, capped for large displays
+        float scale1 = MathF.Max(2f, MathF.Min(w / 100f, h / 70f));
+        float cols1  = (w / scale1) / 8f;
+        float rows1  = (h / scale1) / 8f;
+
+        sdtx_font(0);
+        sdtx_canvas(w / scale1, h / scale1);
+        sdtx_color3b(255, 210, 30);   // gold
+        sdtx_origin(MathF.Max(0f, (cols1 - line1.Length) * 0.5f), rows1 * 0.5f - 1.1f);
+        sdtx_puts(line1);
+
+        // Score line – 60% of main scale so it's visibly smaller
+        float scale2 = MathF.Max(1.5f, scale1 * 0.6f);
+        float cols2  = (w / scale2) / 8f;
+        float rows2  = (h / scale2) / 8f;
+
+        sdtx_canvas(w / scale2, h / scale2);
+        sdtx_color3b(210, 210, 210);  // light grey
+        sdtx_origin(MathF.Max(0f, (cols2 - line2.Length) * 0.5f), rows2 * 0.5f + 1.0f);
+        sdtx_puts(line2);
+    }
+
     static void StartNewGame()
     {
         _game.Reset();
@@ -774,9 +824,15 @@ public static unsafe class ReversiApp
 
         if (_game.Phase == GamePhase.GameOver)
         {
-            string winner = _game.BlackScore > _game.WhiteScore ? "Black wins!" :
-                            _game.WhiteScore > _game.BlackScore ? "White wins!" : "Draw!";
-            igText($"    *** {winner} ***");
+            // Draw semi-transparent dark banner across the centre of the screen
+            float sw = sapp_widthf(), sh = sapp_heightf();
+            float bannerH = sh * 0.28f;
+            float bannerY = (sh - bannerH) * 0.5f;
+            var dl = igGetForegroundDrawList_ViewportPtr(igGetMainViewport());
+            ImDrawList_AddRectFilled(dl,
+                new Vector2(0f, bannerY),
+                new Vector2(sw, bannerY + bannerH),
+                0xCC000000u, 14f, 0);
         }
 
         igSeparator();
