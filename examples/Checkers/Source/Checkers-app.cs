@@ -49,6 +49,8 @@ public static unsafe class CheckersApp
         public uint      pieceSideIdxCount;
         public sg_buffer crownVBuf, crownIBuf;
         public uint      crownIdxCount;
+        public sg_buffer labelVBuf, labelIBuf;
+        public uint      labelIdxCount;
         public bool      pieceLoaded;
 
         public sg_pass_action passAction;
@@ -70,6 +72,38 @@ public static unsafe class CheckersApp
     static Matrix4x4 _view, _proj;
     static Vector3   _cameraPos = new(0f, 11f, 7f);
     static Vector3   _lightPos  = new(3f, 14f, 8f);
+
+    // 3×5 pixel-font bitmaps for digits 0-9 (indices 0-9) and letters A-J (indices 10-19)
+    // Each int[15] is row-major: row 0 = top, col 0 = left.
+    static readonly int[][] s_fontPixels =
+    {
+        new[]{1,1,1, 1,0,1, 1,0,1, 1,0,1, 1,1,1}, // '0'
+        new[]{0,1,0, 1,1,0, 0,1,0, 0,1,0, 1,1,1}, // '1'
+        new[]{1,1,1, 0,0,1, 1,1,1, 1,0,0, 1,1,1}, // '2'
+        new[]{1,1,1, 0,0,1, 1,1,1, 0,0,1, 1,1,1}, // '3'
+        new[]{1,0,1, 1,0,1, 1,1,1, 0,0,1, 0,0,1}, // '4'
+        new[]{1,1,1, 1,0,0, 1,1,1, 0,0,1, 1,1,1}, // '5'
+        new[]{1,1,1, 1,0,0, 1,1,1, 1,0,1, 1,1,1}, // '6'
+        new[]{1,1,1, 0,0,1, 0,1,0, 0,1,0, 0,1,0}, // '7'
+        new[]{1,1,1, 1,0,1, 1,1,1, 1,0,1, 1,1,1}, // '8'
+        new[]{1,1,1, 1,0,1, 1,1,1, 0,0,1, 1,1,1}, // '9'
+        new[]{0,1,0, 1,0,1, 1,1,1, 1,0,1, 1,0,1}, // 'A'
+        new[]{1,1,0, 1,0,1, 1,1,0, 1,0,1, 1,1,0}, // 'B'
+        new[]{0,1,1, 1,0,0, 1,0,0, 1,0,0, 0,1,1}, // 'C'
+        new[]{1,1,0, 1,0,1, 1,0,1, 1,0,1, 1,1,0}, // 'D'
+        new[]{1,1,1, 1,0,0, 1,1,0, 1,0,0, 1,1,1}, // 'E'
+        new[]{1,1,1, 1,0,0, 1,1,0, 1,0,0, 1,0,0}, // 'F'
+        new[]{0,1,1, 1,0,0, 1,0,1, 1,0,1, 0,1,1}, // 'G'
+        new[]{1,0,1, 1,0,1, 1,1,1, 1,0,1, 1,0,1}, // 'H'
+        new[]{1,1,1, 0,1,0, 0,1,0, 0,1,0, 1,1,1}, // 'I'
+        new[]{0,1,1, 0,0,1, 0,0,1, 1,0,1, 0,1,0}, // 'J'
+    };
+    static int FontIdx(char ch) => ch switch
+    {
+        >= '0' and <= '9' => ch - '0',
+        >= 'A' and <= 'J' => ch - 'A' + 10,
+        _ => -1
+    };
 
     static byte      _uiOpen  = 1;
     static bool      _inConfig = true;
@@ -180,6 +214,7 @@ public static unsafe class CheckersApp
         CreatePiecePipeline();
         GeneratePieceMeshes();
         GenerateCrownMesh();
+        BuildLabelMesh();
 
         // Register callback so we can snapshot captured-piece data before the board is modified
         _game.BeforeApplyMove = SaveAnimCaptures;
@@ -610,6 +645,89 @@ public static unsafe class CheckersApp
     }
 
     // =======================================================================
+    // Board label mesh — 3×5 pixel-font glyphs on the wooden frame
+    // =======================================================================
+    static void BuildLabelMesh(int overrideSz = 0)
+    {
+        if (S.labelVBuf.id != 0) { sg_destroy_buffer(S.labelVBuf); sg_destroy_buffer(S.labelIBuf); S.labelIdxCount = 0; }
+
+        int sz = overrideSz > 0 ? overrideSz : _pendingRules.BoardSize;
+        if (sz <= 0) return;
+        float half = sz * 0.5f;
+        float sign  = _humanIsLight ? 1f : -1f;
+
+        // Glyph axes: lie flat on XZ plane.
+        // gRight = screen-right direction; gUp = toward screen top (= toward board centre)
+        var gRight = new Vector3(sign,  0f,    0f);
+        var gUp    = new Vector3(0f,    0f, -sign);
+
+        const float PIX  = 0.038f;   // half pixel box size
+        const float PIT  = 0.055f;   // pixel pitch (step between pixel centres)
+        const float LY   = 0.005f;   // world Y just above frame surface
+        const float CGAP = 0.22f;    // centre-to-centre gap between two-digit numerals
+
+        var verts = new List<float>();
+        var idxs  = new List<ushort>();
+
+        void EmitPixelQuad(float wx, float wz)
+        {
+            ushort b = (ushort)(verts.Count / 6);
+            var ctr = new Vector3(wx, LY, wz);
+            var p0  = ctr - PIX * gRight - PIX * gUp;
+            var p1  = ctr + PIX * gRight - PIX * gUp;
+            var p2  = ctr + PIX * gRight + PIX * gUp;
+            var p3  = ctr - PIX * gRight + PIX * gUp;
+            foreach (var p in new[]{ p0, p1, p2, p3 })
+                verts.AddRange(new float[]{ p.X, LY, p.Z, 0f, 1f, 0f });
+            idxs.AddRange(new ushort[]{ b,(ushort)(b+1),(ushort)(b+2), b,(ushort)(b+2),(ushort)(b+3) });
+        }
+
+        void EmitGlyph(char ch, float cx, float cz)
+        {
+            int fi = FontIdx(ch);
+            if (fi < 0) return;
+            var pxData = s_fontPixels[fi];
+            for (int r = 0; r < 5; r++)
+            for (int c = 0; c < 3; c++)
+            {
+                if (pxData[r * 3 + c] == 0) continue;
+                float hOff = (c - 1) * PIT;  // left-right offset along gRight
+                float vOff = (2 - r) * PIT;  // up-down offset along gUp
+                EmitPixelQuad(cx + hOff * gRight.X + vOff * gUp.X,
+                              cz + hOff * gRight.Z + vOff * gUp.Z);
+            }
+        }
+
+        // Column letters A-J (or A-H) on the near frame strip
+        for (int col = 0; col < sz; col++)
+            EmitGlyph((char)('A' + col), col - half + 0.5f, sign * (half + 0.25f));
+
+        // Row numbers 1-N on the left frame strip (1 at the light-pieces end)
+        for (int row = 0; row < sz; row++)
+        {
+            int  num  = sz - row;  // row=sz-1 (near light pieces) → 1, row=0 (far/dark side) → sz
+            float cx  = -sign * (half + 0.25f);
+            float cz  = row - half + 0.5f;
+            if (num < 10)
+            {
+                EmitGlyph((char)('0' + num), cx, cz);
+            }
+            else  // "10": two digits side-by-side
+            {
+                EmitGlyph('1', cx - sign * CGAP * 0.5f, cz);
+                EmitGlyph('0', cx + sign * CGAP * 0.5f, cz);
+            }
+        }
+
+        if (idxs.Count == 0) return;
+        float[]  lva = verts.ToArray();
+        ushort[] lia = idxs.ToArray();
+        S.labelVBuf     = sg_make_buffer(new sg_buffer_desc { data = SG_RANGE(lva), label = "lbl-v" });
+        S.labelIBuf     = sg_make_buffer(new sg_buffer_desc { usage = new sg_buffer_usage { index_buffer = true }, data = SG_RANGE(lia), label = "lbl-i" });
+        S.labelIdxCount = (uint)lia.Length;
+    }
+
+    // =======================================================================
     // Pipelines
     // =======================================================================
     static void CreateBoardPipeline()
@@ -797,7 +915,7 @@ public static unsafe class CheckersApp
         bool isSelected = idx >= 0 && idx == _game.SelectedPiece;
         Vector3 baseColor = (piece.Color == PieceColor.Light)
             ? new Vector3(0.90f, 0.88f, 0.82f)
-            : new Vector3(0.12f, 0.07f, 0.05f);
+            : new Vector3(0.60f, 0.08f, 0.06f);  // deep red — clear contrast vs dark board squares
 
         var trans = Matrix4x4.CreateTranslation(worldPos);
         var vsP = default(piece_vs_params_t);
@@ -845,44 +963,27 @@ public static unsafe class CheckersApp
     }
 
     // =======================================================================
-    // Board labels (column letters + row numbers via sokol_debugtext)
+    // Board labels — drawn as 3D pixel-font mesh on the wooden frame
     // =======================================================================
     static void DrawBoardLabels()
     {
-        int sz     = _game.Board.Size;
-        float half = HalfBoard();
-        int sw = sapp_width(), sh = sapp_height();
-        // sign=+1 → Light player (camera at +z); sign=-1 → Dark player (camera at -z)
-        float sign = _game.HumanIsLight ? 1f : -1f;
-
-        // canvas(sw,sh) → 1 char = 8 screen pixels
-        sdtx_canvas(sw, sh);
-        sdtx_font(0);
-        sdtx_color3b(220, 200, 160);
-
-        // Column letters along the player's near edge (bottom of screen)
-        for (int col = 0; col < sz; col++)
-        {
-            var ndc = WorldToScreen(new Vector3(col - half + 0.5f, 0f, sign * (half + 0.7f)), sw, sh);
-            if (ndc.Z > 0f && ndc.Z < 1f)
-            {
-                sdtx_pos(ndc.X / 8f - 0.5f, ndc.Y / 8f - 0.5f);
-                sdtx_putc((byte)('A' + col));
-            }
-        }
-
-        // Row numbers along the player's left edge
-        for (int row = 0; row < sz; row++)
-        {
-            var ndc = WorldToScreen(new Vector3(-sign * (half + 0.7f), 0f, row - half + 0.5f), sw, sh);
-            if (ndc.Z > 0f && ndc.Z < 1f)
-            {
-                sdtx_pos(ndc.X / 8f - 0.5f, ndc.Y / 8f - 0.5f);
-                int rowNum = row + 1;
-                if (rowNum >= 10) sdtx_putc((byte)('0' + rowNum / 10));
-                sdtx_putc((byte)('0' + rowNum % 10));
-            }
-        }
+        if (S.labelIdxCount == 0) return;
+        sg_apply_pipeline(S.boardPip);
+        var identity = Matrix4x4.Identity;
+        var vsP = default(board_vs_params_t);
+        vsP.mvp = identity * VP; vsP.model = identity;
+        var fsP = default(board_fs_params_t);
+        fsP.light_pos   = _lightPos;
+        fsP.light_color = new Vector3(1f, 1f, 0.95f);
+        fsP.base_color  = new Vector3(0.95f, 0.85f, 0.45f);  // golden label colour
+        fsP.view_pos    = _cameraPos;
+        var bind = default(sg_bindings);
+        bind.vertex_buffers[0] = S.labelVBuf;
+        bind.index_buffer      = S.labelIBuf;
+        sg_apply_bindings(bind);
+        sg_apply_uniforms(UB_board_vs_params, SG_RANGE<board_vs_params_t>(ref vsP));
+        sg_apply_uniforms(UB_board_fs_params, SG_RANGE<board_fs_params_t>(ref fsP));
+        sg_draw(0, S.labelIdxCount, 1);
     }
 
     static Vector3 WorldToScreen(Vector3 world, int sw, int sh)
@@ -995,6 +1096,7 @@ public static unsafe class CheckersApp
             _game.HumanIsLight = _humanIsLight;
             BuildBoardMesh();
             BuildFrameMesh();
+            BuildLabelMesh();
             UpdateCameraMatrices();
             _game.StartNewGame();
             _inConfig = false;
@@ -1042,6 +1144,7 @@ public static unsafe class CheckersApp
         if (igButton("New Game", new Vector2(-1, 0)))
         {
             UpdateCameraMatrices();
+            BuildLabelMesh(_game.Board.Size);
             _game.StartNewGame();
         }
 
@@ -1051,6 +1154,7 @@ public static unsafe class CheckersApp
             _humanIsLight      = (playAsDark == 0);
             _game.HumanIsLight = _humanIsLight;
             UpdateCameraMatrices();
+            BuildLabelMesh(_game.Board.Size);
             _game.StartNewGame();
         }
 
