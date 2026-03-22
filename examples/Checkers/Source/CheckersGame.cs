@@ -549,6 +549,22 @@ namespace Checkers
                 Console.WriteLine($"[MOVE] {Turn} {piece.Type} {fromLabel}->{toLabel}{caps}{path}  (MoveCount will be {MoveCount+1})");
             }
 
+            // Mid-sequence promotion: a Man that lands on its promotion row during a
+            // multi-hop capture is immediately crowned (matches ExpandCaptures behaviour).
+            if (piece.Type == PieceType.Man && move.Path.Count > 2)
+            {
+                int midPromRow = (piece.Color == PieceColor.Light) ? 0 : Board.Size - 1;
+                for (int i = 1; i < move.Path.Count - 1; i++)
+                {
+                    if (move.Path[i] / Board.Size == midPromRow)
+                    {
+                        piece = new Piece { Color = piece.Color, Type = PieceType.King };
+                        Console.WriteLine($"[PROMOTE] {piece.Color} promoted mid-sequence at {Board.CellLabel(move.Path[i])}");
+                        break;
+                    }
+                }
+            }
+
             // Move piece
             Board.Cells[move.From] = default;
             Board.Cells[move.To]   = piece;
@@ -557,7 +573,7 @@ namespace Checkers
             foreach (int cap in move.Captures)
                 Board.Cells[cap] = default;
 
-            // Promotion
+            // Promotion at final destination
             int row    = move.To / Board.Size;
             int promRow = (piece.Color == PieceColor.Light) ? 0 : Board.Size - 1;
             bool promoted = piece.Type == PieceType.Man && row == promRow;

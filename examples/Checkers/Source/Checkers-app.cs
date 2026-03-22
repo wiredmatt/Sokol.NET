@@ -117,6 +117,10 @@ public static unsafe class CheckersApp
     const  float     ANIM_HOP_DUR  = 0.35f;  // seconds per individual hop
     static PieceColor _animColor   = PieceColor.None;
     static PieceType  _animType    = PieceType.Man;
+    // _animPromotedAtSeg: first segment index where the piece should be drawn as King.
+    // -1 means it was already King at move start (crown shows throughout).
+    static int        _animPromotedAtSeg = -1;
+    static PieceType  _animOriginalType  = PieceType.Man;  // type before ApplyMove promotion
 
     // Captured-piece ghosts: one entry per capture in path order
     static int[]        _animCapIdx   = Array.Empty<int>();    // board cell index of captured piece
@@ -156,14 +160,28 @@ public static unsafe class CheckersApp
         _animating    = true;
         _animColor    = color;
         _animType     = type;
-        var fromCenter = CellCenter(from);
-        var toCenter   = CellCenter(to);
-        Console.WriteLine($"[ANIM] Start animation hops={hops} path=[{string.Join("->", System.Array.ConvertAll(_animPath, idx => _game.Board.CellLabel(idx)))}] color={color} type={type}");
+        // Detect mid-sequence promotion: piece was Man at start but is King at destination.
+        // Find the first intermediate path stop on the promotion row — crown only shows from there.
+        _animPromotedAtSeg = -1;
+        if (type == PieceType.King && _animOriginalType == PieceType.Man && _animPath.Length > 2)
+        {
+            int promRow = (color == PieceColor.Light) ? 0 : _game.Board.Size - 1;
+            for (int i = 1; i < _animPath.Length - 1; i++)
+            {
+                if (_animPath[i] / _game.Board.Size == promRow)
+                {
+                    _animPromotedAtSeg = i;  // crown visible from segment i onwards
+                    break;
+                }
+            }
+        }
+        Console.WriteLine($"[ANIM] Start animation hops={hops} path=[{string.Join("->", System.Array.ConvertAll(_animPath, idx => _game.Board.CellLabel(idx)))}] color={color} type={type} promoSeg={_animPromotedAtSeg}");
     }
 
     // Called BEFORE ApplyMove so Board.Cells still has the captured pieces.
     static void SaveAnimCaptures(CheckersMove move)
     {
+        _animOriginalType = _game.Board.Cells[move.From].Type;  // save before mid-sequence promotion
         var board   = _game.Board;
         int capCount = move.Captures.Count;
         _animCapIdx   = new int[capCount];
@@ -231,16 +249,21 @@ public static unsafe class CheckersApp
 
         if (!_inConfig)
         {
-            int prevCount = _game.MoveCount;
-            _game.PollAIResult();
-            // Animate the AI's move when it arrives
-            if (_game.MoveCount != prevCount && _game.LastMove.HasValue && !_animating)
+            // Only apply AI result when no animation is playing — prevents the AI move from
+            // overwriting ghost-capture arrays or teleporting pieces mid-animation.
+            // The AI can still calculate in the background while the human's animation plays.
+            if (!_animating)
             {
-                var m = _game.LastMove.Value;
-                var p = _game.Board.Cells[m.To];
-                if (!p.IsEmpty) StartMoveAnimation(m.From, m.To, m.Path, p.Color, p.Type);
+                int prevCount = _game.MoveCount;
+                _game.PollAIResult();
+                if (_game.MoveCount != prevCount && _game.LastMove.HasValue)
+                {
+                    var m = _game.LastMove.Value;
+                    var p = _game.Board.Cells[m.To];
+                    if (!p.IsEmpty) StartMoveAnimation(m.From, m.To, m.Path, p.Color, p.Type);
+                }
             }
-            // AI delay: wait 0.5s after human move before starting AI
+            // AI delay: runs even during animation so the AI starts calculating in the background.
             if (_game.AITurnPending)
             {
                 _aiDelayTimer += dt;
@@ -906,7 +929,10 @@ public static unsafe class CheckersApp
             var   fromPos    = CellCenter(_animPath[seg])     + new Vector3(0, pieceY, 0);
             var   toPos      = CellCenter(_animPath[seg + 1]) + new Vector3(0, pieceY, 0);
             var   pos        = Vector3.Lerp(fromPos, toPos, smooth) + new Vector3(0, arc, 0);
-            DrawPieceAt(-1, new Piece{ Color=_animColor, Type=_animType }, pos);
+            // Use Man type until the animation passes the promotion square, then switch to King.
+            var drawType = (_animPromotedAtSeg >= 0 && seg < _animPromotedAtSeg)
+                ? PieceType.Man : _animType;
+            DrawPieceAt(-1, new Piece{ Color=_animColor, Type=drawType }, pos);
         }
     }
 
