@@ -335,6 +335,9 @@ public static unsafe class CheckersApp
     {
         float w = MathF.Max(1f, sapp_widthf());
         float h = MathF.Max(1f, sapp_heightf());
+        // Rotate 180° when human plays Dark so their pieces are always near the camera
+        float camZ = _game.HumanIsLight ? 7f : -7f;
+        _cameraPos = new Vector3(0f, 11f, camZ);
         _proj = Matrix4x4.CreatePerspectiveFieldOfView(
             50f * MathF.PI / 180f, w / h, 0.1f, 100f);
         _view = Matrix4x4.CreateLookAt(_cameraPos, Vector3.Zero, Vector3.UnitY);
@@ -846,19 +849,21 @@ public static unsafe class CheckersApp
     // =======================================================================
     static void DrawBoardLabels()
     {
-        int sz    = _game.Board.Size;
+        int sz     = _game.Board.Size;
         float half = HalfBoard();
         int sw = sapp_width(), sh = sapp_height();
+        // sign=+1 → Light player (camera at +z); sign=-1 → Dark player (camera at -z)
+        float sign = _game.HumanIsLight ? 1f : -1f;
 
         // canvas(sw,sh) → 1 char = 8 screen pixels
         sdtx_canvas(sw, sh);
         sdtx_font(0);
         sdtx_color3b(220, 200, 160);
 
-        // Column letters (A–H/J) along the near edge (z = half + 0.7) → appears at screen bottom
+        // Column letters along the player's near edge (bottom of screen)
         for (int col = 0; col < sz; col++)
         {
-            var ndc = WorldToScreen(new Vector3(col - half + 0.5f, 0f, half + 0.7f), sw, sh);
+            var ndc = WorldToScreen(new Vector3(col - half + 0.5f, 0f, sign * (half + 0.7f)), sw, sh);
             if (ndc.Z > 0f && ndc.Z < 1f)
             {
                 sdtx_pos(ndc.X / 8f - 0.5f, ndc.Y / 8f - 0.5f);
@@ -866,12 +871,10 @@ public static unsafe class CheckersApp
             }
         }
 
-        // Row numbers along the left edge (x = -(half + 0.7))
-        // Row 0 = far from camera (top of screen) = number 1 visually (conventional top-to-bottom if desired)
-        // We label row 0 as "1", row 7 as "8" etc. (displayed top to bottom on screen)
+        // Row numbers along the player's left edge
         for (int row = 0; row < sz; row++)
         {
-            var ndc = WorldToScreen(new Vector3(-(half + 0.7f), 0f, row - half + 0.5f), sw, sh);
+            var ndc = WorldToScreen(new Vector3(-sign * (half + 0.7f), 0f, row - half + 0.5f), sw, sh);
             if (ndc.Z > 0f && ndc.Z < 1f)
             {
                 sdtx_pos(ndc.X / 8f - 0.5f, ndc.Y / 8f - 0.5f);
@@ -1037,7 +1040,20 @@ public static unsafe class CheckersApp
         _game.AiDepth = depth;
 
         if (igButton("New Game", new Vector2(-1, 0)))
+        {
+            UpdateCameraMatrices();
             _game.StartNewGame();
+        }
+
+        byte playAsDark = _humanIsLight ? (byte)0 : (byte)1;
+        if (igCheckbox("Play as Dark (AI first)", ref playAsDark))
+        {
+            _humanIsLight      = (playAsDark == 0);
+            _game.HumanIsLight = _humanIsLight;
+            UpdateCameraMatrices();
+            _game.StartNewGame();
+        }
+
         if (igButton("Configure...", new Vector2(-1, 0)))
             _inConfig = true;
         if (_game.Phase == GamePhase.PlayerTurn)

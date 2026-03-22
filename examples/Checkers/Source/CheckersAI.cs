@@ -58,19 +58,29 @@ namespace Checkers
             int bestScore = int.MinValue;
             CheckersMove? bestMove = null;
 
+#if !WEB
+            // Evaluate root moves in parallel on desktop/mobile for faster response
+            object sync = new object();
+            Parallel.ForEach(moves, move =>
+            {
+                var nb = ApplyMoveToBoard(board, move);
+                int score = AlphaBeta(nb, Opponent(color), color, rules, depth - 1,
+                                      int.MinValue / 2, int.MaxValue / 2);
+                lock (sync)
+                {
+                    if (score > bestScore) { bestScore = score; bestMove = move; }
+                }
+            });
+#else
             foreach (var move in moves)
             {
                 var nb = ApplyMoveToBoard(board, move);
                 // AlphaBeta returns score from aiColor's perspective — no negation needed.
-                // (Negating would make the AI maximise its own LOSS, picking worst moves.)
                 int score = AlphaBeta(nb, Opponent(color), color, rules, depth - 1,
                                       int.MinValue / 2, int.MaxValue / 2);
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestMove  = move;
-                }
+                if (score > bestScore) { bestScore = score; bestMove = move; }
             }
+#endif
             return bestMove;
         }
 
