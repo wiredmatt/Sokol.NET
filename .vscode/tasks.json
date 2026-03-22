@@ -988,6 +988,20 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-Checkers",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/Checkers"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-Checkers-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/Checkers"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "Create New Example",
 			"type": "shell",
 			"command": "dotnet",
@@ -1071,6 +1085,7 @@
 			"type": "pickString",
 			"description": "Select an example",
 			"options": [
+				"Checkers",
 				"ConnectFour",
 				"Reversi",
 				"camera_hardware",
@@ -1132,6 +1147,7 @@
 			"type": "pickString",
 			"description": "Select an example to build",
 			"options": [
+				"examples/Checkers",
 				"examples/ConnectFour",
 				"examples/Reversi",
 				"examples/camera_hardware",
@@ -1227,6 +1243,7 @@
 			"type": "pickString",
 			"description": "⚠️ WARNING: Select an example to PERMANENTLY DELETE",
 			"options": [
+				"Checkers",
 				"ConnectFour",
 				"Reversi",
 				"camera_hardware",
