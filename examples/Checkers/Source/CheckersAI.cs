@@ -158,6 +158,11 @@ namespace Checkers
 
             int aiBackGuards = 0, oppBackGuards = 0;
 
+            // Collected during main loop for endgame distance evaluation.
+            int  aiCount = 0, oppCount = 0;
+            var  aiKingPos = new System.Collections.Generic.List<(int r, int c)>();
+            var  oppPos    = new System.Collections.Generic.List<(int r, int c)>();
+
             for (int i = 0; i < sz * sz; i++)
             {
                 var p = board.Cells[i];
@@ -194,14 +199,19 @@ namespace Checkers
                 if (p.Color == aiColor)
                 {
                     score += pval;
+                    aiCount++;
                     if (p.Type == PieceType.Man && row == aiHomeRow)
                         aiBackGuards++;
+                    if (p.Type == PieceType.King)
+                        aiKingPos.Add((row, col));
                 }
                 else
                 {
                     score -= pval;
+                    oppCount++;
                     if (p.Type == PieceType.Man && row == oppHomeRow)
                         oppBackGuards++;
+                    oppPos.Add((row, col));
                 }
             }
 
@@ -214,6 +224,28 @@ namespace Checkers
             int aiMobility  = MoveGenerator.GetAllMoves(board, aiColor,  rules).Count;
             int oppMobility = MoveGenerator.GetAllMoves(board, oppColor, rules).Count;
             score += (aiMobility - oppMobility) * MOBILITY_BONUS;
+
+            // Endgame king-chase: when few pieces remain the standard positional tables
+            // can't distinguish "approaching enemy" from "retreating", causing kings to
+            // oscillate aimlessly. Drive each AI king toward its nearest opponent using
+            // Chebyshev distance so the AI closes in rather than drifting.
+            // Mirrors Draughts-AI _sum_of_dist / _farthest_piece endgame evaluation.
+            int totalPieces = aiCount + oppCount;
+            if (totalPieces <= 8 && aiKingPos.Count > 0 && oppPos.Count > 0)
+            {
+                const int ENDGAME_CHASE = 6; // points per proximity step
+                foreach (var (kr, kc) in aiKingPos)
+                {
+                    int minDist = sz * 2;
+                    foreach (var (or, oc) in oppPos)
+                    {
+                        int d = Math.Max(Math.Abs(kr - or), Math.Abs(kc - oc));
+                        if (d < minDist) minDist = d;
+                    }
+                    // Closer = higher score
+                    score += (sz - minDist) * ENDGAME_CHASE;
+                }
+            }
 
             return score;
         }
