@@ -974,6 +974,20 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-ConnectFour",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/ConnectFour"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-ConnectFour-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/ConnectFour"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "Create New Example",
 			"type": "shell",
 			"command": "dotnet",
@@ -1057,6 +1071,7 @@
 			"type": "pickString",
 			"description": "Select an example",
 			"options": [
+				"ConnectFour",
 				"Reversi",
 				"camera_hardware",
 				"sokol_gp_sdf",
@@ -1117,6 +1132,7 @@
 			"type": "pickString",
 			"description": "Select an example to build",
 			"options": [
+				"examples/ConnectFour",
 				"examples/Reversi",
 				"examples/camera_hardware",
 				"examples/sokol_gp_sdf",
@@ -1211,6 +1227,7 @@
 			"type": "pickString",
 			"description": "⚠️ WARNING: Select an example to PERMANENTLY DELETE",
 			"options": [
+				"ConnectFour",
 				"Reversi",
 				"camera_hardware",
 				"sokol_gp_sdf",

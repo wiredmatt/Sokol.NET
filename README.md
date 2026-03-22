@@ -160,6 +160,7 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 
 ### Games
 - **[Reversi](examples/Reversi)** - Playable Othello/Reversi board game with 3D discs, animated flips, touch + mouse input, adjustable AI depth, and cross-platform support (Desktop, Web, iOS, Android)
+- **[ConnectFour](examples/ConnectFour)** - Playable Connect 4 game with 3D disc drop animation, ghost preview, pulsing win highlights, alpha-beta AI with parallel search, and cross-platform support (Desktop, Web, iOS, Android)
 
 ## 📜 Spine License Notice
 
