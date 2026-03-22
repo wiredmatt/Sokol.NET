@@ -8,39 +8,43 @@ namespace Checkers
 {
     public static class CheckersAI
     {
-        // Position value tables (8×8 and 10×10)
-        // Higher value = more desirable square
-        private static readonly int[] POS_WEIGHTS_8 =
+        // Positional tables for KINGS only (symmetric — kings value center control).
+        // Center squares are highest so kings gravitate toward active positions.
+        private static readonly int[] KING_POS_8 =
         {
-             0,  4,  0,  4,  0,  4,  0,  4,
-             4,  0,  3,  0,  3,  0,  3,  0,
-             0,  3,  0,  2,  0,  2,  0,  2,
-             2,  0,  2,  0,  1,  0,  1,  0,
-             0,  1,  0,  1,  0,  2,  0,  2,
-             2,  0,  2,  0,  2,  0,  3,  0,
-             0,  3,  0,  3,  0,  3,  0,  4,
-             4,  0,  4,  0,  4,  0,  4,  0,
+             0,  2,  0,  2,  0,  2,  0,  2,
+             2,  0,  3,  0,  3,  0,  3,  0,
+             0,  3,  0,  4,  0,  4,  0,  3,
+             3,  0,  4,  0,  5,  0,  4,  0,
+             0,  4,  0,  5,  0,  4,  0,  3,
+             3,  0,  4,  0,  4,  0,  3,  0,
+             0,  3,  0,  3,  0,  3,  0,  2,
+             2,  0,  2,  0,  2,  0,  2,  0,
         };
 
-        private static readonly int[] POS_WEIGHTS_10 =
+        private static readonly int[] KING_POS_10 =
         {
-             0,  4,  0,  4,  0,  4,  0,  4,  0,  4,
-             4,  0,  3,  0,  3,  0,  3,  0,  3,  0,
-             0,  3,  0,  2,  0,  2,  0,  2,  0,  2,
-             2,  0,  2,  0,  1,  0,  1,  0,  1,  0,
-             0,  1,  0,  1,  0,  1,  0,  1,  0,  1,
-             1,  0,  1,  0,  1,  0,  1,  0,  1,  0,
-             0,  1,  0,  1,  0,  1,  0,  2,  0,  2,
-             2,  0,  2,  0,  2,  0,  2,  0,  3,  0,
-             0,  3,  0,  3,  0,  3,  0,  3,  0,  4,
-             4,  0,  4,  0,  4,  0,  4,  0,  4,  0,
+             0,  2,  0,  2,  0,  2,  0,  2,  0,  2,
+             2,  0,  3,  0,  3,  0,  3,  0,  3,  0,
+             0,  3,  0,  4,  0,  4,  0,  4,  0,  3,
+             3,  0,  4,  0,  5,  0,  5,  0,  4,  0,
+             0,  4,  0,  5,  0,  5,  0,  5,  0,  4,
+             4,  0,  5,  0,  5,  0,  5,  0,  4,  0,
+             0,  4,  0,  5,  0,  5,  0,  4,  0,  3,
+             3,  0,  4,  0,  4,  0,  4,  0,  3,  0,
+             0,  3,  0,  3,  0,  3,  0,  3,  0,  2,
+             2,  0,  2,  0,  2,  0,  2,  0,  2,  0,
         };
 
-        private const int PIECE_VALUE    = 100;
-        private const int KING_VALUE     = 280;
-        private const int WIN_SCORE      = 10000;
-        private const int MOBILITY_BONUS = 3;    // per legal move available
-        private const int BACK_RANK_BONUS = 15;  // per piece still on own back rank (guard king-row)
+        private const int PIECE_VALUE      = 100;
+        private const int KING_VALUE       = 280;
+        private const int WIN_SCORE        = 10000;
+        private const int MOBILITY_BONUS   = 3;   // per extra legal move vs opponent
+        private const int BACK_RANK_BONUS  = 10;  // per guard on own home row (capped at 2)
+        // Half-court bonus: once a piece crosses the midline it is in enemy territory
+        // and worth significantly more — mirrors Draughts-AI _piece_and_board2val (7 vs 5, +40%).
+        private const int ENEMY_HALF_BONUS = 40;
+        private const int MAN_ADV_SCALE    = 4;   // small ramp within each half (tiebreaker)
 
         /// <summary>
         /// Return the best move for the given color on the given board.
@@ -140,36 +144,73 @@ namespace Checkers
 
         static int Evaluate(CheckersBoard board, PieceColor aiColor, GameRules rules)
         {
-            var weights    = board.Size == 8 ? POS_WEIGHTS_8 : POS_WEIGHTS_10;
-            var oppColor   = Opponent(aiColor);
-            int score      = 0;
-            int sz         = board.Size;
+            var kingWeights = board.Size == 8 ? KING_POS_8 : KING_POS_10;
+            var oppColor    = Opponent(aiColor);
+            int score       = 0;
+            int sz          = board.Size;
+            int mid         = sz / 2;  // row index of midline (4 for 8x8)
 
-            // Back rank rows for each color
-            int aiBackRow  = (aiColor  == PieceColor.Light) ? 0        : sz - 1;
-            int oppBackRow = (oppColor == PieceColor.Light) ? 0        : sz - 1;
+            // Home row: the very last row for each color (where pieces haven't yet moved).
+            // Light promotes at row 0, starts + home = row sz-1.
+            // Dark  promotes at row sz-1, starts + home = row 0.
+            int aiHomeRow  = (aiColor  == PieceColor.Light) ? sz - 1 : 0;
+            int oppHomeRow = (oppColor == PieceColor.Light) ? sz - 1 : 0;
+
+            int aiBackGuards = 0, oppBackGuards = 0;
 
             for (int i = 0; i < sz * sz; i++)
             {
                 var p = board.Cells[i];
                 if (p.IsEmpty) continue;
-                int pval = (p.Type == PieceType.King ? KING_VALUE : PIECE_VALUE) + weights[i];
+                int row = i / sz;
+                int col = i % sz;
+
+                int pval;
+                if (p.Type == PieceType.King)
+                {
+                    // Kings: high fixed value + center-biased positional bonus.
+                    pval = KING_VALUE + kingWeights[i];
+                }
+                else
+                {
+                    // Men: directional advancement + big half-court bonus.
+                    //
+                    // Advancement: 0 at home row, (sz-1) at promotion row.
+                    int adv = (p.Color == PieceColor.Light) ? (sz - 1 - row) : row;
+
+                    // Half-court bonus (Draughts-AI _piece_and_board2val): once a piece
+                    // crosses the midline it is in enemy territory and is worth ~40% more.
+                    // This also means opponent pieces deep in OUR half draw a bigger penalty,
+                    // since their pval is higher and we subtract it.
+                    bool inEnemyHalf = (p.Color == PieceColor.Light) ? (row < mid) : (row >= mid);
+                    int halfBonus    = inEnemyHalf ? ENEMY_HALF_BONUS : 0;
+
+                    // Small center-column tiebreaker (inner columns have more move options).
+                    int centerBonus  = Math.Min(col, sz - 1 - col);
+
+                    pval = PIECE_VALUE + adv * MAN_ADV_SCALE + halfBonus + centerBonus;
+                }
+
                 if (p.Color == aiColor)
                 {
                     score += pval;
-                    // Reward keeping men on own back rank (they guard promotion)
-                    if (p.Type == PieceType.Man && (i / sz) == aiBackRow)
-                        score += BACK_RANK_BONUS;
+                    if (p.Type == PieceType.Man && row == aiHomeRow)
+                        aiBackGuards++;
                 }
                 else
                 {
                     score -= pval;
-                    if (p.Type == PieceType.Man && (i / sz) == oppBackRow)
-                        score -= BACK_RANK_BONUS;
+                    if (p.Type == PieceType.Man && row == oppHomeRow)
+                        oppBackGuards++;
                 }
             }
 
-            // Mobility bonus: more legal moves = better
+            // Back-rank guard bonus: reward having 1-2 men on the very home row so the
+            // opponent can't easily run pieces behind our formation and promote freely.
+            score += Math.Min(aiBackGuards,  2) * BACK_RANK_BONUS;
+            score -= Math.Min(oppBackGuards, 2) * BACK_RANK_BONUS;
+
+            // Mobility: more legal moves = better board control and fewer forced captures.
             int aiMobility  = MoveGenerator.GetAllMoves(board, aiColor,  rules).Count;
             int oppMobility = MoveGenerator.GetAllMoves(board, oppColor, rules).Count;
             score += (aiMobility - oppMobility) * MOBILITY_BONUS;
@@ -191,9 +232,25 @@ namespace Checkers
             nb.Cells[move.From] = default;
             foreach (int cap in move.Captures)
                 nb.Cells[cap] = default;
+
+            // Mid-sequence promotion: a Man that lands on its promotion row during a
+            // multi-hop capture is immediately crowned — matches CheckersGame.ApplyMove.
+            if (piece.Type == PieceType.Man && move.Path.Count > 2)
+            {
+                int midPromRow = (piece.Color == PieceColor.Light) ? 0 : nb.Size - 1;
+                for (int pi = 1; pi < move.Path.Count - 1; pi++)
+                {
+                    if (move.Path[pi] / nb.Size == midPromRow)
+                    {
+                        piece = new Piece { Color = piece.Color, Type = PieceType.King };
+                        break;
+                    }
+                }
+            }
+
             nb.Cells[move.To] = piece;
 
-            // Promote
+            // Final destination promotion.
             int row     = move.To / nb.Size;
             int promRow = (piece.Color == PieceColor.Light) ? 0 : nb.Size - 1;
             if (piece.Type == PieceType.Man && row == promRow)
