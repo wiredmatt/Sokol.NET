@@ -22,6 +22,7 @@ namespace Checkers
         Configure,      // UI config screen
         PlayerTurn,
         AIThinking,
+        DrawOffer,      // Draw condition met — waiting for human consent
         GameOver,
     }
 
@@ -441,6 +442,10 @@ namespace Checkers
         private const int MAX_NO_PROGRESS = 40; // half-moves before draw
         private const int THREEFOLD = 3;
 
+        // Draw offer state (DrawOffer phase)
+        public  string DrawOfferReason = "";
+        private ulong  _drawOfferHash;     // Zobrist hash of repeating position (0 = no-progress draw)
+
         // Last move (for highlighting animation)
         public CheckersMove? LastMove = null;
 
@@ -475,6 +480,8 @@ namespace Checkers
             _history.Clear();
             _noProgressMoves = 0;
             _positionCounts.Clear();
+            DrawOfferReason = "";
+            _drawOfferHash  = 0;
             RefreshLegalMoves();
 
             // If AI plays first (human is Dark), trigger AI
@@ -618,11 +625,13 @@ namespace Checkers
             if (CheckGameOver()) return;
 
             // Draw: no-progress (40 half-moves without capture or promotion)
+            // Instead of declaring the draw outright, offer it to the human player.
             if (_noProgressMoves >= MAX_NO_PROGRESS)
             {
-                IsDraw = true;
-                Phase  = GamePhase.GameOver;
-                Console.WriteLine($"[DRAW] No-progress draw after {_noProgressMoves} moves without capture/promotion.");
+                DrawOfferReason = $"No progress: {_noProgressMoves} half-moves without a capture or promotion.";
+                _drawOfferHash  = 0;
+                Phase           = GamePhase.DrawOffer;
+                Console.WriteLine($"[DRAW] No-progress draw offer after {_noProgressMoves} moves.");
                 return;
             }
 
@@ -632,9 +641,10 @@ namespace Checkers
             _positionCounts[hash] = cnt + 1;
             if (_positionCounts[hash] >= THREEFOLD)
             {
-                IsDraw = true;
-                Phase  = GamePhase.GameOver;
-                Console.WriteLine($"[DRAW] Threefold repetition draw.");
+                DrawOfferReason = "The same position has occurred three times (threefold repetition).";
+                _drawOfferHash  = hash;
+                Phase           = GamePhase.DrawOffer;
+                Console.WriteLine($"[DRAW] Threefold repetition draw offer.");
                 return;
             }
 
@@ -652,6 +662,52 @@ namespace Checkers
             }
 
             // Signal app to start AI after a short delay
+            if (!IsHumanTurn())
+                AITurnPending = true;
+        }
+
+        /// <summary>Human accepts the draw offer. Game ends as a draw.</summary>
+        public void AcceptDraw()
+        {
+            IsDraw = true;
+            Phase  = GamePhase.GameOver;
+            DrawOfferReason = "";
+            Console.WriteLine("[DRAW] Human accepted draw offer.");
+        }
+
+        /// <summary>
+        /// Human declines the draw offer. Resets the counter that triggered the offer
+        /// and resumes play for another full cycle (40 more moves before the next offer).
+        /// </summary>
+        public void DeclineDraw()
+        {
+            Console.WriteLine("[DRAW] Human declined draw offer — resetting counter and resuming.");
+
+            // Reset whichever counter caused the offer
+            if (_noProgressMoves >= MAX_NO_PROGRESS)
+                _noProgressMoves = 0;   // restart the 40-move no-progress clock
+
+            if (_drawOfferHash != 0)
+            {
+                _positionCounts[_drawOfferHash] = 0;  // clear repetition tally for that position
+                _drawOfferHash = 0;
+            }
+
+            DrawOfferReason = "";
+
+            // Resume the turn-switch that was paused at the draw check
+            Turn = Opponent(Turn);
+            RefreshLegalMoves();
+
+            if (AllLegalMoves.Count == 0)
+            {
+                Winner = Turn == PieceColor.Light ? PieceColor.Dark : PieceColor.Light;
+                RecordWin(Winner);
+                Phase = GamePhase.GameOver;
+                return;
+            }
+
+            Phase = GamePhase.PlayerTurn;
             if (!IsHumanTurn())
                 AITurnPending = true;
         }

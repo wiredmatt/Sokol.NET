@@ -1083,6 +1083,34 @@ public static unsafe class CheckersApp
         igSetNextWindowSize(new Vector2(255, 0), ImGuiCond.Always);
         igBegin("Checkers", ref _uiOpen, ImGuiWindowFlags.NoResize);
         if (_inConfig) DrawConfigUI(); else DrawGameUI();
+
+        // Draw offer modal — must be called inside the same Begin/End block that calls OpenPopup
+        if (_game.Phase == GamePhase.DrawOffer)
+            igOpenPopup_Str("Draw Offered", ImGuiPopupFlags.None);
+
+        byte popupOpen = 1;
+        if (igBeginPopupModal("Draw Offered", ref popupOpen, ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            igText("The game has reached a draw condition:");
+            igSpacing();
+            igText(_game.DrawOfferReason);
+            igSeparator();
+            igText("Do you accept the draw?");
+            igSpacing();
+            if (igButton("Accept Draw", new Vector2(110, 0)))
+            {
+                _game.AcceptDraw();
+                igCloseCurrentPopup();
+            }
+            igSameLine(0, 8);
+            if (igButton("Play On", new Vector2(110, 0)))
+            {
+                _game.DeclineDraw();
+                igCloseCurrentPopup();
+            }
+            igEndPopup();
+        }
+
         igEnd();
     }
 
@@ -1156,6 +1184,7 @@ public static unsafe class CheckersApp
         {
             GamePhase.PlayerTurn => _game.AITurnPending ? "AI preparing move..." : "Your turn — click a piece",
             GamePhase.AIThinking => "AI is thinking...",
+            GamePhase.DrawOffer  => "Draw offered — see dialog",
             GamePhase.GameOver   => (_game.Winner == PieceColor.None ? "Draw!" :
                                      _game.Winner == _game.HumanColor() ? "You Win!" : "AI Wins!"),
             _ => ""
