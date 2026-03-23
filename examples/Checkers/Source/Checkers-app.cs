@@ -73,6 +73,10 @@ public static unsafe class CheckersApp
     static Vector3   _cameraPos = new(0f, 11f, 7f);
     static Vector3   _lightPos  = new(3f, 14f, 8f);
 
+    // Piece colors — editable via ImGui
+    static Vector3   _lightPieceColor = new(0.90f, 0.88f, 0.82f);  // cream-white
+    static Vector3   _darkPieceColor  = new(0.60f, 0.08f, 0.06f);  // deep red
+
     // 3×5 pixel-font bitmaps for digits 0-9 (indices 0-9) and letters A-J (indices 10-19)
     // Each int[15] is row-major: row 0 = top, col 0 = left.
     static readonly int[][] s_fontPixels =
@@ -939,9 +943,7 @@ public static unsafe class CheckersApp
     static void DrawPieceAt(int idx, Piece piece, Vector3 worldPos)
     {
         bool isSelected = idx >= 0 && idx == _game.SelectedPiece;
-        Vector3 baseColor = (piece.Color == PieceColor.Light)
-            ? new Vector3(0.90f, 0.88f, 0.82f)
-            : new Vector3(0.60f, 0.08f, 0.06f);  // deep red — clear contrast vs dark board squares
+        Vector3 baseColor = (piece.Color == PieceColor.Light) ? _lightPieceColor : _darkPieceColor;
 
         var trans = Matrix4x4.CreateTranslation(worldPos);
         var vsP = default(piece_vs_params_t);
@@ -1111,6 +1113,16 @@ public static unsafe class CheckersApp
         if (igRadioButton_Bool("Forbidden##bw", _pendingRules.Backward == BackwardCapture.Forbidden)) _pendingRules.Backward = BackwardCapture.Forbidden;
 
         igSeparator();
+        igText("Promotion During Capture:");
+        if (igRadioButton_Bool("Stop turn (English)",    _pendingRules.Promotion == PromotionCapture.Stop))     _pendingRules.Promotion = PromotionCapture.Stop;
+        if (igRadioButton_Bool("Continue as King",       _pendingRules.Promotion == PromotionCapture.Continue)) _pendingRules.Promotion = PromotionCapture.Continue;
+
+        igSeparator();
+        igText("Piece Colors:");
+        igColorEdit3("Light##pc", ref _lightPieceColor, ImGuiColorEditFlags.None);
+        igColorEdit3("Dark##pc",  ref _darkPieceColor,  ImGuiColorEditFlags.None);
+
+        igSeparator();
         igText("Play As:");
         if (igRadioButton_Bool("Light (first)",  _humanIsLight)) _humanIsLight = true;
         if (igRadioButton_Bool("Dark",          !_humanIsLight)) _humanIsLight = false;
@@ -1193,6 +1205,12 @@ public static unsafe class CheckersApp
         igSeparator();
         igText($"Light pieces: {_game.Board.CountPieces(PieceColor.Light)}");
         igText($"Dark pieces:  {_game.Board.CountPieces(PieceColor.Dark)}");
+
+        if (igCollapsingHeader_TreeNodeFlags("Piece Colors", ImGuiTreeNodeFlags.None))
+        {
+            igColorEdit3("Light##pc", ref _lightPieceColor, ImGuiColorEditFlags.None);
+            igColorEdit3("Dark##pc",  ref _darkPieceColor,  ImGuiColorEditFlags.None);
+        }
 
         if (_game.Phase == GamePhase.GameOver)
         {

@@ -28,6 +28,7 @@ namespace Checkers
     public enum KingBehavior { FlyingKings, NoFlyingKings }
     public enum CaptureBehavior { MandatoryMaxMen, MandatoryAny, Optional }
     public enum BackwardCapture { Allowed, Forbidden }
+    public enum PromotionCapture { Stop, Continue }  // Stop = Man ends turn when promoted mid-capture
 
     public struct GameRules
     {
@@ -35,6 +36,7 @@ namespace Checkers
         public KingBehavior Kings;
         public CaptureBehavior Capture;
         public BackwardCapture Backward;
+        public PromotionCapture Promotion;  // Stop = Man stops capturing when crowned mid-sequence
 
         public static GameRules International => new GameRules
         {
@@ -42,6 +44,7 @@ namespace Checkers
             Kings     = KingBehavior.FlyingKings,
             Capture   = CaptureBehavior.MandatoryMaxMen,
             Backward  = BackwardCapture.Allowed,
+            Promotion = PromotionCapture.Continue,
         };
     }
 
@@ -333,7 +336,12 @@ namespace Checkers
                     // Restore captured piece position for cross-capture detection
                     nb.Cells[midIdx] = capturedPiece;
                     var newCaptured = new HashSet<int>(capturedInSeq) { midIdx };
-                    ExpandCaptures(nb, lr, lc, pieceAtDest, newSeq, rules, results, newCaptured);
+                    // If Man just promoted and rule says stop, end this sequence here
+                    if (piece.Type == PieceType.Man && pieceAtDest.Type == PieceType.King
+                        && rules.Promotion == PromotionCapture.Stop)
+                        results.Add(newSeq);
+                    else
+                        ExpandCaptures(nb, lr, lc, pieceAtDest, newSeq, rules, results, newCaptured);
                 }
             }
 
@@ -427,6 +435,12 @@ namespace Checkers
         // Move history for undo
         private readonly Stack<(CheckersBoard board, PieceColor turn, int selPiece)> _history = new();
 
+        // Draw detection: no-progress counter and board-position repetition map
+        private int _noProgressMoves = 0;  // resets on any capture or promotion
+        private readonly Dictionary<ulong, int> _positionCounts = new();  // Zobrist hash -> occurrence count
+        private const int MAX_NO_PROGRESS = 40; // half-moves before draw
+        private const int THREEFOLD = 3;
+
         // Last move (for highlighting animation)
         public CheckersMove? LastMove = null;
 
@@ -459,6 +473,8 @@ namespace Checkers
             _aiMoveReady  = false;
             _pendingAIMove= null;
             _history.Clear();
+            _noProgressMoves = 0;
+            _positionCounts.Clear();
             RefreshLegalMoves();
 
             // If AI plays first (human is Dark), trigger AI
@@ -534,6 +550,16 @@ namespace Checkers
             // Save undo
             _history.Push((Board.Clone(), Turn, SelectedPiece));
 
+            // No-progress tracking: reset on captures or promotions, else increment
+            bool isCapture   = move.Captures.Count > 0;
+            var  movingPiece = Board.Cells[move.From];
+            int  promRow     = (movingPiece.Color == PieceColor.Light) ? 0 : Board.Size - 1;
+            bool isPromotion = movingPiece.Type == PieceType.Man && (move.To / Board.Size) == promRow;
+            if (isCapture || isPromotion)
+                _noProgressMoves = 0;
+            else
+                _noProgressMoves++;
+
             var piece = Board.Cells[move.From];
 
             // DEBUG LOG: trace every move
@@ -574,14 +600,14 @@ namespace Checkers
                 Board.Cells[cap] = default;
 
             // Promotion at final destination
-            int row    = move.To / Board.Size;
-            int promRow = (piece.Color == PieceColor.Light) ? 0 : Board.Size - 1;
-            bool promoted = piece.Type == PieceType.Man && row == promRow;
+            int row     = move.To / Board.Size;
+            int destPromRow = (piece.Color == PieceColor.Light) ? 0 : Board.Size - 1;
+            bool promoted = piece.Type == PieceType.Man && row == destPromRow;
             if (promoted)
                 Board.Cells[move.To] = new Piece { Color = piece.Color, Type = PieceType.King };
 
             if (promoted)
-                Console.WriteLine($"[PROMOTE] {piece.Color} promoted at {Board.CellLabel(move.To)} (row={row}, promRow={promRow})");
+                Console.WriteLine($"[PROMOTE] {piece.Color} promoted at {Board.CellLabel(move.To)} (row={row}, promRow={destPromRow})");
 
             MoveCount++;
             LastMove      = move;
@@ -590,6 +616,27 @@ namespace Checkers
 
             // Check game over
             if (CheckGameOver()) return;
+
+            // Draw: no-progress (40 half-moves without capture or promotion)
+            if (_noProgressMoves >= MAX_NO_PROGRESS)
+            {
+                IsDraw = true;
+                Phase  = GamePhase.GameOver;
+                Console.WriteLine($"[DRAW] No-progress draw after {_noProgressMoves} moves without capture/promotion.");
+                return;
+            }
+
+            // Draw: position repeated THREEFOLD times
+            ulong hash = ZobristHash(Board, Turn);
+            _positionCounts.TryGetValue(hash, out int cnt);
+            _positionCounts[hash] = cnt + 1;
+            if (_positionCounts[hash] >= THREEFOLD)
+            {
+                IsDraw = true;
+                Phase  = GamePhase.GameOver;
+                Console.WriteLine($"[DRAW] Threefold repetition draw.");
+                return;
+            }
 
             // Switch turn
             Turn = Opponent(Turn);
@@ -637,6 +684,24 @@ namespace Checkers
             else DarkWins++;
         }
 
+        // Simple Zobrist-style hash of the board + whose turn it is.
+        // We compute it on-the-fly without a prebuilt table; fast enough for draw detection.
+        static ulong ZobristHash(CheckersBoard board, PieceColor turn)
+        {
+            ulong hash = turn == PieceColor.Light ? 0xA5A5A5A5A5A5A5A5UL : 0x5A5A5A5A5A5A5A5AUL;
+            for (int i = 0; i < board.Cells.Length; i++)
+            {
+                var p = board.Cells[i];
+                if (p.IsEmpty) continue;
+                // Mix index, color, and type into the hash
+                ulong pcode = (ulong)i * 1000003UL
+                            + (p.Color == PieceColor.Light ? 1UL : 2UL)
+                            + (p.Type  == PieceType.King   ? 4UL : 0UL);
+                hash ^= pcode * 0x9E3779B97F4A7C15UL;
+            }
+            return hash;
+        }
+
         // -----------------------------------------------------------------------
         // AI
         // -----------------------------------------------------------------------
@@ -655,19 +720,21 @@ namespace Checkers
             foreach (var lm in legalNow)
                 Console.WriteLine($"[AI]   candidate: {Board.CellLabel(lm.From)}->{Board.CellLabel(lm.To)} caps={lm.Captures.Count}");
 
-            var boardSnap = Board.Clone();
-            var aiColor   = Turn;
-            var rules     = Rules;
-            int depth     = AiDepth;
+            var boardSnap    = Board.Clone();
+            var aiColor      = Turn;
+            var rules        = Rules;
+            int depth        = AiDepth;
+            // Snapshot position counts so the AI can penalise near-repetitions during search.
+            var posCounts    = new Dictionary<ulong, int>(_positionCounts);
 
 #if WEB
-            var result = CheckersAI.GetBestMove(boardSnap, aiColor, rules, depth);
+            var result = CheckersAI.GetBestMove(boardSnap, aiColor, rules, depth, posCounts);
             _pendingAIMove = result;
             _aiMoveReady   = true;
 #else
             Task.Run(() =>
             {
-                var result = CheckersAI.GetBestMove(boardSnap, aiColor, rules, depth);
+                var result = CheckersAI.GetBestMove(boardSnap, aiColor, rules, depth, posCounts);
                 _pendingAIMove = result;
                 _aiMoveReady   = true;
             });
