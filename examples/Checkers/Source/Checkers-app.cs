@@ -1176,7 +1176,7 @@ public static unsafe class CheckersApp
         igSeparator();
 
         int depth = _game.AiDepth;
-        igSliderInt("AI depth", ref depth, 1, 8, "%d", 0);
+        igSliderInt("AI depth", ref depth, 1, 10, "%d", 0);
         _game.AiDepth = depth;
 
         if (igButton("New Game", new Vector2(-1, 0)))

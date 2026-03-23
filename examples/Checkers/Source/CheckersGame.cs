@@ -728,13 +728,13 @@ namespace Checkers
             var posCounts    = new Dictionary<ulong, int>(_positionCounts);
 
 #if WEB
-            var result = CheckersAI.GetBestMove(boardSnap, aiColor, rules, depth, posCounts);
+            var result = CheckersAI.GetBestMove(boardSnap, aiColor, rules, depth, posCounts, _noProgressMoves);
             _pendingAIMove = result;
             _aiMoveReady   = true;
 #else
             Task.Run(() =>
             {
-                var result = CheckersAI.GetBestMove(boardSnap, aiColor, rules, depth, posCounts);
+                var result = CheckersAI.GetBestMove(boardSnap, aiColor, rules, depth, posCounts, _noProgressMoves);
                 _pendingAIMove = result;
                 _aiMoveReady   = true;
             });

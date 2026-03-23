@@ -147,6 +147,10 @@ namespace Checkers
         // Piece-count advantage bonus (tiered, same concept as reference engine).
         // When ahead by 1+ pieces, earn a positional bonus that scales with how many remain.
         private const int KING_CORNER_PENALTY = 20; // penalty for own king stuck in a corner
+        // Draw-urgency: when the no-progress clock is close to the 40-move limit, heavily
+        // favour moves that reset it (captures and promotions) at the root level.
+        private const int DRAW_URGENCY_THRESHOLD = 30; // no-progress moves before urgency kicks in
+        private const int DRAW_URGENCY_BONUS     = 120; // bonus added to counter-resetting root moves
 
         // Transposition table: power-of-2 size for cheap masking.
         private const int TT_SIZE = 1 << 20; // ~1 M entries
@@ -159,7 +163,8 @@ namespace Checkers
         /// approach the 3-fold repetition limit.
         /// </summary>
         public static CheckersMove? GetBestMove(CheckersBoard board, PieceColor color, GameRules rules, int depth,
-                                                Dictionary<ulong, int>? positionCounts = null)
+                                                Dictionary<ulong, int>? positionCounts = null,
+                                                int noProgressMoves = 0)
         {
             var moves = MoveGenerator.GetAllMoves(board, color, rules);
             if (moves.Count == 0) return null;
@@ -191,6 +196,9 @@ namespace Checkers
                 int score = AlphaBeta(nb, Opponent(color), color, rules, depth - 1,
                                       int.MinValue / 2, int.MaxValue / 2, localRep,
                                       localKillers, 1);
+                // Draw-urgency: bias counter-resetting moves when the no-progress clock is high.
+                if (noProgressMoves >= DRAW_URGENCY_THRESHOLD && ResetsDrawClock(board, move, color))
+                    score += DRAW_URGENCY_BONUS;
                 string key = $"{board.CellLabel(move.From)}->{board.CellLabel(move.To)}";
                 scoreMap[key] = score;
                 lock (sync)
@@ -207,6 +215,9 @@ namespace Checkers
                 int score = AlphaBeta(nb, Opponent(color), color, rules, depth - 1,
                                       int.MinValue / 2, int.MaxValue / 2, rootRep,
                                       killers, 1);
+                // Draw-urgency: bias counter-resetting moves when the no-progress clock is high.
+                if (noProgressMoves >= DRAW_URGENCY_THRESHOLD && ResetsDrawClock(board, move, color))
+                    score += DRAW_URGENCY_BONUS;
                 Console.WriteLine($"[AI] score {board.CellLabel(move.From)}->{board.CellLabel(move.To)} = {score}");
                 if (score > bestScore) { bestScore = score; bestMove = move; }
             }
@@ -578,6 +589,21 @@ namespace Checkers
                 hash ^= pcode * 0x9E3779B97F4A7C15UL;
             }
             return hash;
+        }
+
+        // Returns true if the move resets the no-progress (draw) clock:
+        // any capture, or a Man landing on its promotion row.
+        static bool ResetsDrawClock(CheckersBoard board, CheckersMove move, PieceColor color)
+        {
+            if (move.Captures.Count > 0) return true;
+            var piece = board.Cells[move.From];
+            if (piece.Type == PieceType.Man)
+            {
+                int destRow = move.To / board.Size;
+                int promRow = (color == PieceColor.Light) ? 0 : board.Size - 1;
+                if (destRow == promRow) return true;
+            }
+            return false;
         }
 
         static CheckersBoard ApplyMoveToBoard(CheckersBoard board, CheckersMove move)
