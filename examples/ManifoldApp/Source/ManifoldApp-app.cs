@@ -23,9 +23,9 @@ using static Manifold.Manifoldc;
 public static unsafe class ManifoldappApp
 {
     // ---- Constants ----
-    // 400k verts * 6 floats/vert, 400k tris * 3 uints/tri
-    const int MAX_VERTS_FLOATS = 2_400_000;
-    const int MAX_INDICES      = 1_200_000;
+    // 500k verts * 6 floats/vert, 1000k tris * 3 uints/tri
+    const int MAX_VERTS_FLOATS = 3_000_000;
+    const int MAX_INDICES      = 3_000_000;
 
     static readonly string[] SampleNames =
     {
@@ -573,32 +573,79 @@ public static unsafe class ManifoldappApp
             MengerFractal(holes, template, w, px + ox[k], py + oy[k], depth + 1, maxDepth);
     }
 
-    // Gyroid: implicit surface f(x,y,z) = cos(x)sin(y) + cos(y)sin(z) + cos(z)sin(x) = 0
-    // Generated with manifold_level_set using an unmanaged SDF delegate.
+    // Gyroid SDF — expects coordinates in SIZE units; ctx = pointer to double (1/sc).
+    // Divides coords by sc to get natural period units, then applies pi/4 phase offset.
     [UnmanagedCallersOnly]
     static double GyroidSDF(double x, double y, double z, void* ctx)
     {
-        double pi   = Math.PI;
-        double freq = 2.0 * pi / 2.0;   // two periods across the bounding volume
-        double fx   = x * freq;
-        double fy   = y * freq;
-        double fz   = z * freq;
-        return Math.Cos(fx) * Math.Sin(fy)
-             + Math.Cos(fy) * Math.Sin(fz)
-             + Math.Cos(fz) * Math.Sin(fx);
+        double invSc = *(double*)ctx;
+        double off = 3.14159265358979 * 0.25;  // pi/4
+        double ox = x * invSc - off;
+        double oy = y * invSc - off;
+        double oz = z * invSc - off;
+        return Math.Cos(ox) * Math.Sin(oy)
+             + Math.Cos(oy) * Math.Sin(oz)
+             + Math.Cos(oz) * Math.Sin(ox);
     }
 
+    // Gyroid modular puzzle piece — ported from gyroid-module.ts.
+    // Builds m=4 pyramid of 20 copies, each translated by [(k+i-j)*size,(k-i)*size,(-j)*size],
+    // matching the JS reference exactly.
     static (float[], uint[], float) BuildGyroid()
     {
-        const double bound     = 3.14159265;
-        const double edgeLen   = 0.3;        // mesh resolution
+        double period  = 2.0 * Math.PI;
+        double n       = 20.0;
+        double size    = 20.0;
+        double sc      = size / period;          // ≈ 3.185
+        double edgeLen = size / n;               // = 1.0 (in size units)
+        double rdS     = size * Math.Sqrt(2.0);
+        double bound   = rdS * 1.1;
 
+        double invSc   = 1.0 / sc;
+
+        // --- Build the level sets once (in size units, SDF normalises via ctx) ---
         IntPtr boxMem = manifold_alloc_box();
         IntPtr box    = manifold_box((void*)boxMem, -bound, -bound, -bound, bound, bound, bound);
 
-        IntPtr rMem   = A();
-        IntPtr result = manifold_level_set((void*)rMem, &GyroidSDF, box, edgeLen, 0.0, -1.0, null);
+        IntPtr g1Mem = A();
+        IntPtr g1    = manifold_level_set((void*)g1Mem, &GyroidSDF, box, edgeLen, -0.4, -1.0, &invSc);
+        IntPtr g2Mem = A();
+        IntPtr g2    = manifold_level_set((void*)g2Mem, &GyroidSDF, box, edgeLen,  0.4, -1.0, &invSc);
         manifold_delete_box(box);
+
+        // --- Rhombic dodecahedron ---
+        IntPtr rb0Mem = A(); IntPtr rb0 = MCube(rb0Mem, rdS, rdS, 2.0 * rdS, true);
+        IntPtr rb1Mem = A(); IntPtr rb1 = MRotate(rb1Mem, rb0, 90, 45,  0);
+        IntPtr rb2Mem = A(); IntPtr rb2 = MRotate(rb2Mem, rb0, 90, 45, 90);
+        IntPtr rb3Mem = A(); IntPtr rb3 = MRotate(rb3Mem, rb0,  0,  0, 45);
+        D(rb0);
+        IntPtr i1Mem = A(); IntPtr rd12 = MBoolean(i1Mem, rb1, rb2, ManifoldOpType.MANIFOLD_INTERSECT); D(rb1); D(rb2);
+        IntPtr i2Mem = A(); IntPtr rd   = MBoolean(i2Mem, rd12, rb3, ManifoldOpType.MANIFOLD_INTERSECT); D(rd12); D(rb3);
+
+        // --- Single module: rd.intersect(g1).subtract(g2) ---
+        IntPtr s1Mem = A(); IntPtr step1  = MBoolean(s1Mem, rd,    g1, ManifoldOpType.MANIFOLD_INTERSECT); D(rd);    D(g1);
+        IntPtr s2Mem = A(); IntPtr module = MBoolean(s2Mem, step1, g2, ManifoldOpType.MANIFOLD_SUBTRACT);  D(step1); D(g2);
+
+        // --- Replicate m=4 copies with pyramid translations, then batch-union ---
+        const int m = 4;
+        IntPtr vec = manifold_alloc_manifold_vec();
+        for (int i = 0; i < m; i++)
+        for (int j = i; j < m; j++)
+        for (int k = j; k < m; k++)
+        {
+            double tx = (k + i - j) * size;
+            double ty = (k - i)     * size;
+            double tz = (-j)        * size;
+            IntPtr tMem = A();
+            IntPtr copy = MTranslate(tMem, module, tx, ty, tz);
+            manifold_manifold_vec_push_back(vec, copy);
+            D(copy);
+        }
+        D(module);
+
+        IntPtr resMem = A();
+        IntPtr result = manifold_batch_boolean((void*)resMem, vec, ManifoldOpType.MANIFOLD_ADD);
+        manifold_delete_manifold_vec(vec);
 
         float s = ExtractMesh(result, out var v, out var idx);
         D(result);
