@@ -1002,6 +1002,20 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-ManifoldApp",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/ManifoldApp"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-ManifoldApp-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/ManifoldApp"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "Create New Example",
 			"type": "shell",
 			"command": "dotnet",
@@ -1085,6 +1099,7 @@
 			"type": "pickString",
 			"description": "Select an example",
 			"options": [
+				"ManifoldApp",
 				"Checkers",
 				"ConnectFour",
 				"Reversi",
@@ -1147,6 +1162,7 @@
 			"type": "pickString",
 			"description": "Select an example to build",
 			"options": [
+				"examples/ManifoldApp",
 				"examples/Checkers",
 				"examples/ConnectFour",
 				"examples/Reversi",
@@ -1243,6 +1259,7 @@
 			"type": "pickString",
 			"description": "⚠️ WARNING: Select an example to PERMANENTLY DELETE",
 			"options": [
+				"ManifoldApp",
 				"Checkers",
 				"ConnectFour",
 				"Reversi",
