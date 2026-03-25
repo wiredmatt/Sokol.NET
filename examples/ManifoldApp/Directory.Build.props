@@ -44,7 +44,7 @@
    </ItemGroup>
 
    <ItemGroup>
-    <Compile Include="../../ext/manifold/bindings/csharp/Manifoldc.cs">
+    <Compile Include="../../ext/manifold/bindings/csharp/*.cs">
         <Link>Manifold\%(Filename)%(Extension)</Link>
     </Compile>
    </ItemGroup>

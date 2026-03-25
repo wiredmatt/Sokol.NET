@@ -707,10 +707,9 @@ public static unsafe class ManifoldappApp
         return (v, idx, s);
     }
 
-    // Heart: sphere warped onto Taubin's algebraic heart surface via Newton's method.
-    // Ported from heart.mjs in the Manifold wasm examples.
+
     [UnmanagedCallersOnly]
-    static ManifoldVec3 HeartWarp(double x, double y, double z, void* ctx)
+    static void HeartWarp(ManifoldVec3* result, double x, double y, double z, void* ctx)
     {
         double x2 = x*x, y2 = y*y, z2 = z*z;
         double a  = x2 + 9.0/4.0*y2 + z2;
@@ -728,8 +727,9 @@ public static unsafe class ManifoldappApp
             r -= dr;
             if (Math.Abs(dr) < 0.0001) break;
         }
-        return new ManifoldVec3 { x = x*r, y = y*r, z = z*r };
+        result->x = x*r; result->y = y*r; result->z = z*r;
     }
+
 
     static (float[], uint[], float) BuildHeart()
     {
@@ -746,7 +746,7 @@ public static unsafe class ManifoldappApp
     // Torus Knot (p=1, q=3 trefoil knot): revolved cylinder warped along a torus-knot path.
     // Ported from torus-knot.mjs in the Manifold wasm examples.
     [UnmanagedCallersOnly]
-    static ManifoldVec3 TorusKnotWarp(double x, double y, double z, void* ctx)
+    static void TorusKnotWarp(ManifoldVec3* result, double x, double y, double z, void* ctx)
     {
         const double majorR  = 25.0;
         const double minorR  = 10.0;
@@ -783,12 +783,9 @@ public static unsafe class ManifoldappApp
 
         // Final rotation around Z by psi
         double cosP = Math.Cos(psi), sinP = Math.Sin(psi);
-        return new ManifoldVec3
-        {
-            x = p3x * cosP - p3y * sinP,
-            y = p3x * sinP + p3y * cosP,
-            z = p3z,
-        };
+        result->x = p3x * cosP - p3y * sinP;
+        result->y = p3x * sinP + p3y * cosP;
+        result->z = p3z;
     }
 
     static (float[], uint[], float) BuildTorusKnot()
@@ -816,6 +813,7 @@ public static unsafe class ManifoldappApp
 
         IntPtr wMem   = A();
         IntPtr result = manifold_warp((void*)wMem, revolved, &TorusKnotWarp, null);
+
         D(revolved);
 
         float s = ExtractMesh(result, out var v, out var idx);

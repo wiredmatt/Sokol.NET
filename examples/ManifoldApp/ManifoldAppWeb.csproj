@@ -145,7 +145,13 @@
             </PropertyGroup>
         </When>
     </Choose>
-    
+
+    <!-- Include path for manifoldc_web_extensions.c (manifoldc headers use angle-bracket includes) -->
+    <PropertyGroup>
+      <ManifoldIncludePath>$(SokolNetHome)/ext/manifold/bindings/c/include</ManifoldIncludePath>
+      <EmccFlags>$(EmccFlags) -I$(ManifoldIncludePath)</EmccFlags>
+    </PropertyGroup>
+
   <!-- Copy assets with folder structure -->
   <Target Name="CopyAssetsWithStructure" AfterTargets="_WasmGenerateAppBundle">
     <Message Text="Copying assets to AppBundle..." Importance="high" />

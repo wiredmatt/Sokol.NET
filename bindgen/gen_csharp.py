@@ -140,6 +140,7 @@ name_ignores = [
     'sgimgui_t', # struct
     'fonsSetErrorCallback', # function pointer callback not supported
     'camDevice_t_',          # opaque handle, exposed as IntPtr via camDevice typedef
+    'manifold_warp',         # hand-written wrapper in manifoldc_csharp_internal_wrappers.h
 ]
 
 name_overrides = {
