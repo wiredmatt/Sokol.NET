@@ -663,10 +663,6 @@ public struct cgltf_mesh
     public cgltf_extension* extensions;
 }
 [StructLayout(LayoutKind.Sequential)]
-public struct cgltf_node_
-{
-}
-[StructLayout(LayoutKind.Sequential)]
 public struct cgltf_skin
 {
     public IntPtr name;

@@ -109,6 +109,7 @@
         "/^cd /Users/elialoni/Development/Graphics/Sokol\\.NET/ext/camerac && rm -rf build-emscripten && cd scripts && bash build-camerac-web\\.sh Release 2>&1 \\| tail -10$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "mkdir": true
     }
 }

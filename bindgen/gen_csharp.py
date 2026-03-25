@@ -36,12 +36,14 @@ module_names = {
     'b2':       'Box2D',
     'cam_':     'CameraC',
     'cam':      'CameraC',
+    'manifold_': 'Manifoldc',
 }
 
 # Namespace names per prefix
 namespace_names = {
     'cam_':     'System.Hardware',
     'cam':      'System.Hardware',
+    'manifold_': 'Manifold',
 }
 default_namespace = 'Sokol'
 
@@ -49,12 +51,24 @@ default_namespace = 'Sokol'
 output_dirs = {
     'cam_':     '../src/System.Hardware',
     'cam':      '../src/System.Hardware',
+    'manifold_': '../ext/manifold/bindings/csharp',
 }
 default_output_dir = '../src/sokol/generated'
+
+# Extra include directories for clang, per prefix (relative to bindgen/)
+extra_include_dirs = {
+    'manifold_': ['../ext/manifold/bindings/c/include'],
+}
 
 # Extra hand-written declarations to emit at the top of a generated class, per prefix.
 # Each entry is a list of raw C# lines.
 extra_declarations = {
+}
+
+# Additional API prefixes per module (captures types with different naming conventions)
+# e.g. manifold functions use 'manifold_' but types use 'Manifold' (PascalCase)
+extra_api_prefixes = {
+    'manifold_': ['Manifold'],
 }
 
 # Library names for DllImport statements
@@ -82,6 +96,7 @@ library_names = {
     'b2':       'box2d',  # Box2D uses separate library
     'cam_':     'camerac',  # CameraC uses separate library
     'cam':      'camerac',  # CameraC uses separate library (no-underscore prefix)
+    'manifold_': 'manifoldc',  # manifoldc uses separate library
 }
 
 
@@ -111,6 +126,7 @@ c_source_paths = {
     'b2':       'c/box2d.c',
     'cam_':     'c/camerac.c',
     'cam':      'c/camerac.c',
+    'manifold_': 'c/manifoldc.c',  # manifoldc has its own CMake build — no single .c source
 }
 
 name_ignores = [
@@ -207,6 +223,22 @@ prim_types = {
     'camDevice':               'IntPtr',
     'camFrameCallback':        'delegate* unmanaged<IntPtr, camFrame*, void*, void>',
     'camPermissionCallback':   'delegate* unmanaged<IntPtr, camPermission, void*, void>',
+    # Manifoldc opaque pointer types
+    'ManifoldManifold *':       'IntPtr',
+    'ManifoldManifoldVec *':    'IntPtr',
+    'ManifoldCrossSection *':   'IntPtr',
+    'ManifoldCrossSectionVec *':'IntPtr',
+    'ManifoldSimplePolygon *':  'IntPtr',
+    'ManifoldPolygons *':       'IntPtr',
+    'ManifoldMeshGL *':         'IntPtr',
+    'ManifoldMeshGL64 *':       'IntPtr',
+    'ManifoldBox *':            'IntPtr',
+    'ManifoldRect *':           'IntPtr',
+    'ManifoldTriangulation *':  'IntPtr',
+    # Manifoldc function pointer typedef
+    'ManifoldSdf':              'delegate* unmanaged<double, double, double, void*, double>',
+    # ManifoldSimplePolygon** — double pointer to opaque handle
+    'ManifoldSimplePolygon **':  'IntPtr',
 }
 
 
@@ -543,6 +575,15 @@ def as_csharp_arg_type(arg_prefix, arg_type, prefix):
         return f"IntPtr{pre}"  # Function pointer: float (*)(const b2RayCastInput*, int, uint64_t, void*)
     elif arg_type.startswith("b2TreeShapeCastCallbackFcn *"):
         return f"IntPtr{pre}"  # Function pointer: float (*)(const b2ShapeCastInput*, int, uint64_t, void*)
+    # Manifoldc inline function pointer types
+    elif arg_type == 'ManifoldVec3 (*)(double, double, double, void *)':
+        return f"delegate* unmanaged<double, double, double, void*, ManifoldVec3>{pre}"
+    elif arg_type == 'ManifoldVec2 (*)(double, double, void *)':
+        return f"delegate* unmanaged<double, double, void*, ManifoldVec2>{pre}"
+    elif arg_type == 'void (*)(char *, void *)':
+        return f"delegate* unmanaged<byte*, void*, void>{pre}"
+    elif arg_type == 'void (*)(double *, ManifoldVec3, const double *, void *)':
+        return f"delegate* unmanaged<double*, ManifoldVec3, double*, void*, void>{pre}"
     else:
         print(f"[DEBUG] as_csharp_arg_type not handled for arg_type: '{arg_type}', arg_prefix: '{arg_prefix}', prefix: '{prefix}'", file=sys.stderr, flush=True)
         if arg_prefix is None:
@@ -697,6 +738,8 @@ def gen_struct(decl, prefix):
         elif util.is_void_ptr(field_type):
             l(f"    public void* {field_name};")
         elif is_const_prim_ptr(field_type):
+            l(f"    public {as_csharp_prim_type(extract_ptr_type(field_type))}* {field_name};")
+        elif is_prim_ptr(field_type):
             l(f"    public {as_csharp_prim_type(extract_ptr_type(field_type))}* {field_name};")
         elif is_struct_ptr(field_type):
             l(f"    public {as_csharp_struct_type(extract_ptr_type(field_type), prefix)}* {field_name};")
@@ -1090,6 +1133,8 @@ def gen_c_internal_wrappers_header(all_inputs):
             continue
         if prefix == 'b2':  # Skip box2d functions - they go in separate header
             continue
+        if prefix == 'manifold_':  # Skip manifoldc functions - they go in separate header
+            continue
             
         module_name = inp['module']
         module_functions[prefix] = {'module': module_name, 'functions': []}
@@ -1401,6 +1446,79 @@ def gen_c_box2d_wrappers_header(all_inputs):
     
     return "\n".join(header_lines)
 
+def gen_c_manifoldc_wrappers_header(all_inputs):
+    """Generate C header file with manifoldc _internal wrapper function implementations."""
+    header_lines = []
+    header_lines.append("/*")
+    header_lines.append("    AUTO-GENERATED MANIFOLDC INTERNAL WRAPPER FUNCTIONS")
+    header_lines.append("    This file is automatically generated by gen_csharp.py")
+    header_lines.append("    DO NOT EDIT MANUALLY")
+    header_lines.append("")
+    header_lines.append("    WebAssembly/Emscripten cannot marshal structs returned by value through P/Invoke.")
+    header_lines.append("    These _internal helper functions work around this limitation by taking an output")
+    header_lines.append("    pointer parameter instead.")
+    header_lines.append("*/")
+    header_lines.append("")
+    header_lines.append("#ifndef MANIFOLDC_CSHARP_INTERNAL_WRAPPERS_H")
+    header_lines.append("#define MANIFOLDC_CSHARP_INTERNAL_WRAPPERS_H")
+    header_lines.append("")
+    header_lines.append("#include <manifold/manifoldc.h>")
+    header_lines.append("#include <manifold/types.h>")
+    header_lines.append("")
+    header_lines.append("// For Emscripten builds, these functions need to be exported")
+    header_lines.append("#ifdef __EMSCRIPTEN__")
+    header_lines.append("    #include <emscripten.h>")
+    header_lines.append("    #define MANIFOLDC_EXPORT EMSCRIPTEN_KEEPALIVE")
+    header_lines.append("#else")
+    header_lines.append("    #define MANIFOLDC_EXPORT")
+    header_lines.append("#endif")
+    header_lines.append("")
+
+    # Filter only manifoldc-related functions
+    for inp in all_inputs:
+        prefix = inp['prefix']
+        if prefix != 'manifold_':  # Only process manifoldc functions
+            continue
+
+        module_name = inp['module']
+        has_functions = False
+
+        for decl in inp['decls']:
+            if not decl['is_dep'] and decl['kind'] == 'func':
+                c_func_name = decl['name']
+                if c_func_name in web_wrapper_struct_return_functions:
+                    if not has_functions:
+                        header_lines.append(f"// ========== {module_name} ({prefix}) ===========")
+                        header_lines.append("")
+                        has_functions = True
+
+                    return_type = web_wrapper_struct_return_functions[c_func_name]
+
+                    # Build parameter list for C
+                    params_c = []
+                    for param in decl['params']:
+                        param_type = check_type_override(c_func_name, param['name'], param['type'])
+                        param_name = param['name']
+                        params_c.append(f"{param_type} {param_name}")
+
+                    params_str = ", ".join(params_c) if params_c else ""
+                    if params_str:
+                        params_str = ", " + params_str
+
+                    # Build argument list for function call
+                    args = [param['name'] for param in decl['params']]
+                    args_str = ", ".join(args)
+
+                    header_lines.append(f"MANIFOLDC_EXPORT void {c_func_name}_internal({return_type}* result{params_str}) {{")
+                    header_lines.append(f"    *result = {c_func_name}({args_str});")
+                    header_lines.append("}")
+                    header_lines.append("")
+
+    header_lines.append("#endif // MANIFOLDC_CSHARP_INTERNAL_WRAPPERS_H")
+    header_lines.append("")
+
+    return "\n".join(header_lines)
+
 def gen_module(inp, dep_prefixes):
     l('// machine generated, do not edit')
     l('using System;')
@@ -1454,7 +1572,9 @@ def gen(c_header_path, c_prefix, dep_c_prefixes):
     print(f'  {c_header_path} => {module_name} (lib: {library_names.get(c_prefix, "sokol")})')
     reset_globals()
     current_library_name = library_names.get(c_prefix, 'sokol')  # Set library name AFTER reset_globals
-    ir = gen_ir.gen(c_header_path, c_source_path, module_name, c_prefix, dep_c_prefixes)
+    extra_dirs = extra_include_dirs.get(c_prefix, None)
+    extra_api = extra_api_prefixes.get(c_prefix, None)
+    ir = gen_ir.gen(c_header_path, c_source_path, module_name, c_prefix, dep_c_prefixes, extra_include_dirs=extra_dirs, extra_api_prefixes=extra_api)
     gen_module(ir, dep_c_prefixes)
     output_dir = output_dirs.get(c_prefix, default_output_dir)
     output_path = f"{output_dir}/{ir['module']}.cs"

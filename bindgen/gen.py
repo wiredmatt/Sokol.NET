@@ -24,6 +24,7 @@ tasks = [
     [ '../ext/tinyexr/tinyexr.h',            'EXR',      [] ],
     [ '../ext/box2d/include/box2d/box2d.h',  'b2',      [] ],
     [ '../ext/camerac/include/camerac.h',    'cam',      [] ],
+    [ '../ext/manifold/bindings/c/include/manifold/manifoldc.h', 'manifold_', [] ],
     
 ]
 
@@ -70,3 +71,10 @@ box2d_header_output_path = '../ext/box2d/box2d_csharp_internal_wrappers.h'
 with open(box2d_header_output_path, 'w', newline='\n') as f_header:
     f_header.write(box2d_header_content)
 print(f'  Generated Box2D wrappers: {box2d_header_output_path}')
+
+# Generate manifoldc wrappers header (only manifold functions)
+manifoldc_header_content = gen_csharp.gen_c_manifoldc_wrappers_header(all_irs)
+manifoldc_header_output_path = '../ext/manifold/bindings/c/include/manifoldc_csharp_internal_wrappers.h'
+with open(manifoldc_header_output_path, 'w', newline='\n') as f_header:
+    f_header.write(manifoldc_header_content)
+print(f'  Generated Manifoldc wrappers: {manifoldc_header_output_path}')

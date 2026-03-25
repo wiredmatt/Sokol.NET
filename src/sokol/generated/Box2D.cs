@@ -274,14 +274,6 @@ public static extern void b2SetLengthUnitsPerMeter(float lengthUnits);
 public static extern float b2GetLengthUnitsPerMeter();
 
 [StructLayout(LayoutKind.Sequential)]
-public struct b2SimplexCache_
-{
-}
-[StructLayout(LayoutKind.Sequential)]
-public struct b2Hull_
-{
-}
-[StructLayout(LayoutKind.Sequential)]
 public struct b2RayCastInput
 {
     public b2Vec2 origin;
@@ -1371,10 +1363,10 @@ public struct b2DynamicTree
     public int nodeCapacity;
     public int freeList;
     public int proxyCount;
-// FIXME: leafIndices: int *;
+    public int* leafIndices;
     public b2AABB* leafBoxes;
     public b2Vec2* leafCenters;
-// FIXME: binIndices: int *;
+    public int* binIndices;
     public int rebuildCapacity;
 }
 [StructLayout(LayoutKind.Sequential)]

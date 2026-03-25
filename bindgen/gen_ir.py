@@ -3,9 +3,15 @@
 #-------------------------------------------------------------------------------
 import re, json, sys, subprocess , os
 
-def is_api_decl(decl, prefix):
+def is_api_decl(decl, prefix, extra_api_prefixes=None):
     if 'name' in decl:
-        return decl['name'].startswith(prefix)
+        if decl['name'].startswith(prefix):
+            return True
+        if extra_api_prefixes:
+            for ep in extra_api_prefixes:
+                if decl['name'].startswith(ep):
+                    return True
+        return False
     elif decl['kind'] == 'EnumDecl':
         # an anonymous enum, check if the items start with the prefix
         first = get_first_non_comment(decl['inner'])
@@ -74,10 +80,8 @@ def parse_struct(decl, source):
             item['type'] = filter_types(item_decl['type']['qualType'])
             outp['fields'].append(item)
     else:
-        # No inner declarations - possibly an empty or forward-declared struct.
-        outp['fields'] = []
-        outp['name'] = decl.get('name', '')+'_'
-        print(f"Warning: Struct '{outp['name']}' has no inner declarations.")
+        # No inner declarations - forward/opaque declaration, skip
+        return None
     return outp
 
 def parse_enum(decl, source):
@@ -155,7 +159,7 @@ def parse_decl(decl, source):
 #         cmd.append('-fparse-all-comments')
 #     return subprocess.check_output(cmd)
 
-def clang(csrc_path, with_comments=False):
+def clang(csrc_path, with_comments=False, extra_include_dirs=None):
     import os
     ext = os.path.splitext(csrc_path)[1]
     if ext == '.cpp':
@@ -168,14 +172,19 @@ def clang(csrc_path, with_comments=False):
     if std_flag:
         cmd.append(std_flag)
     # Add include path for parent directory (needed to find ../ext/sokol/*.h)
-    cmd += ['-I..', '-Xclang', '-ast-dump=json', "-c", csrc_path]
+    cmd.append('-I..')
+    # Add any extra include dirs required by specific libraries
+    if extra_include_dirs:
+        for inc in extra_include_dirs:
+            cmd.append(f'-I{inc}')
+    cmd += ['-Xclang', '-ast-dump=json', "-c", csrc_path]
     if with_comments:
         cmd.append('-fparse-all-comments')
     return subprocess.check_output(cmd)
 
 
-def gen(header_path, source_path, module, main_prefix, dep_prefixes, with_comments=False):
-    ast = clang(source_path, with_comments=with_comments)
+def gen(header_path, source_path, module, main_prefix, dep_prefixes, with_comments=False, extra_include_dirs=None, extra_api_prefixes=None):
+    ast = clang(source_path, with_comments=with_comments, extra_include_dirs=extra_include_dirs)
     inp = json.loads(ast)
     outp = {}
     outp['module'] = module
@@ -210,7 +219,7 @@ def gen(header_path, source_path, module, main_prefix, dep_prefixes, with_commen
                 next_decl = inp['inner'][i + 1]
                 if (next_decl.get('kind') == 'TypedefDecl' and 
                     next_decl.get('name') and
-                    next_decl.get('name').startswith(main_prefix)):
+                    is_api_decl(next_decl, main_prefix, extra_api_prefixes)):
                     
                     # This is a typedef struct pattern, merge them
                     merged_decl = decl.copy()
@@ -225,7 +234,7 @@ def gen(header_path, source_path, module, main_prefix, dep_prefixes, with_commen
         # Now process the merged declarations
         for decl in decls_to_process:
             is_dep = is_dep_decl(decl, dep_prefixes)
-            if is_api_decl(decl, main_prefix) or is_dep:
+            if is_api_decl(decl, main_prefix, extra_api_prefixes) or is_dep:
                 outp_decl = parse_decl(decl, source)
                 if outp_decl is not None:
                     outp_decl['is_dep'] = is_dep
