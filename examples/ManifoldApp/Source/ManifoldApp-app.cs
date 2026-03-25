@@ -134,9 +134,12 @@ public static unsafe class ManifoldappApp
     // Extracts mesh data from a manifold into a GPU-ready interleaved vertex array and index array.
     // Vertex layout: 6 floats per vertex — [x, y, z, nx, ny, nz].
     //
-    // Normals are computed with crease-angle smoothing (threshold ~60°):
-    //   - Adjacent faces within the threshold → smooth shared normal (good for spheres, cylinders)
-    //   - Adjacent faces beyond the threshold → hard split vertex (good for cube edges, CSG seams)
+    // Normals are computed with crease-angle smoothing (threshold 60°):
+    //   - Adjacent faces within threshold → smooth shared normal (spheres, cylinders)
+    //   - Adjacent faces beyond threshold → hard split vertex (cube edges, CSG seams)
+    //
+    // Uses a flat int[] prefix-sum adjacency structure instead of Dictionary<(int,int),int>
+    // to avoid GC pressure and tuple boxing overhead on large meshes.
     //
     // Returns a normalize_scale so the mesh fits within ~1.5 units from origin.
     static float ExtractMesh(IntPtr m, out float[] vertices, out uint[] indices)
@@ -144,10 +147,11 @@ public static unsafe class ManifoldappApp
         IntPtr meshMem = manifold_alloc_meshgl();
         IntPtr mesh    = manifold_get_meshgl((void*)meshMem, m);
 
-        int numVerts = (int)manifold_meshgl_num_vert(mesh);
-        int numTri   = (int)manifold_meshgl_num_tri(mesh);
-        int propLen  = (int)manifold_meshgl_vert_properties_length(mesh);
-        int triLen   = (int)manifold_meshgl_tri_length(mesh);
+        int numOrigVerts = (int)manifold_meshgl_num_vert(mesh);
+        int numProp      = (int)manifold_meshgl_num_prop(mesh);   // 3 for primitives (xyz only)
+        int propLen      = (int)manifold_meshgl_vert_properties_length(mesh);  // = numOrigVerts * numProp
+        int triLen       = (int)manifold_meshgl_tri_length(mesh);              // = numTri * 3
+        int numTri       = triLen / 3;
 
         float[] props = new float[propLen];
         fixed (float* pP = props)
@@ -159,80 +163,78 @@ public static unsafe class ManifoldappApp
 
         manifold_delete_meshgl(mesh);
 
-        // numProp = total floats per vertex in vertProperties (3 for plain primitives = xyz only)
-        int numProp = numVerts > 0 ? propLen / numVerts : 3;
-        Vector3 P(int v) => new(props[v * numProp], props[v * numProp + 1], props[v * numProp + 2]);
+        // Helper: xyz position of a raw vertex index
+        Vector3 P(uint v) { int i = (int)v * numProp; return new Vector3(props[i], props[i+1], props[i+2]); }
 
-        // Flip winding: Manifold outputs CCW in right-hand coords, but after MVP transform
-        // the triangles appear CW from the camera. Swap index 1 and 2 of every triangle
-        // so they become CCW in clip space (matching Metal/Sokol SG_CULLMODE_BACK expectation).
-        // for (int t = 0; t < numTri; t++)
-        // {
-        //     (rawIdx[t*3+1], rawIdx[t*3+2]) = (rawIdx[t*3+2], rawIdx[t*3+1]);
-        // }
-
-        // --- Per-face normals (cross product matches the flipped winding order) ---
+        // Step 1: per-face normals
         var faceNorm = new Vector3[numTri];
         for (int t = 0; t < numTri; t++)
         {
-            Vector3 p0 = P((int)rawIdx[t*3]), p1 = P((int)rawIdx[t*3+1]), p2 = P((int)rawIdx[t*3+2]);
+            var p0 = P(rawIdx[t*3]); var p1 = P(rawIdx[t*3+1]); var p2 = P(rawIdx[t*3+2]);
             var n = Vector3.Normalize(Vector3.Cross(p1 - p0, p2 - p0));
             faceNorm[t] = float.IsNaN(n.X) ? Vector3.UnitY : n;
         }
 
-        // --- Vertex → triangle adjacency ---
-        var vtris = new List<int>[numVerts];
-        for (int v = 0; v < numVerts; v++) vtris[v] = new List<int>();
+        // Step 2: prefix-sum adjacency (vertex → incident triangles) — O(N), no per-vertex heap alloc
+        var triCount = new int[numOrigVerts];
+        for (int i = 0; i < triLen; i++) triCount[rawIdx[i]]++;
+        var triStart = new int[numOrigVerts + 1];
+        for (int v = 0; v < numOrigVerts; v++) triStart[v+1] = triStart[v] + triCount[v];
+        var triAdj = new int[triLen];
+        Array.Clear(triCount, 0, numOrigVerts);
         for (int t = 0; t < numTri; t++)
-            for (int k = 0; k < 3; k++) vtris[(int)rawIdx[t*3+k]].Add(t);
+            for (int k = 0; k < 3; k++) { int v = (int)rawIdx[t*3+k]; triAdj[triStart[v] + triCount[v]++] = t; }
 
-        // --- Crease-angle normal smoothing ---
-        // cos(60°) = 0.5 — faces sharper than 60° apart get hard edges (split vertices).
-        // This gives flat shading on cube faces and smooth shading on sphere/cylinder curves.
-        const float CreaseDot = 0.5f;
-        var outV    = new List<float>(numVerts * 6);
-        var emitted = new Dictionary<(int origVert, int tri), int>();
-        indices = new uint[numTri * 3];
+        // Step 3: crease-angle smooth normals
+        // assignedIdx[t*3+k] = output vertex index for that tri-corner; -1 = not yet emitted.
+        // Using a flat int[] avoids the GC overhead of Dictionary<(int,int),int>.
+        const float CreaseDot = 0.5f; // cos(60°)
+        var assignedIdx = new int[triLen];
+        Array.Fill(assignedIdx, -1);
+        var outV = new System.Collections.Generic.List<float>(numOrigVerts * 6);
 
         for (int t = 0; t < numTri; t++)
         {
             for (int k = 0; k < 3; k++)
             {
-                int ov = (int)rawIdx[t * 3 + k];
-                if (emitted.TryGetValue((ov, t), out int eidx)) { indices[t*3+k] = (uint)eidx; continue; }
+                if (assignedIdx[t*3+k] >= 0) continue;
 
-                // Collect smooth group: all tris at this vertex within the crease angle
-                Vector3 refN = faceNorm[t];
-                var group = new List<int>();
-                Vector3 acc = Vector3.Zero;
-                foreach (int at in vtris[ov])
+                int ov     = (int)rawIdx[t*3+k];
+                var refN   = faceNorm[t];
+                int newIdx = outV.Count / 6;
+
+                // Accumulate area-weighted normals for all faces in the smooth group,
+                // and claim all their unassigned corners at vertex ov.
+                var acc = Vector3.Zero;
+                int start = triStart[ov], cnt = triStart[ov+1] - triStart[ov];
+                for (int j = 0; j < cnt; j++)
                 {
-                    if (Vector3.Dot(refN, faceNorm[at]) >= CreaseDot)
-                    {
-                        group.Add(at);
-                        // Area-weighted accumulation (cross product magnitude = 2× triangle area)
-                        Vector3 q0 = P((int)rawIdx[at*3]), q1 = P((int)rawIdx[at*3+1]), q2 = P((int)rawIdx[at*3+2]);
-                        acc += Vector3.Cross(q1 - q0, q2 - q0);
-                    }
+                    int at = triAdj[start + j];
+                    if (Vector3.Dot(refN, faceNorm[at]) < CreaseDot) continue;
+
+                    var q0 = P(rawIdx[at*3]); var q1 = P(rawIdx[at*3+1]); var q2 = P(rawIdx[at*3+2]);
+                    acc += Vector3.Cross(q1 - q0, q2 - q0); // area-weighted
+
+                    for (int kk = 0; kk < 3; kk++)
+                        if ((int)rawIdx[at*3+kk] == ov && assignedIdx[at*3+kk] < 0)
+                            assignedIdx[at*3+kk] = newIdx;
                 }
+                if (assignedIdx[t*3+k] < 0) assignedIdx[t*3+k] = newIdx; // safety
+
                 var norm = Vector3.Normalize(acc);
                 if (float.IsNaN(norm.X)) norm = Vector3.UnitY;
-
-                int newIdx = outV.Count / 6;
-                Vector3 pos = P(ov);
-                outV.Add(pos.X); outV.Add(pos.Y); outV.Add(pos.Z);
+                int pi = ov * numProp;
+                outV.Add(props[pi]); outV.Add(props[pi+1]); outV.Add(props[pi+2]);
                 outV.Add(norm.X); outV.Add(norm.Y); outV.Add(norm.Z);
-
-                // Register all tris in this smooth group so they reuse this vertex index
-                foreach (int st in group) emitted[(ov, st)] = newIdx;
-                indices[t*3+k] = (uint)newIdx;
             }
         }
 
         vertices = outV.ToArray();
-        int outVerts = vertices.Length / 6;
+        indices  = new uint[triLen];
+        for (int i = 0; i < triLen; i++) indices[i] = (uint)assignedIdx[i];
 
         // Normalize scale to fit within ~1.5 units from origin
+        int outVerts = vertices.Length / 6;
         float maxExtent = 0.001f;
         for (int v = 0; v < outVerts; v++)
         {
@@ -590,47 +592,47 @@ public static unsafe class ManifoldappApp
             MengerFractal(holes, template, w, px + ox[k], py + oy[k], depth + 1, maxDepth);
     }
 
-    // Gyroid SDF — expects coordinates in SIZE units; ctx = pointer to double (1/sc).
-    // Divides coords by sc to get natural period units, then applies pi/4 phase offset.
+    // Gyroid SDF — works in natural period units (period = 2π). ctx unused.
+    // Matches the TS gyroid() function in gyroid-module.ts exactly.
     [UnmanagedCallersOnly]
     static double GyroidSDF(double x, double y, double z, void* ctx)
     {
-        double invSc = *(double*)ctx;
         double off = 3.14159265358979 * 0.25;  // pi/4
-        double ox = x * invSc - off;
-        double oy = y * invSc - off;
-        double oz = z * invSc - off;
+        double ox = x - off;
+        double oy = y - off;
+        double oz = z - off;
         return Math.Cos(ox) * Math.Sin(oy)
              + Math.Cos(oy) * Math.Sin(oz)
              + Math.Cos(oz) * Math.Sin(ox);
     }
 
     // Gyroid modular puzzle piece — ported from gyroid-module.ts.
-    // Builds m=4 pyramid of 20 copies, each translated by [(k+i-j)*size,(k-i)*size,(-j)*size],
-    // matching the JS reference exactly.
+    // Builds m=3 pyramid of copies, each translated by [(k+i-j)*size,(k-i)*size,(-j)*size].
     static (float[], uint[], float) BuildGyroid()
     {
         double period  = 2.0 * Math.PI;
         double n       = 20.0;
         double size    = 20.0;
-        double sc      = size / period;          // ≈ 3.185
-        double edgeLen = size / n;               // = 1.0 (in size units)
+        double sc      = size / period;          // scale: natural → size units ≈ 3.185
+        double edgeLen = period / n;             // resolution in natural units ≈ 0.314
         double rdS     = size * Math.Sqrt(2.0);
-        double bound   = rdS * 1.1;
 
-        double invSc   = 1.0 / sc;
-
-        // --- Build the level sets once (in size units, SDF normalises via ctx) ---
+        // --- Level sets in natural-unit box [-period, period]^3 — matches TS gyroidOffset().
+        // SDF works in natural units (period=2π), box has 40³ = 64K cells vs the old ~62³ = 238K.
+        // After the level set, scale by sc to bring to size units (matches TS .scale(size/period)).
         IntPtr boxMem = manifold_alloc_box();
-        IntPtr box    = manifold_box((void*)boxMem, -bound, -bound, -bound, bound, bound, bound);
+        IntPtr box    = manifold_box((void*)boxMem, -period, -period, -period, period, period, period);
 
-        IntPtr g1Mem = A();
-        IntPtr g1    = manifold_level_set((void*)g1Mem, &GyroidSDF, box, edgeLen, -0.4, -1.0, &invSc);
-        IntPtr g2Mem = A();
-        IntPtr g2    = manifold_level_set((void*)g2Mem, &GyroidSDF, box, edgeLen,  0.4, -1.0, &invSc);
+        IntPtr g1rMem = A();
+        IntPtr g1raw  = manifold_level_set((void*)g1rMem, &GyroidSDF, box, edgeLen, -0.4, -1.0, null);
+        IntPtr g2rMem = A();
+        IntPtr g2raw  = manifold_level_set((void*)g2rMem, &GyroidSDF, box, edgeLen,  0.4, -1.0, null);
         manifold_delete_box(box);
 
-        // --- Rhombic dodecahedron ---
+        IntPtr sg1Mem = A(); IntPtr g1 = manifold_scale((void*)sg1Mem, g1raw, sc, sc, sc); D(g1raw);
+        IntPtr sg2Mem = A(); IntPtr g2 = manifold_scale((void*)sg2Mem, g2raw, sc, sc, sc); D(g2raw);
+
+        // --- Rhombic dodecahedron (in size units) ---
         IntPtr rb0Mem = A(); IntPtr rb0 = MCube(rb0Mem, rdS, rdS, 2.0 * rdS, true);
         IntPtr rb1Mem = A(); IntPtr rb1 = MRotate(rb1Mem, rb0, 90, 45,  0);
         IntPtr rb2Mem = A(); IntPtr rb2 = MRotate(rb2Mem, rb0, 90, 45, 90);

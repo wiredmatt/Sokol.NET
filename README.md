@@ -157,6 +157,7 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 - **[drawcallperf](examples/drawcallperf)** - Draw call performance testing
 - **[plmpeg](examples/plmpeg)** - MPEG1 video playback
 - **[ShaderToyApp](examples/ShaderToyApp)** - Multi-shader gallery with 7 fragment shaders
+- **[ManifoldApp](examples/ManifoldApp)** - Interactive 3D CSG demo with 18 procedural shapes powered by the [Manifold](https://github.com/elalish/manifold) geometry kernel — boolean operations, SDF level sets, extrusion, revolution, mesh warp, and crease-angle smooth normals
 
 ### Games
 - **[Reversi](examples/Reversi)** - Playable Othello/Reversi board game with 3D discs, animated flips, touch + mouse input, adjustable AI depth, and cross-platform support (Desktop, Web, iOS, Android)
