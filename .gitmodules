@@ -26,3 +26,6 @@
 [submodule "ext/cgltf"]
 	path = ext/cgltf
 	url = https://github.com/elix22/cgltf.git
+[submodule "ext/manifold"]
+	path = ext/manifold
+	url = https://github.com/elix22/manifold.git
