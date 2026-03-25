@@ -1,5 +1,6 @@
 using System;
 using Sokol;
+using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Numerics;
@@ -35,7 +36,6 @@ public static unsafe class ManifoldappApp
         "Cylinder",
         "CSG: Union",
         "CSG: Difference",
-        "CSG: Intersection",
         "Perforated Cube",
         "Wireframe Cube",
         "Torus",
@@ -89,6 +89,17 @@ public static unsafe class ManifoldappApp
     }
 
     static _state state = new _state();
+
+#if !WEB
+    // Async build state — background thread computes geometry; main thread uploads to GPU.
+    // _buildState: 0=idle, 1=building, 2=result ready.
+    // Uses volatile int so acquire/release semantics guarantee cross-thread visibility.
+    static volatile int _buildState;
+    static int          _buildingIdx = -1;
+    static float[]      _pendingVerts   = Array.Empty<float>();
+    static uint[]       _pendingIndices = Array.Empty<uint>();
+    static float        _pendingScale;
+#endif
 
     // ---- Manifold C API helpers ----
 
@@ -231,6 +242,24 @@ public static unsafe class ManifoldappApp
         return 1.5f / maxExtent;
     }
 
+#if !WEB
+    static void StartBuildThread(int idx)
+    {
+        _buildingIdx = idx;
+        _buildState  = 1;
+        var t = new Thread(() =>
+        {
+            var (verts, indices, scale) = BuildSample(idx);
+            _pendingVerts   = verts;
+            _pendingIndices = indices;
+            _pendingScale   = scale;
+            _buildState     = 2; // volatile write — releases the data writes above
+        });
+        t.IsBackground = true;
+        t.Start();
+    }
+#endif
+
     // ---- Sample builders ----
 
     static (float[] verts, uint[] indices, float scale) BuildSample(int idx) => idx switch
@@ -241,19 +270,18 @@ public static unsafe class ManifoldappApp
         3 => BuildCylinder(),
         4 => BuildCSGUnion(),
         5 => BuildCSGDifference(),
-        6 => BuildCSGIntersection(),
-        7 => BuildPerforatedCube(),
-        8 => BuildWireframeCube(),
-        9 => BuildTorus(),
-        10 => BuildRoundedFrame(),
-        11 => BuildTwistedColumn(),
-        12 => BuildMengerSponge(),
-        13 => BuildGyroid(),
-        14 => BuildAuger(),
-        15 => BuildHeart(),
-        16 => BuildTorusKnot(),
-        17 => BuildScallop(),
-        18 => BuildStretchyBracelet(),
+        6 => BuildPerforatedCube(),
+        7 => BuildWireframeCube(),
+        8 => BuildTorus(),
+        9 => BuildRoundedFrame(),
+        10 => BuildTwistedColumn(),
+        11 => BuildMengerSponge(),
+        12 => BuildGyroid(),
+        13 => BuildAuger(),
+        14 => BuildHeart(),
+        15 => BuildTorusKnot(),
+        16 => BuildScallop(),
+        17 => BuildStretchyBracelet(),
         _ => BuildCube(),
     };
 
@@ -315,17 +343,6 @@ public static unsafe class ManifoldappApp
         return (v, idx, s);
     }
 
-    // CSG Intersection: rounded cube (cube intersected with sphere)
-    static (float[], uint[], float) BuildCSGIntersection()
-    {
-        IntPtr aMem = A(); IntPtr a = MCube(aMem, 1.6, 1.6, 1.6);
-        IntPtr bMem = A(); IntPtr b = MSphere(bMem, 1.05, 48);
-        IntPtr rMem = A(); IntPtr r = MBoolean(rMem, a, b, ManifoldOpType.MANIFOLD_INTERSECT);
-        D(a); D(b);
-        float s = ExtractMesh(r, out var v, out var idx);
-        D(r);
-        return (v, idx, s);
-    }
 
     // Perforated Cube: 3x3x3 cube with 3 axis-aligned bars subtracted (level-1 Menger sponge)
     static (float[], uint[], float) BuildPerforatedCube()
@@ -1110,8 +1127,40 @@ public static unsafe class ManifoldappApp
         if (state.needs_rebuild)
         {
             state.needs_rebuild = false;
+#if !WEB
+            if (_buildState == 0)
+                StartBuildThread(state.current_sample);
+            // else: already building; when it finishes we check state.current_sample
+#else
             LoadSample(state.current_sample);
+#endif
         }
+
+#if !WEB
+        // Upload completed background build result (must happen on main thread)
+        if (_buildState == 2)
+        {
+            state.normalize_scale = _pendingScale;
+            state.index_count     = _pendingIndices.Length;
+            fixed (float* pV = _pendingVerts)
+                sg_update_buffer(state.vbuf, new sg_range
+                {
+                    ptr  = pV,
+                    size = (nuint)(_pendingVerts.Length * sizeof(float)),
+                });
+            fixed (uint* pI = _pendingIndices)
+                sg_update_buffer(state.ibuf, new sg_range
+                {
+                    ptr  = pI,
+                    size = (nuint)(_pendingIndices.Length * sizeof(uint)),
+                });
+            int completedIdx = _buildingIdx;
+            _buildState = 0;
+            // If user navigated away while building, start the new build immediately
+            if (state.current_sample != completedIdx)
+                StartBuildThread(state.current_sample);
+        }
+#endif
 
         // Auto-rotate around Y
         float dt = (float)sapp_frame_duration();
@@ -1141,12 +1190,21 @@ public static unsafe class ManifoldappApp
         });
 
         igSetNextWindowPos(new Vector2(10, 10), ImGuiCond.Always, Vector2.Zero);
+#if !WEB
+        bool isBuilding = _buildState != 0;
+        igSetNextWindowSize(new Vector2(300, isBuilding ? 155 : 130), ImGuiCond.Always);
+#else
         igSetNextWindowSize(new Vector2(300, 130), ImGuiCond.Always);
+#endif
         byte winOpen = 1;
         igBegin("Manifold Samples", ref winOpen,
             ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse);
         igText(SampleNames[state.current_sample]);
         igText($"Triangles: {state.index_count / 3:N0}");
+#if !WEB
+        if (isBuilding)
+            igTextColored(new Vector4(1f, 0.8f, 0.2f, 1f), "Building...");
+#endif
         igSeparator();
         if (igButton("< Previous", new Vector2(130, 30)))
         {
