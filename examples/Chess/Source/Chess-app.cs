@@ -1,0 +1,829 @@
+// Chess-app.cs — Chess game using sokol_gp 2D rendering + Lynx AI engine.
+using System;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using Sokol;
+using Imgui;
+using static Sokol.SApp;
+using static Sokol.SG;
+using static Sokol.SG.sg_vertex_format;
+using static Sokol.SG.sg_blend_factor;
+using static Sokol.SGlue;
+using static Sokol.SGP;
+using static Sokol.Utils;
+using static Sokol.SImgui;
+using static Sokol.SDebugText;
+using static Imgui.ImguiNative;
+using static Imgui.ImGuiHelpers;
+using static Sokol.SLog;
+using Lynx.Model;
+
+public static unsafe class ChessApp
+{
+    // -----------------------------------------------------------------------
+    // Constants
+    // -----------------------------------------------------------------------
+    const int BOARD_SIZE = 8;
+    static float CELL_SIZE = 80f;
+    static float BORDER = 40f;
+    static float WINDOW_SIZE = BOARD_SIZE * CELL_SIZE + BORDER * 2f;
+    static float UI_PANEL_WIDTH = 270f;
+    static float UI_GAP = 16f;
+    static float UI_MIN_WIDTH = 280f;
+    static float UI_MAX_WIDTH = 380f;
+    static float WINDOW_WIDTH = WINDOW_SIZE + UI_PANEL_WIDTH + UI_GAP + 16f;
+    static float WINDOW_HEIGHT = WINDOW_SIZE;
+
+    // Board colors (classic Lichess palette)
+    static readonly sg_color CLR_LIGHT = new() { r = 0.941f, g = 0.851f, b = 0.710f, a = 1f };
+    static readonly sg_color CLR_DARK = new() { r = 0.710f, g = 0.533f, b = 0.388f, a = 1f };
+    static readonly sg_color CLR_SELECTED = new() { r = 0.20f, g = 0.75f, b = 0.20f, a = 0.55f };
+    static readonly sg_color CLR_VALID = new() { r = 0.20f, g = 0.75f, b = 0.20f, a = 0.38f };
+    static readonly sg_color CLR_LAST_MOVE = new() { r = 0.97f, g = 0.81f, b = 0.12f, a = 0.55f };
+    static readonly sg_color CLR_CHECK = new() { r = 0.90f, g = 0.10f, b = 0.10f, a = 0.55f };
+    static readonly sg_color CLR_BORDER = new() { r = 0.50f, g = 0.33f, b = 0.22f, a = 1f };
+
+    // Checkers-style 3x5 pixel glyphs for digits 0-9 and letters A-H.
+    static readonly int[][] s_fontPixels =
+    {
+        new[]{1,1,1, 1,0,1, 1,0,1, 1,0,1, 1,1,1}, // 0
+        new[]{0,1,0, 1,1,0, 0,1,0, 0,1,0, 1,1,1}, // 1
+        new[]{1,1,1, 0,0,1, 1,1,1, 1,0,0, 1,1,1}, // 2
+        new[]{1,1,1, 0,0,1, 1,1,1, 0,0,1, 1,1,1}, // 3
+        new[]{1,0,1, 1,0,1, 1,1,1, 0,0,1, 0,0,1}, // 4
+        new[]{1,1,1, 1,0,0, 1,1,1, 0,0,1, 1,1,1}, // 5
+        new[]{1,1,1, 1,0,0, 1,1,1, 1,0,1, 1,1,1}, // 6
+        new[]{1,1,1, 0,0,1, 0,1,0, 0,1,0, 0,1,0}, // 7
+        new[]{1,1,1, 1,0,1, 1,1,1, 1,0,1, 1,1,1}, // 8
+        new[]{1,1,1, 1,0,1, 1,1,1, 0,0,1, 1,1,1}, // 9
+        new[]{0,1,0, 1,0,1, 1,1,1, 1,0,1, 1,0,1}, // A
+        new[]{1,1,0, 1,0,1, 1,1,0, 1,0,1, 1,1,0}, // B
+        new[]{0,1,1, 1,0,0, 1,0,0, 1,0,0, 0,1,1}, // C
+        new[]{1,1,0, 1,0,1, 1,0,1, 1,0,1, 1,1,0}, // D
+        new[]{1,1,1, 1,0,0, 1,1,0, 1,0,0, 1,1,1}, // E
+        new[]{1,1,1, 1,0,0, 1,1,0, 1,0,0, 1,0,0}, // F
+        new[]{0,1,1, 1,0,0, 1,0,1, 1,0,1, 0,1,1}, // G
+        new[]{1,0,1, 1,0,1, 1,1,1, 1,0,1, 1,0,1}, // H
+    };
+
+    static int FontIdx(char ch) => ch switch
+    {
+        >= '0' and <= '9' => ch - '0',
+        >= 'A' and <= 'H' => ch - 'A' + 10,
+        _ => -1
+    };
+
+    // -----------------------------------------------------------------------
+    // Piece texture indices  (12 textures: White P N B R Q K, Black p n b r q k)
+    // Lynx Piece enum:       P=0 N=1 B=2 R=3 Q=4 K=5  p=6 n=7 b=8 r=9 q=10 k=11
+    // -----------------------------------------------------------------------
+    static readonly string[] PIECE_ASSETS = {
+        "Chess_plt60.png",  // 0  White Pawn
+        "Chess_nlt60.png",  // 1  White Knight
+        "Chess_blt60.png",  // 2  White Bishop
+        "Chess_rlt60.png",  // 3  White Rook
+        "Chess_qlt60.png",  // 4  White Queen
+        "Chess_klt60.png",  // 5  White King
+        "Chess_pdt60.png",  // 6  Black Pawn
+        "Chess_ndt60.png",  // 7  Black Knight
+        "Chess_bdt60.png",  // 8  Black Bishop
+        "Chess_rdt60.png",  // 9  Black Rook
+        "Chess_qdt60.png",  // 10 Black Queen
+        "Chess_kdt60.png",  // 11 Black King
+    };
+
+    // -----------------------------------------------------------------------
+    // State
+    // -----------------------------------------------------------------------
+    struct _state
+    {
+        public sg_pass_action passAction;
+        public sg_sampler sampler;
+    }
+
+    static _state S;
+
+    // Piece textures
+    static readonly Texture?[] _pieceTextures = new Texture?[12];
+    static readonly sg_view[] _pieceViews = new sg_view[12];
+    static readonly sg_image[] _pieceImages = new sg_image[12];
+    static readonly bool[] _pieceLoaded = new bool[12];
+    static int _piecesLoadedCount = 0;
+
+    // Game
+    static readonly ChessGame _game = new();
+    static readonly List<string> _moveHistory = new();
+    static string? _lastRecordedMoveUci;
+
+    // Optional time-control mode
+    static bool _useTimeControl = false;
+    static int _timeMinutesPerSide = 5;
+    static float _whiteTimeSec = 5 * 60f;
+    static float _blackTimeSec = 5 * 60f;
+    static bool _timeExpired = false;
+    static string _timeExpiredStatus = string.Empty;
+
+    // Last move highlight squares
+    static int _lastMoveFrom = -1, _lastMoveTo = -1;
+
+    // UI
+    static byte _showUI = 1;
+    static float _mouseX, _mouseY;
+    static bool _mouseClicked;
+    static bool _flipBoard = false;
+
+    static string _statusText = "White to move";
+
+    // -----------------------------------------------------------------------
+    // Init
+    // -----------------------------------------------------------------------
+    [UnmanagedCallersOnly]
+    private static void Init()
+    {
+
+        sg_setup(new sg_desc
+        {
+            environment = sglue_environment(),
+            logger = { func = &slog_func }
+        });
+
+        sgp_setup(new sgp_desc());
+
+        simgui_setup(new simgui_desc_t { logger = { func = &slog_func } });
+
+        var sdtxDesc = new sdtx_desc_t();
+        sdtxDesc.fonts[0] = sdtx_font_kc854();
+        sdtx_setup(sdtxDesc);
+
+        FileSystem.Instance.Initialize();
+
+        // Linear clamp sampler for piece sprites
+        S.sampler = sg_make_sampler(new sg_sampler_desc
+        {
+            min_filter = sg_filter.SG_FILTER_LINEAR,
+            mag_filter = sg_filter.SG_FILTER_LINEAR,
+            wrap_u = sg_wrap.SG_WRAP_CLAMP_TO_EDGE,
+            wrap_v = sg_wrap.SG_WRAP_CLAMP_TO_EDGE,
+        });
+
+        // Pass action — dark background
+        S.passAction = default;
+        S.passAction.colors[0].load_action = sg_load_action.SG_LOADACTION_CLEAR;
+        S.passAction.colors[0].clear_value = new sg_color { r = 0.15f, g = 0.15f, b = 0.15f, a = 1f };
+
+        // Load piece textures asynchronously
+        for (int i = 0; i < 12; i++)
+        {
+            int idx = i;
+            FileSystem.Instance.LoadFile(PIECE_ASSETS[idx], (path, data, status) =>
+            {
+                if (status == FileLoadStatus.Success && data != null)
+                {
+                    var tex = Texture.LoadFromMemory(data, path);
+                    if (tex != null)
+                    {
+                        // Keep a strong reference alive for the whole app lifetime.
+                        // Texture finalizer destroys sg_image/sg_view if object gets GC-collected.
+                        _pieceTextures[idx] = tex;
+                        _pieceImages[idx] = tex.Image;
+                        _pieceViews[idx] = sgp_make_texture_view_from_image(tex.Image, PIECE_ASSETS[idx]);
+                        _pieceLoaded[idx] = true;
+                        _piecesLoadedCount++;
+                    }
+                }
+            });
+        }
+
+        float size = Math.Min(sapp_height(), sapp_width());
+        CELL_SIZE = (size * 0.75f) / 8f;
+
+        BORDER = CELL_SIZE;
+        WINDOW_SIZE = BOARD_SIZE * CELL_SIZE + BORDER * 2f;
+        UI_PANEL_WIDTH = 270f;
+        UI_GAP = 16f;
+        UI_MIN_WIDTH = 280f;
+        UI_MAX_WIDTH = 380f;
+        WINDOW_WIDTH = WINDOW_SIZE + UI_PANEL_WIDTH + UI_GAP + 16f;
+        WINDOW_HEIGHT = WINDOW_SIZE;
+    }
+
+    // -----------------------------------------------------------------------
+    // Frame
+    // -----------------------------------------------------------------------
+    [UnmanagedCallersOnly]
+    private static void Frame()
+    {
+        FileSystem.Instance.Update();
+        ChessAI.PumpCompleted();
+
+        int width = sapp_width();
+        int height = sapp_height();
+        float dt = (float)sapp_frame_duration();
+
+        // Trigger AI if needed
+        if (!_timeExpired && _game.Phase == GamePhase.AIThinking && !ChessAI.IsPending)
+        {
+            ChessAI.RequestMove(_game, () =>
+            {
+                UpdateLastMove();
+                RefreshStatus();
+            });
+        }
+
+        // Process pending mouse click
+        bool clicked = _mouseClicked;
+        _mouseClicked = false;
+
+        if (!_timeExpired && clicked && _game.Phase == GamePhase.PlayerTurn)
+        {
+            int sq = ScreenToSquare(_mouseX, _mouseY, width, height);
+            if (sq >= 0)
+            {
+                _game.SelectSquare(sq);
+                if (_game.Phase == GamePhase.AIThinking)
+                    UpdateLastMove();
+                RefreshStatus();
+            }
+        }
+
+        // Also trigger AI for new-game-as-black / immediate-transition scenario
+        if (!_timeExpired && _game.Phase == GamePhase.AIThinking && !ChessAI.IsPending)
+        {
+            ChessAI.RequestMove(_game, () =>
+            {
+                UpdateLastMove();
+                RefreshStatus();
+            });
+        }
+
+        UpdateMoveHistory();
+        UpdateTimeControl(dt);
+
+        // --- SGP 2D frame ---
+        sgp_begin(width, height);
+        sgp_viewport(0, 0, width, height);
+        sgp_project(0, width, 0, height);
+
+        float boardPx = BOARD_SIZE * CELL_SIZE;
+        ComputeBoardOrigin(width, height, boardPx, out float boardLeft, out float boardTop);
+
+        // Border frame around the board
+        sgp_set_color(CLR_BORDER.r, CLR_BORDER.g, CLR_BORDER.b, 1f);
+        sgp_draw_filled_rect(boardLeft - BORDER, boardTop - BORDER,
+                             boardPx + BORDER * 2f, boardPx + BORDER * 2f);
+
+        DrawBoard(boardLeft, boardTop);
+        DrawPieces(boardLeft, boardTop, width, height);
+        DrawBoardCoordinates(boardLeft, boardTop);
+
+        sg_begin_pass(new sg_pass { action = S.passAction, swapchain = sglue_swapchain() });
+        sgp_flush();
+        sgp_end();
+
+        if (_showUI != 0)
+            DrawImGui(dt);
+
+        sg_end_pass();
+        sg_commit();
+    }
+
+    // -----------------------------------------------------------------------
+    // Board drawing
+    // -----------------------------------------------------------------------
+    static void DrawBoard(float bx, float by)
+    {
+        int selectedSq = _game.SelectedSquare;
+
+        // Find king square when in check
+        int checkKingSq = -1;
+        if (_game.Phase != GamePhase.AIThinking && _game.IsInCheck())
+        {
+            var sideToMove = _game.CurrentSideToMove;
+            var kingPiece = sideToMove == Side.White ? Piece.K : Piece.k;
+            for (int sq = 0; sq < 64; sq++)
+            {
+                if (_game.GetPieceAt(sq) == kingPiece)
+                {
+                    checkKingSq = sq;
+                    break;
+                }
+            }
+        }
+
+        var validDests = new HashSet<int>();
+        foreach (var m in _game.LegalMovesFromSelected)
+            validDests.Add(m.TargetSquare());
+
+        for (int rank = 0; rank < 8; rank++)
+        {
+            for (int file = 0; file < 8; file++)
+            {
+                int sq = SquareFromRankFile(rank, file);
+                SquareToScreen(sq, bx, by, out float sx, out float sy);
+
+                // Base color
+                bool light = ((rank + file) % 2) == 0;
+                var col = light ? CLR_LIGHT : CLR_DARK;
+                sgp_set_color(col.r, col.g, col.b, col.a);
+                sgp_draw_filled_rect(sx, sy, CELL_SIZE, CELL_SIZE);
+
+                // Last move
+                if (sq == _lastMoveFrom || sq == _lastMoveTo)
+                {
+                    sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_BLEND);
+                    sgp_set_color(CLR_LAST_MOVE.r, CLR_LAST_MOVE.g, CLR_LAST_MOVE.b, CLR_LAST_MOVE.a);
+                    sgp_draw_filled_rect(sx, sy, CELL_SIZE, CELL_SIZE);
+                    sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_NONE);
+                }
+
+                // King in check
+                if (sq == checkKingSq)
+                {
+                    sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_BLEND);
+                    sgp_set_color(CLR_CHECK.r, CLR_CHECK.g, CLR_CHECK.b, CLR_CHECK.a);
+                    sgp_draw_filled_rect(sx, sy, CELL_SIZE, CELL_SIZE);
+                    sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_NONE);
+                }
+
+                // Selected square
+                if (sq == selectedSq)
+                {
+                    sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_BLEND);
+                    sgp_set_color(CLR_SELECTED.r, CLR_SELECTED.g, CLR_SELECTED.b, CLR_SELECTED.a);
+                    sgp_draw_filled_rect(sx, sy, CELL_SIZE, CELL_SIZE);
+                    sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_NONE);
+                }
+
+                // Valid destination dot
+                if (validDests.Contains(sq))
+                {
+                    float dotSize = CELL_SIZE * 0.28f;
+                    float dotOff = (CELL_SIZE - dotSize) * 0.5f;
+                    sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_BLEND);
+                    sgp_set_color(CLR_VALID.r, CLR_VALID.g, CLR_VALID.b, CLR_VALID.a);
+                    sgp_draw_filled_rect(sx + dotOff, sy + dotOff, dotSize, dotSize);
+                    sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_NONE);
+                }
+            }
+        }
+        sgp_reset_color();
+    }
+
+    static void DrawPieces(float bx, float by, int w, int h)
+    {
+        if (_piecesLoadedCount == 0)
+        {
+            return;
+        }
+
+        sgp_reset_viewport();
+        sgp_reset_scissor();
+        sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_BLEND);
+
+        int activeTexIdx = -1;
+        var srcRect = new sgp_rect { x = 0f, y = 0f, w = 60f, h = 60f };
+
+        for (int sq = 0; sq < 64; sq++)
+        {
+            var piece = _game.GetPieceAt(sq);
+            if (piece == Piece.None || piece == Piece.Unknown) continue;
+
+            int texIdx = (int)piece;
+            if (texIdx < 0 || texIdx >= 12 || !_pieceLoaded[texIdx]) continue;
+
+            SquareToScreen(sq, bx, by, out float sx, out float sy);
+            float pad = CELL_SIZE * 0.05f;
+            float size = CELL_SIZE - pad * 2f;
+
+            if (texIdx != activeTexIdx)
+            {
+                sgp_set_view(0, _pieceViews[texIdx]);
+                sgp_set_sampler(0, S.sampler);
+                activeTexIdx = texIdx;
+            }
+
+            sgp_draw_textured_rect(
+                0,
+                new sgp_rect { x = sx + pad, y = sy + pad, w = size, h = size },
+                srcRect);
+
+        }
+
+        sgp_reset_view(0);
+        sgp_reset_sampler(0);
+        sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_NONE);
+    }
+
+    // -----------------------------------------------------------------------
+    // ImGui panel
+    // -----------------------------------------------------------------------
+    static void DrawImGui(float dt)
+    {
+        simgui_new_frame(new simgui_frame_desc_t
+        {
+            width = sapp_width(),
+            height = sapp_height(),
+            delta_time = dt
+        });
+
+        float boardPx = BOARD_SIZE * CELL_SIZE;
+        ComputeBoardOrigin(sapp_width(), sapp_height(), boardPx, out float boardLeft, out float boardTop);
+
+        float panelWidth = GetUiPanelWidth(sapp_widthf());
+        float panelHeight = MathF.Max(360f, MathF.Min(520f, sapp_heightf() - 20f));
+        float panelX = 10f;
+        float panelY = 10f;
+
+        igSetNextWindowPos(new Vector2(panelX, panelY), ImGuiCond.Always, Vector2.Zero);
+        igSetNextWindowSize(new Vector2(panelWidth, panelHeight), ImGuiCond.Always);
+
+        byte _open = 1;
+        if (igBegin("Chess", ref _open,
+            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse))
+        {
+            igText(_statusText);
+            igSeparator();
+
+            int depth = _game.AiDepth;
+            if (igSliderInt("AI Depth", ref depth, 1, 12, "%d", 0))
+                _game.AiDepth = depth;
+
+            igSeparator();
+
+            byte tcEnabled = _useTimeControl ? (byte)1 : (byte)0;
+            if (igCheckbox("Use Time Limit", ref tcEnabled))
+            {
+                _useTimeControl = tcEnabled != 0;
+                ResetClocks();
+                _timeExpired = false;
+                _timeExpiredStatus = string.Empty;
+                RefreshStatus();
+            }
+
+            int mins = _timeMinutesPerSide;
+            if (igSliderInt("Minutes/Side", ref mins, 1, 30, "%d", 0))
+            {
+                _timeMinutesPerSide = mins;
+                if (_useTimeControl)
+                {
+                    ResetClocks();
+                    _timeExpired = false;
+                    _timeExpiredStatus = string.Empty;
+                    RefreshStatus();
+                }
+            }
+
+            igText($"White: {FormatClock(_whiteTimeSec)}");
+            igText($"Black: {FormatClock(_blackTimeSec)}");
+            if (igButton("Reset Clocks", new Vector2(-1, 0)))
+            {
+                ResetClocks();
+                _timeExpired = false;
+                _timeExpiredStatus = string.Empty;
+                RefreshStatus();
+            }
+
+            igSeparator();
+
+            byte flipByte = _flipBoard ? (byte)1 : (byte)0;
+            if (igCheckbox("Flip Board", ref flipByte))
+                _flipBoard = (flipByte != 0);
+
+            igSeparator();
+
+            if (igButton("New Game (White)", new Vector2(-1, 0)))
+                StartNewGame(Side.White);
+
+            if (igButton("New Game (Black)", new Vector2(-1, 0)))
+                StartNewGame(Side.Black);
+
+            if (_game.Phase == GamePhase.AIThinking)
+            {
+                igSeparator();
+                igText("AI thinking...");
+            }
+
+            if (_piecesLoadedCount < 12)
+            {
+                igSeparator();
+                igText($"Loading pieces {_piecesLoadedCount}/12...");
+            }
+
+            igSeparator();
+            igText("Move History");
+            igBeginChild_Str("move_history", new Vector2(0, 130), ImGuiChildFlags.Borders, ImGuiWindowFlags.None);
+            if (_moveHistory.Count == 0)
+            {
+                igTextDisabled("No moves yet");
+            }
+            else
+            {
+                for (int i = 0; i < _moveHistory.Count; i++)
+                {
+                    igText(_moveHistory[i]);
+                }
+            }
+            igEndChild();
+        }
+        igEnd();
+
+        simgui_render();
+    }
+
+    static void StartNewGame(Side humanSide)
+    {
+        _game.Reset(humanSide);
+        _flipBoard = (humanSide == Side.Black);
+        _lastMoveFrom = -1;
+        _lastMoveTo = -1;
+        _moveHistory.Clear();
+        _lastRecordedMoveUci = null;
+        ResetClocks();
+        _timeExpired = false;
+        _timeExpiredStatus = string.Empty;
+        RefreshStatus();
+    }
+
+    // -----------------------------------------------------------------------
+    // Event handling
+    // -----------------------------------------------------------------------
+    [UnmanagedCallersOnly]
+    private static void Event(sapp_event* e)
+    {
+        simgui_handle_event(in *e);
+
+        if (e->type == sapp_event_type.SAPP_EVENTTYPE_MOUSE_UP
+            && e->mouse_button == sapp_mousebutton.SAPP_MOUSEBUTTON_LEFT)
+        {
+            _mouseX = e->mouse_x;
+            _mouseY = e->mouse_y;
+            _mouseClicked = true;
+        }
+
+        if (e->type == sapp_event_type.SAPP_EVENTTYPE_TOUCHES_ENDED)
+        {
+            if (e->num_touches > 0)
+            {
+                _mouseX = e->touches[0].pos_x;
+                _mouseY = e->touches[0].pos_y;
+                _mouseClicked = true;
+            }
+        }
+
+        if (e->type == sapp_event_type.SAPP_EVENTTYPE_KEY_DOWN)
+        {
+            if (e->key_code == sapp_keycode.SAPP_KEYCODE_ESCAPE)
+                _showUI = (byte)(_showUI == 0 ? 1 : 0);
+            if (e->key_code == sapp_keycode.SAPP_KEYCODE_F)
+                _flipBoard = !_flipBoard;
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Cleanup
+    // -----------------------------------------------------------------------
+    [UnmanagedCallersOnly]
+    static void Cleanup()
+    {
+        for (int i = 0; i < _pieceTextures.Length; i++)
+        {
+            _pieceTextures[i]?.Dispose();
+            _pieceTextures[i] = null;
+        }
+
+        simgui_shutdown();
+        sdtx_shutdown();
+        sgp_shutdown();
+        sg_shutdown();
+
+        if (Debugger.IsAttached)
+            Environment.Exit(0);
+    }
+
+    // -----------------------------------------------------------------------
+    // Entry point
+    // -----------------------------------------------------------------------
+    public static sapp_desc sokol_main()
+    {
+        return new sapp_desc
+        {
+            init_cb = &Init,
+            frame_cb = &Frame,
+            event_cb = &Event,
+            cleanup_cb = &Cleanup,
+            width = 1200,
+            height = 800,
+            window_title = "Chess",
+            sample_count = 1,
+            icon = { sokol_default = true },
+            logger = { func = &slog_func },
+        };
+    }
+
+    // -----------------------------------------------------------------------
+    // Coordinate helpers
+    // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Lynx big-endian squares: a8=0..h8=7, ..., a1=56..h1=63.
+    /// screenRow 0 = top of window.
+    /// </summary>
+    static int SquareFromRankFile(int screenRow, int screenFile)
+    {
+        int lynxRank = _flipBoard ? (7 - screenRow) : screenRow;
+        int lynxFile = _flipBoard ? (7 - screenFile) : screenFile;
+        return lynxRank * 8 + lynxFile;
+    }
+
+    static void SquareToScreen(int square, float bx, float by, out float sx, out float sy)
+    {
+        int lynxRank = square / 8;
+        int lynxFile = square % 8;
+        int screenRow = _flipBoard ? (7 - lynxRank) : lynxRank;
+        int screenFile = _flipBoard ? (7 - lynxFile) : lynxFile;
+        sx = bx + screenFile * CELL_SIZE;
+        sy = by + screenRow * CELL_SIZE;
+    }
+
+    static int ScreenToSquare(float mx, float my, int width, int height)
+    {
+        float boardPx = BOARD_SIZE * CELL_SIZE;
+        ComputeBoardOrigin(width, height, boardPx, out float boardLeft, out float boardTop);
+        float lx = mx - boardLeft;
+        float ly = my - boardTop;
+        if (lx < 0 || ly < 0 || lx >= boardPx || ly >= boardPx) return -1;
+        int screenFile = (int)(lx / CELL_SIZE);
+        int screenRow = (int)(ly / CELL_SIZE);
+        return SquareFromRankFile(screenRow, screenFile);
+    }
+
+    static void ComputeBoardOrigin(int width, int height, float boardPx, out float boardLeft, out float boardTop)
+    {
+        float leftInset = 0f;
+        if (_showUI != 0)
+        {
+            leftInset = GetUiPanelWidth(width) + UI_GAP + 10f;
+        }
+
+        float availableWidth = MathF.Max(1f, width - leftInset);
+        boardLeft = leftInset + MathF.Max(0f, (availableWidth - boardPx) * 0.5f);
+        boardTop = MathF.Max(0f, (height - boardPx) * 0.5f);
+    }
+
+    static float GetUiPanelWidth(float windowWidth)
+    {
+        return Math.Clamp(windowWidth * 0.24f, UI_MIN_WIDTH, UI_MAX_WIDTH);
+    }
+
+    // -----------------------------------------------------------------------
+    // Status / highlight helpers
+    // -----------------------------------------------------------------------
+    static void UpdateLastMove()
+    {
+        var uci = _game.LastMoveUCI;
+        if (uci != null && uci.Length >= 4)
+        {
+            int fromFile = uci[0] - 'a';
+            int fromRank = 8 - (uci[1] - '0');
+            int toFile = uci[2] - 'a';
+            int toRank = 8 - (uci[3] - '0');
+            _lastMoveFrom = fromRank * 8 + fromFile;
+            _lastMoveTo = toRank * 8 + toFile;
+        }
+    }
+
+    static void RefreshStatus()
+    {
+        if (_timeExpired)
+        {
+            _statusText = _timeExpiredStatus;
+            return;
+        }
+
+        _statusText = _game.Phase switch
+        {
+            GamePhase.GameOver => _game.OverReason switch
+            {
+                GameOverReason.Checkmate => _game.CurrentSideToMove == Side.White
+                                               ? "Checkmate — Black wins!"
+                                               : "Checkmate — White wins!",
+                GameOverReason.Stalemate => "Stalemate — Draw",
+                GameOverReason.FiftyMoveRule => "Draw (50-move rule)",
+                _ => "Game over"
+            },
+            GamePhase.AIThinking => "AI is thinking...",
+            _ => _game.CurrentSideToMove == Side.White ? "White to move" : "Black to move"
+        };
+    }
+
+    static void UpdateMoveHistory()
+    {
+        var uci = _game.LastMoveUCI;
+        if (string.IsNullOrEmpty(uci) || uci == _lastRecordedMoveUci)
+        {
+            return;
+        }
+
+        Side mover = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
+        string prefix = mover == Side.White ? "White" : "Black";
+        _moveHistory.Add($"{prefix}: {uci}");
+        _lastRecordedMoveUci = uci;
+    }
+
+    static void UpdateTimeControl(float dt)
+    {
+        if (!_useTimeControl || _timeExpired || _game.Phase == GamePhase.GameOver)
+        {
+            return;
+        }
+
+        if (_game.CurrentSideToMove == Side.White)
+        {
+            _whiteTimeSec -= dt;
+            if (_whiteTimeSec <= 0f)
+            {
+                _whiteTimeSec = 0f;
+                _timeExpired = true;
+                _timeExpiredStatus = "Black wins on time";
+                RefreshStatus();
+            }
+        }
+        else
+        {
+            _blackTimeSec -= dt;
+            if (_blackTimeSec <= 0f)
+            {
+                _blackTimeSec = 0f;
+                _timeExpired = true;
+                _timeExpiredStatus = "White wins on time";
+                RefreshStatus();
+            }
+        }
+    }
+
+    static void ResetClocks()
+    {
+        float t = _timeMinutesPerSide * 60f;
+        _whiteTimeSec = t;
+        _blackTimeSec = t;
+    }
+
+    static string FormatClock(float seconds)
+    {
+        int total = Math.Max(0, (int)MathF.Ceiling(seconds));
+        int mm = total / 60;
+        int ss = total % 60;
+        return $"{mm:00}:{ss:00}";
+    }
+
+    static void DrawBoardCoordinates(float bx, float by)
+    {
+        const float pixelPitch = 4.5f;
+        const float pixelSize = 3.2f;
+        const float labelMargin = 7f;
+
+        void EmitPixel(float x, float y)
+        {
+            sgp_draw_filled_rect(x - pixelSize * 0.5f, y - pixelSize * 0.5f, pixelSize, pixelSize);
+        }
+
+        void EmitGlyph(char ch, float cx, float cy)
+        {
+            int fi = FontIdx(ch);
+            if (fi < 0) return;
+            var px = s_fontPixels[fi];
+            for (int r = 0; r < 5; r++)
+            {
+                for (int c = 0; c < 3; c++)
+                {
+                    if (px[r * 3 + c] == 0) continue;
+                    float x = cx + (c - 1) * pixelPitch;
+                    float y = cy + (r - 2) * pixelPitch;
+                    EmitPixel(x, y);
+                }
+            }
+        }
+
+        for (int i = 0; i < 8; i++)
+        {
+            // Files A-H on bottom wooden frame strip.
+            int file = _flipBoard ? (7 - i) : i;
+            char fileCh = (char)('A' + file);
+            float fileX = bx + i * CELL_SIZE + CELL_SIZE * 0.5f;
+            float fileY = by + BOARD_SIZE * CELL_SIZE + labelMargin + 10f;
+            sgp_set_color(0.93f, 0.84f, 0.45f, 1f);
+            EmitGlyph(fileCh, fileX, fileY);
+
+            // Ranks 1-8 on left wooden frame strip.
+            int rank = _flipBoard ? (i + 1) : (8 - i);
+            float rankX = bx - labelMargin - 9f;
+            float rankY = by + i * CELL_SIZE + CELL_SIZE * 0.5f;
+            sgp_set_color(0.93f, 0.84f, 0.45f, 1f);
+            EmitGlyph((char)('0' + rank), rankX, rankY);
+        }
+
+        sgp_reset_color();
+    }
+}

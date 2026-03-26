@@ -222,6 +222,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManifoldApp", "examples\Man
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ManifoldAppWeb", "examples\ManifoldApp\ManifoldAppWeb.csproj", "{FAA5A95F-FAE9-4C51-B7A8-507E995A9152}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chess", "examples\Chess\Chess.csproj", "{76BB73B0-BE77-47F1-93B3-23A7BF35C70F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -664,6 +666,10 @@ Global
 		{FAA5A95F-FAE9-4C51-B7A8-507E995A9152}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FAA5A95F-FAE9-4C51-B7A8-507E995A9152}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FAA5A95F-FAE9-4C51-B7A8-507E995A9152}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76BB73B0-BE77-47F1-93B3-23A7BF35C70F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76BB73B0-BE77-47F1-93B3-23A7BF35C70F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76BB73B0-BE77-47F1-93B3-23A7BF35C70F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76BB73B0-BE77-47F1-93B3-23A7BF35C70F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -778,6 +784,7 @@ Global
 		{9A04E901-1EB2-4E2E-85B3-7493AEA02D15} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{59B90539-5CBD-4BF2-8FC7-EF9172CC2A96} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{FAA5A95F-FAE9-4C51-B7A8-507E995A9152} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
+		{76BB73B0-BE77-47F1-93B3-23A7BF35C70F} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3E698CF8-2571-44C4-BDB3-0CAAE475F5DF}
