@@ -30,6 +30,7 @@ public sealed class ChessGame
     public GameOverReason OverReason { get; private set; } = GameOverReason.None;
     public int AiDepth { get; set; } = 5;
     public string? LastMoveUCI { get; private set; }
+    public string? LastMoveAlgebraic { get; private set; }
 
     // The square the human has selected (0-63, or -1 if none)
     public int SelectedSquare { get; private set; } = -1;
@@ -60,14 +61,22 @@ public sealed class ChessGame
     {
         Console.WriteLine($"[ChessGame] Reset — human plays {humanSide}");
         HumanSide = humanSide;
-        Phase = GamePhase.PlayerTurn;
         OverReason = GameOverReason.None;
         SelectedSquare = -1;
         LastMoveUCI = null;
+        LastMoveAlgebraic = null;
         _legalMovesFromSelected.Clear();
         _engine.NewGame();
         RefreshLegalMoves();
         TakeSnapshot();
+
+        // At game start White is to move. If the human picked Black,
+        // AI (White) should move immediately.
+        Phase = _engine.Game.CurrentPosition.Side == HumanSide
+            ? GamePhase.PlayerTurn
+            : GamePhase.AIThinking;
+
+        Console.WriteLine($"[ChessGame] Reset phase → {Phase}");
     }
 
     // -----------------------------------------------------------------------
@@ -162,6 +171,7 @@ public sealed class ChessGame
 
     private void ApplyHumanMove(Move move)
     {
+        string algebraicBase = move.ToEPDString(_engine.Game.CurrentPosition);
         LastMoveUCI = move.UCIString();
         Console.WriteLine($"[ChessGame] Human move: {LastMoveUCI}");
         _engine.Game.MakeMove(move);
@@ -169,6 +179,7 @@ public sealed class ChessGame
         RefreshLegalMoves();
         TakeSnapshot();   // snapshot BEFORE handing off to AI thread
         CheckGameOver();
+        LastMoveAlgebraic = AppendCheckSuffix(algebraicBase);
         if (Phase == GamePhase.PlayerTurn)
         {
             Phase = GamePhase.AIThinking;
@@ -193,10 +204,12 @@ public sealed class ChessGame
         }
 
         Console.WriteLine($"[ChessGame] AI thinking (depth={AiDepth})...");
+        using var positionBeforeAIMove = new Position(_engine.Game.CurrentPosition);
         // BestMove already calls Game.MakeMove and Game.UpdateInitialPosition internally.
         // During search, CurrentPosition.Board[] is volatile — use _boardSnapshot for rendering.
         var result = _engine.BestMove(new GoCommand($"go depth {AiDepth}"));
         LastMoveUCI = result.BestMove.UCIString();
+        string algebraicBase = result.BestMove.ToEPDString(positionBeforeAIMove);
         Console.WriteLine($"[ChessGame] AI played: {LastMoveUCI}");
 
         RefreshLegalMoves();
@@ -205,6 +218,7 @@ public sealed class ChessGame
         LogBoardSnapshot();
 
         CheckGameOver();
+        LastMoveAlgebraic = AppendCheckSuffix(algebraicBase);
 
         if (Phase != GamePhase.GameOver)
         {
@@ -252,6 +266,28 @@ public sealed class ChessGame
             OverReason = GameOverReason.FiftyMoveRule;
             Console.WriteLine("[ChessGame] GameOver → FiftyMoveRule");
         }
+    }
+
+    private string AppendCheckSuffix(string algebraic)
+    {
+        if (string.IsNullOrEmpty(algebraic))
+        {
+            return algebraic;
+        }
+
+        // Avoid duplicating suffixes if already present.
+        if (algebraic.EndsWith("+") || algebraic.EndsWith("#"))
+        {
+            return algebraic;
+        }
+
+        bool inCheck = _engine.Game.CurrentPosition.IsInCheck();
+        if (!inCheck)
+        {
+            return algebraic;
+        }
+
+        return _allLegalMoves.Length == 0 ? algebraic + "#" : algebraic + "+";
     }
 
     public bool IsInCheck() => _engine.Game.CurrentPosition.IsInCheck();

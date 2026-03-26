@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Text;
 using Sokol;
 using Imgui;
 using static Sokol.SApp;
@@ -22,6 +23,14 @@ using Lynx.Model;
 
 public static unsafe class ChessApp
 {
+    enum HistoryNotation
+    {
+        Uci,
+        Algebraic
+    }
+
+    readonly record struct MoveHistoryEntry(string Side, string Uci, string Algebraic);
+
     // -----------------------------------------------------------------------
     // Constants
     // -----------------------------------------------------------------------
@@ -114,14 +123,18 @@ public static unsafe class ChessApp
 
     // Game
     static readonly ChessGame _game = new();
-    static readonly List<string> _moveHistory = new();
+    static readonly List<MoveHistoryEntry> _moveHistory = new();
     static string? _lastRecordedMoveUci;
+    static float _historyCopiedToastSec = 0f;
+    static string _historyCopiedToast = string.Empty;
+    static HistoryNotation _historyNotation = HistoryNotation.Uci;
 
     // Optional time-control mode
     static bool _useTimeControl = false;
     static int _timeMinutesPerSide = 5;
     static float _whiteTimeSec = 5 * 60f;
     static float _blackTimeSec = 5 * 60f;
+    static bool _clockStarted = false;
     static bool _timeExpired = false;
     static string _timeExpiredStatus = string.Empty;
 
@@ -277,6 +290,9 @@ public static unsafe class ChessApp
         DrawBoard(boardLeft, boardTop);
         DrawPieces(boardLeft, boardTop, width, height);
         DrawBoardCoordinates(boardLeft, boardTop);
+        DrawGameOverBanner(width, height);
+
+        PrepareGameOverSdtx(width, height);
 
         sg_begin_pass(new sg_pass { action = S.passAction, swapchain = sglue_swapchain() });
         sgp_flush();
@@ -284,6 +300,8 @@ public static unsafe class ChessApp
 
         if (_showUI != 0)
             DrawImGui(dt);
+
+        sdtx_draw();
 
         sg_end_pass();
         sg_commit();
@@ -421,6 +439,15 @@ public static unsafe class ChessApp
     // -----------------------------------------------------------------------
     static void DrawImGui(float dt)
     {
+        if (_historyCopiedToastSec > 0f)
+        {
+            _historyCopiedToastSec = MathF.Max(0f, _historyCopiedToastSec - dt);
+            if (_historyCopiedToastSec <= 0f)
+            {
+                _historyCopiedToast = string.Empty;
+            }
+        }
+
         simgui_new_frame(new simgui_frame_desc_t
         {
             width = sapp_width(),
@@ -432,9 +459,9 @@ public static unsafe class ChessApp
         ComputeBoardOrigin(sapp_width(), sapp_height(), boardPx, out float boardLeft, out float boardTop);
 
         float panelWidth = GetUiPanelWidth(sapp_widthf());
-        float panelHeight = MathF.Max(360f, MathF.Min(520f, sapp_heightf() - 20f));
+        float panelHeight = sapp_heightf();
         float panelX = 10f;
-        float panelY = 10f;
+        float panelY = 0f;
 
         igSetNextWindowPos(new Vector2(panelX, panelY), ImGuiCond.Always, Vector2.Zero);
         igSetNextWindowSize(new Vector2(panelWidth, panelHeight), ImGuiCond.Always);
@@ -457,6 +484,7 @@ public static unsafe class ChessApp
             {
                 _useTimeControl = tcEnabled != 0;
                 ResetClocks();
+                _clockStarted = _useTimeControl && _moveHistory.Count > 0;
                 _timeExpired = false;
                 _timeExpiredStatus = string.Empty;
                 RefreshStatus();
@@ -469,6 +497,7 @@ public static unsafe class ChessApp
                 if (_useTimeControl)
                 {
                     ResetClocks();
+                    _clockStarted = _moveHistory.Count > 0;
                     _timeExpired = false;
                     _timeExpiredStatus = string.Empty;
                     RefreshStatus();
@@ -480,6 +509,7 @@ public static unsafe class ChessApp
             if (igButton("Reset Clocks", new Vector2(-1, 0)))
             {
                 ResetClocks();
+                _clockStarted = false;
                 _timeExpired = false;
                 _timeExpiredStatus = string.Empty;
                 RefreshStatus();
@@ -513,23 +543,139 @@ public static unsafe class ChessApp
 
             igSeparator();
             igText("Move History");
-            igBeginChild_Str("move_history", new Vector2(0, 130), ImGuiChildFlags.Borders, ImGuiWindowFlags.None);
+
+            byte uciSel = _historyNotation == HistoryNotation.Uci ? (byte)1 : (byte)0;
+            if (igRadioButton_Bool("UCI", uciSel != 0))
+            {
+                _historyNotation = HistoryNotation.Uci;
+            }
+            igSameLine(0, 8f);
+            byte algSel = _historyNotation == HistoryNotation.Algebraic ? (byte)1 : (byte)0;
+            if (igRadioButton_Bool("Algebraic", algSel != 0))
+            {
+                _historyNotation = HistoryNotation.Algebraic;
+            }
+
+            if (igButton("Copy Move History", new Vector2(-1, 0)))
+            {
+                string payload = BuildMoveHistoryClipboardText();
+                sapp_set_clipboard_string(payload);
+                _historyCopiedToast = "Move history copied";
+                _historyCopiedToastSec = 1.8f;
+            }
+
+            if (_historyCopiedToastSec > 0f)
+            {
+                igText(_historyCopiedToast);
+            }
+
+            Vector2 remaining = default;
+            igGetContentRegionAvail(ref remaining);
+            float historyHeight = MathF.Max(80f, remaining.Y);
+            igBeginChild_Str("move_history", new Vector2(0, historyHeight), ImGuiChildFlags.Borders, ImGuiWindowFlags.None);
             if (_moveHistory.Count == 0)
             {
                 igTextDisabled("No moves yet");
             }
             else
             {
-                for (int i = 0; i < _moveHistory.Count; i++)
+                if (_historyNotation == HistoryNotation.Algebraic)
                 {
-                    igText(_moveHistory[i]);
+                    string pgnLike = BuildAlgebraicHistoryText(includeResult: true);
+                    igTextWrapped(pgnLike);
+                }
+                else
+                {
+                    for (int i = 0; i < _moveHistory.Count; i++)
+                    {
+                        var item = _moveHistory[i];
+                        igText($"{item.Side}: {item.Uci}");
+                    }
                 }
             }
             igEndChild();
         }
         igEnd();
-
         simgui_render();
+    }
+
+    static string BuildMoveHistoryClipboardText()
+    {
+        if (_moveHistory.Count == 0)
+        {
+            return "No moves yet";
+        }
+
+        if (_historyNotation == HistoryNotation.Algebraic)
+        {
+            return BuildAlgebraicHistoryText(includeResult: true);
+        }
+
+        var lines = new List<string>(_moveHistory.Count);
+        for (int i = 0; i < _moveHistory.Count; i++)
+        {
+            var item = _moveHistory[i];
+            lines.Add($"{item.Side}: {item.Uci}");
+        }
+        return string.Join("\n", lines);
+    }
+
+    static string BuildAlgebraicHistoryText(bool includeResult)
+    {
+        if (_moveHistory.Count == 0)
+        {
+            return "";
+        }
+
+        var sb = new StringBuilder();
+
+        for (int i = 0; i < _moveHistory.Count; i += 2)
+        {
+            int moveNumber = (i / 2) + 1;
+            sb.Append(moveNumber);
+            sb.Append('.');
+            sb.Append(_moveHistory[i].Algebraic);
+
+            if (i + 1 < _moveHistory.Count)
+            {
+                sb.Append(' ');
+                sb.Append(_moveHistory[i + 1].Algebraic);
+            }
+
+            if (i + 2 < _moveHistory.Count)
+            {
+                sb.Append(' ');
+            }
+        }
+
+        if (includeResult)
+        {
+            string result = GetPgnResultSuffix();
+            if (!string.IsNullOrEmpty(result))
+            {
+                sb.Append(' ');
+                sb.Append(result);
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    static string GetPgnResultSuffix()
+    {
+        if (_game.Phase != GamePhase.GameOver)
+        {
+            return "";
+        }
+
+        return _game.OverReason switch
+        {
+            GameOverReason.Checkmate => _game.CurrentSideToMove == Side.White ? "0-1" : "1-0",
+            GameOverReason.Stalemate => "1/2-1/2",
+            GameOverReason.FiftyMoveRule => "1/2-1/2",
+            GameOverReason.InsufficientMaterial => "1/2-1/2",
+            _ => "*"
+        };
     }
 
     static void StartNewGame(Side humanSide)
@@ -541,9 +687,18 @@ public static unsafe class ChessApp
         _moveHistory.Clear();
         _lastRecordedMoveUci = null;
         ResetClocks();
+        _clockStarted = false;
         _timeExpired = false;
         _timeExpiredStatus = string.Empty;
-        RefreshStatus();
+
+        if (humanSide == Side.Black && _game.Phase == GamePhase.AIThinking)
+        {
+            _statusText = "AI starts as White...";
+        }
+        else
+        {
+            RefreshStatus();
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -617,6 +772,8 @@ public static unsafe class ChessApp
             height = 800,
             window_title = "Chess",
             sample_count = 1,
+            enable_clipboard = true,
+            clipboard_size = 8192,
             icon = { sokol_default = true },
             logger = { func = &slog_func },
         };
@@ -727,14 +884,19 @@ public static unsafe class ChessApp
         }
 
         Side mover = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
-        string prefix = mover == Side.White ? "White" : "Black";
-        _moveHistory.Add($"{prefix}: {uci}");
+        string side = mover == Side.White ? "White" : "Black";
+        string algebraic = string.IsNullOrWhiteSpace(_game.LastMoveAlgebraic) ? uci : _game.LastMoveAlgebraic!;
+        _moveHistory.Add(new MoveHistoryEntry(side, uci, algebraic));
         _lastRecordedMoveUci = uci;
+        if (_useTimeControl)
+        {
+            _clockStarted = true;
+        }
     }
 
     static void UpdateTimeControl(float dt)
     {
-        if (!_useTimeControl || _timeExpired || _game.Phase == GamePhase.GameOver)
+        if (!_useTimeControl || !_clockStarted || _timeExpired || _game.Phase == GamePhase.GameOver)
         {
             return;
         }
@@ -772,7 +934,7 @@ public static unsafe class ChessApp
 
     static string FormatClock(float seconds)
     {
-        int total = Math.Max(0, (int)MathF.Ceiling(seconds));
+        int total = Math.Max(0, (int)MathF.Floor(seconds));
         int mm = total / 60;
         int ss = total % 60;
         return $"{mm:00}:{ss:00}";
@@ -825,5 +987,92 @@ public static unsafe class ChessApp
         }
 
         sgp_reset_color();
+    }
+
+    static void DrawGameOverBanner(int width, int height)
+    {
+        if (_game.Phase != GamePhase.GameOver)
+        {
+            return;
+        }
+
+        float w = width;
+        float h = height;
+        float bandH = h * 0.28f;
+        float bandY = (h - bandH) * 0.5f;
+
+        sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_BLEND);
+        sgp_set_color(0f, 0f, 0f, 0.78f);
+        sgp_draw_filled_rect(0f, bandY, w, bandH);
+        sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_NONE);
+        sgp_reset_color();
+    }
+
+    static void PrepareGameOverSdtx(int width, int height)
+    {
+        if (_game.Phase != GamePhase.GameOver)
+        {
+            return;
+        }
+
+        float w = width;
+        float h = height;
+
+        string line1;
+        string line2;
+
+        if (_game.OverReason == GameOverReason.Checkmate)
+        {
+            var winner = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
+            bool humanWon = winner == _game.HumanSide;
+            line1 = humanWon ? "CHECKMATE - YOU WIN!" : "CHECKMATE - AI WINS!";
+            line2 = humanWon ? "Great game" : "Try again";
+        }
+        else
+        {
+            line1 = _game.OverReason switch
+            {
+                GameOverReason.Stalemate => "STALEMATE",
+                GameOverReason.FiftyMoveRule => "DRAW (50-MOVE RULE)",
+                GameOverReason.InsufficientMaterial => "DRAW (INSUFFICIENT MATERIAL)",
+                _ => "GAME OVER"
+            };
+            line2 = "Draw";
+        }
+
+        // Choose a large readable scale, but clamp it so the text always fits the screen.
+        float baseScale1 = MathF.Max(2f, MathF.Min(w / 110f, h / 70f));
+        float fitScale1W = w / (8f * (line1.Length + 2));
+        float fitScale1H = h / 20f;
+        float scale1 = MathF.Max(1f, MathF.Min(baseScale1, MathF.Min(fitScale1W, fitScale1H)));
+        float cols1  = (w / scale1) / 8f;
+        float rows1  = (h / scale1) / 8f;
+
+        sdtx_font(0);
+        sdtx_canvas(w / scale1, h / scale1);
+        if (_game.OverReason == GameOverReason.Checkmate)
+        {
+            var winner = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
+            bool humanWon = winner == _game.HumanSide;
+            if (humanWon) sdtx_color3b(255, 215, 30);
+            else sdtx_color3b(255, 90, 70);
+        }
+        else
+        {
+            sdtx_color3b(200, 200, 200);
+        }
+        sdtx_origin(MathF.Max(0f, (cols1 - line1.Length) * 0.5f), rows1 * 0.5f - 1.1f);
+        sdtx_puts(line1);
+
+        float baseScale2 = MathF.Max(1.5f, scale1 * 0.6f);
+        float fitScale2W = w / (8f * (line2.Length + 2));
+        float fitScale2H = h / 22f;
+        float scale2 = MathF.Max(1f, MathF.Min(baseScale2, MathF.Min(fitScale2W, fitScale2H)));
+        float cols2  = (w / scale2) / 8f;
+        float rows2  = (h / scale2) / 8f;
+        sdtx_canvas(w / scale2, h / scale2);
+        sdtx_color3b(210, 210, 210);
+        sdtx_origin(MathF.Max(0f, (cols2 - line2.Length) * 0.5f), rows2 * 0.5f + 1.3f);
+        sdtx_puts(line2);
     }
 }
