@@ -137,6 +137,9 @@ public static unsafe class ChessApp
     static bool _clockStarted = false;
     static bool _timeExpired = false;
     static string _timeExpiredStatus = string.Empty;
+    static int _whiteWins = 0;
+    static int _blackWins = 0;
+    static bool _resultRecordedForCurrentGame = false;
 
     // Last move highlight squares
     static int _lastMoveFrom = -1, _lastMoveTo = -1;
@@ -273,6 +276,7 @@ public static unsafe class ChessApp
 
         UpdateMoveHistory();
         UpdateTimeControl(dt);
+        TryRecordGameResult();
 
         // --- SGP 2D frame ---
         sgp_begin(width, height);
@@ -705,6 +709,7 @@ public static unsafe class ChessApp
         _clockStarted = false;
         _timeExpired = false;
         _timeExpiredStatus = string.Empty;
+        _resultRecordedForCurrentGame = false;
 
         if (humanSide == Side.Black && _game.Phase == GamePhase.AIThinking)
         {
@@ -1054,7 +1059,7 @@ public static unsafe class ChessApp
         {
             bool whiteFlagged = _whiteTimeSec <= 0f;
             line1 = whiteFlagged ? "BLACK WINS ON TIME" : "WHITE WINS ON TIME";
-            line2 = "Time expired";
+            line2 = BuildWinsScoreText();
         }
         else
         {
@@ -1063,7 +1068,7 @@ public static unsafe class ChessApp
                 var winner = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
                 bool humanWon = winner == _game.HumanSide;
                 line1 = humanWon ? "CHECKMATE - YOU WIN!" : "CHECKMATE - AI WINS!";
-                line2 = humanWon ? "Great game" : "Try again";
+                line2 = BuildWinsScoreText();
             }
             else
             {
@@ -1074,7 +1079,7 @@ public static unsafe class ChessApp
                     GameOverReason.InsufficientMaterial => "DRAW (INSUFFICIENT MATERIAL)",
                     _ => "GAME OVER"
                 };
-                line2 = "Draw";
+                line2 = BuildWinsScoreText();
             }
         }
 
@@ -1116,5 +1121,53 @@ public static unsafe class ChessApp
         sdtx_color3b(210, 210, 210);
         sdtx_origin(MathF.Max(0f, (cols2 - line2.Length) * 0.5f), rows2 * 0.5f + 1.3f);
         sdtx_puts(line2);
+    }
+
+    static void TryRecordGameResult()
+    {
+        if (_resultRecordedForCurrentGame)
+        {
+            return;
+        }
+
+        if (_timeExpired)
+        {
+            bool whiteFlagged = _whiteTimeSec <= 0f;
+            if (whiteFlagged)
+            {
+                _blackWins++;
+            }
+            else
+            {
+                _whiteWins++;
+            }
+            _resultRecordedForCurrentGame = true;
+            return;
+        }
+
+        if (_game.Phase != GamePhase.GameOver)
+        {
+            return;
+        }
+
+        if (_game.OverReason == GameOverReason.Checkmate)
+        {
+            Side winner = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
+            if (winner == Side.White)
+            {
+                _whiteWins++;
+            }
+            else
+            {
+                _blackWins++;
+            }
+        }
+
+        _resultRecordedForCurrentGame = true;
+    }
+
+    static string BuildWinsScoreText()
+    {
+        return $"White wins: {_whiteWins}  Black wins: {_blackWins}";
     }
 }
