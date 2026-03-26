@@ -734,6 +734,17 @@ public static unsafe class ChessApp
             if (e->key_code == sapp_keycode.SAPP_KEYCODE_F)
                 _flipBoard = !_flipBoard;
         }
+
+        if(e->type == sapp_event_type.SAPP_EVENTTYPE_RESIZED)
+        {
+            float size = Math.Min(sapp_height(), sapp_width());
+            CELL_SIZE = (size * 0.75f) / 8f;
+
+            BORDER = CELL_SIZE;
+            WINDOW_SIZE = BOARD_SIZE * CELL_SIZE + BORDER * 2f;
+            WINDOW_WIDTH = WINDOW_SIZE + GetUiPanelWidth(sapp_widthf()) + UI_GAP + 16f;
+            WINDOW_HEIGHT = WINDOW_SIZE;
+        }
     }
 
     // -----------------------------------------------------------------------

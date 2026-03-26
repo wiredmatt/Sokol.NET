@@ -163,6 +163,7 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 - **[Reversi](examples/Reversi)** - Playable Othello/Reversi board game with 3D discs, animated flips, touch + mouse input, adjustable AI depth, and cross-platform support (Desktop, Web, iOS, Android)
 - **[ConnectFour](examples/ConnectFour)** - Playable Connect 4 game with 3D disc drop animation, ghost preview, pulsing win highlights, alpha-beta AI with parallel search, and cross-platform support (Desktop, Web, iOS, Android)
 - **[Checkers](examples/Checkers)** - Playable Checkers game, animated moves, configurable,  alpha-beta AI ,adjustable AI depth, and cross-platform support (Desktop, Web, iOS, Android)
+- **[Chess](examples/Chess)** - Playable Chess game powered by the Lynx engine with configurable AI depth, move-history export, optional time controls, and support for Desktop, Android, and iOS
 
 ## 📜 Spine License Notice
 
