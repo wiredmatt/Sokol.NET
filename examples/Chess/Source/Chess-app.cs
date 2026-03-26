@@ -470,16 +470,23 @@ public static unsafe class ChessApp
         if (igBegin("Chess", ref _open,
             ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse))
         {
+            bool gameplaySettingsDisabled = (_moveHistory.Count > 0 || _game.Phase == GamePhase.AIThinking)
+                                           && _game.Phase != GamePhase.GameOver
+                                           && !_timeExpired;
+
             igText(_statusText);
             igSeparator();
 
             int depth = _game.AiDepth;
+            igBeginDisabled(gameplaySettingsDisabled);
             if (igSliderInt("AI Depth", ref depth, 1, 12, "%d", 0))
                 _game.AiDepth = depth;
+            igEndDisabled();
 
             igSeparator();
 
             byte tcEnabled = _useTimeControl ? (byte)1 : (byte)0;
+            igBeginDisabled(gameplaySettingsDisabled);
             if (igCheckbox("Use Time Limit", ref tcEnabled))
             {
                 _useTimeControl = tcEnabled != 0;
@@ -489,8 +496,10 @@ public static unsafe class ChessApp
                 _timeExpiredStatus = string.Empty;
                 RefreshStatus();
             }
+            igEndDisabled();
 
             int mins = _timeMinutesPerSide;
+            igBeginDisabled(gameplaySettingsDisabled);
             if (igSliderInt("Minutes/Side", ref mins, 1, 30, "%d", 0))
             {
                 _timeMinutesPerSide = mins;
@@ -503,9 +512,12 @@ public static unsafe class ChessApp
                     RefreshStatus();
                 }
             }
+            igEndDisabled();
 
             igText($"White: {FormatClock(_whiteTimeSec)}");
             igText($"Black: {FormatClock(_blackTimeSec)}");
+            bool resetClocksDisabled = _useTimeControl && _clockStarted && !_timeExpired && _game.Phase != GamePhase.GameOver;
+            igBeginDisabled(resetClocksDisabled);
             if (igButton("Reset Clocks", new Vector2(-1, 0)))
             {
                 ResetClocks();
@@ -514,12 +526,15 @@ public static unsafe class ChessApp
                 _timeExpiredStatus = string.Empty;
                 RefreshStatus();
             }
+            igEndDisabled();
 
             igSeparator();
 
             byte flipByte = _flipBoard ? (byte)1 : (byte)0;
+            igBeginDisabled(gameplaySettingsDisabled);
             if (igCheckbox("Flip Board", ref flipByte))
                 _flipBoard = (flipByte != 0);
+            igEndDisabled();
 
             igSeparator();
 
@@ -731,7 +746,10 @@ public static unsafe class ChessApp
         {
             if (e->key_code == sapp_keycode.SAPP_KEYCODE_ESCAPE)
                 _showUI = (byte)(_showUI == 0 ? 1 : 0);
-            if (e->key_code == sapp_keycode.SAPP_KEYCODE_F)
+            bool gameplaySettingsDisabled = (_moveHistory.Count > 0 || _game.Phase == GamePhase.AIThinking)
+                                           && _game.Phase != GamePhase.GameOver
+                                           && !_timeExpired;
+            if (e->key_code == sapp_keycode.SAPP_KEYCODE_F && !gameplaySettingsDisabled)
                 _flipBoard = !_flipBoard;
         }
 
@@ -1002,7 +1020,7 @@ public static unsafe class ChessApp
 
     static void DrawGameOverBanner(int width, int height)
     {
-        if (_game.Phase != GamePhase.GameOver)
+        if (_game.Phase != GamePhase.GameOver && !_timeExpired)
         {
             return;
         }
@@ -1021,7 +1039,7 @@ public static unsafe class ChessApp
 
     static void PrepareGameOverSdtx(int width, int height)
     {
-        if (_game.Phase != GamePhase.GameOver)
+        if (_game.Phase != GamePhase.GameOver && !_timeExpired)
         {
             return;
         }
@@ -1032,23 +1050,32 @@ public static unsafe class ChessApp
         string line1;
         string line2;
 
-        if (_game.OverReason == GameOverReason.Checkmate)
+        if (_timeExpired)
         {
-            var winner = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
-            bool humanWon = winner == _game.HumanSide;
-            line1 = humanWon ? "CHECKMATE - YOU WIN!" : "CHECKMATE - AI WINS!";
-            line2 = humanWon ? "Great game" : "Try again";
+            bool whiteFlagged = _whiteTimeSec <= 0f;
+            line1 = whiteFlagged ? "BLACK WINS ON TIME" : "WHITE WINS ON TIME";
+            line2 = "Time expired";
         }
         else
         {
-            line1 = _game.OverReason switch
+            if (_game.OverReason == GameOverReason.Checkmate)
             {
-                GameOverReason.Stalemate => "STALEMATE",
-                GameOverReason.FiftyMoveRule => "DRAW (50-MOVE RULE)",
-                GameOverReason.InsufficientMaterial => "DRAW (INSUFFICIENT MATERIAL)",
-                _ => "GAME OVER"
-            };
-            line2 = "Draw";
+                var winner = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
+                bool humanWon = winner == _game.HumanSide;
+                line1 = humanWon ? "CHECKMATE - YOU WIN!" : "CHECKMATE - AI WINS!";
+                line2 = humanWon ? "Great game" : "Try again";
+            }
+            else
+            {
+                line1 = _game.OverReason switch
+                {
+                    GameOverReason.Stalemate => "STALEMATE",
+                    GameOverReason.FiftyMoveRule => "DRAW (50-MOVE RULE)",
+                    GameOverReason.InsufficientMaterial => "DRAW (INSUFFICIENT MATERIAL)",
+                    _ => "GAME OVER"
+                };
+                line2 = "Draw";
+            }
         }
 
         // Choose a large readable scale, but clamp it so the text always fits the screen.
@@ -1061,7 +1088,11 @@ public static unsafe class ChessApp
 
         sdtx_font(0);
         sdtx_canvas(w / scale1, h / scale1);
-        if (_game.OverReason == GameOverReason.Checkmate)
+        if (_timeExpired)
+        {
+            sdtx_color3b(255, 180, 60);
+        }
+        else if (_game.OverReason == GameOverReason.Checkmate)
         {
             var winner = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
             bool humanWon = winner == _game.HumanSide;
