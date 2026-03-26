@@ -137,8 +137,8 @@ public static unsafe class ChessApp
     static bool _clockStarted = false;
     static bool _timeExpired = false;
     static string _timeExpiredStatus = string.Empty;
-    static int _whiteWins = 0;
-    static int _blackWins = 0;
+    static int _humanWins = 0;
+    static int _aiWins = 0;
     static bool _resultRecordedForCurrentGame = false;
 
     // Last move highlight squares
@@ -1133,14 +1133,8 @@ public static unsafe class ChessApp
         if (_timeExpired)
         {
             bool whiteFlagged = _whiteTimeSec <= 0f;
-            if (whiteFlagged)
-            {
-                _blackWins++;
-            }
-            else
-            {
-                _whiteWins++;
-            }
+            Side winner = whiteFlagged ? Side.Black : Side.White;
+            RecordWinner(winner);
             _resultRecordedForCurrentGame = true;
             return;
         }
@@ -1153,21 +1147,26 @@ public static unsafe class ChessApp
         if (_game.OverReason == GameOverReason.Checkmate)
         {
             Side winner = _game.CurrentSideToMove == Side.White ? Side.Black : Side.White;
-            if (winner == Side.White)
-            {
-                _whiteWins++;
-            }
-            else
-            {
-                _blackWins++;
-            }
+            RecordWinner(winner);
         }
 
         _resultRecordedForCurrentGame = true;
     }
 
+    static void RecordWinner(Side winner)
+    {
+        if (winner == _game.HumanSide)
+        {
+            _humanWins++;
+        }
+        else
+        {
+            _aiWins++;
+        }
+    }
+
     static string BuildWinsScoreText()
     {
-        return $"White wins: {_whiteWins}  Black wins: {_blackWins}";
+        return $"Human wins: {_humanWins}  AI wins: {_aiWins}";
     }
 }
