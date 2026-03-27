@@ -1045,7 +1045,7 @@ public static unsafe class ChessApp
         float bandY = (h - bandH) * 0.5f;
 
         sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_BLEND);
-        sgp_set_color(0f, 0f, 0f, 0.78f);
+        sgp_set_color(0f, 0f, 0f, 0.50f);
         sgp_draw_filled_rect(0f, bandY, w, bandH);
         sgp_set_blend_mode(sgp_blend_mode.SGP_BLENDMODE_NONE);
         sgp_reset_color();
