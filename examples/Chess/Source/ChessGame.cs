@@ -1,9 +1,25 @@
 // ChessGame.cs — Wrapper around the Lynx chess engine for Chess game state.
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 using Lynx;
 using Lynx.Model;
+using Lynx.UCI.Commands.Engine;
 using Lynx.UCI.Commands.GUI;
+
+/// <summary>
+/// Controls which search back-end ChessGame uses for AI moves.
+/// </summary>
+public enum AISearchMode
+{
+    /// <summary>Single-threaded: calls Engine.BestMove() directly (original behavior).</summary>
+    SingleEngine,
+    /// <summary>Multi-threaded: drives Lynx's Searcher via its channel-based UCI interface.
+    /// Thread count is set by <see cref="ChessGame.SearcherThreadCount"/> before the first AI move.</summary>
+    MultithreadedSearcher
+}
 
 public enum GamePhase
 {
@@ -24,6 +40,39 @@ public enum GameOverReason
 public sealed class ChessGame
 {
     private readonly Engine _engine;
+
+    // -----------------------------------------------------------------------
+    // Search-mode configuration
+    // -----------------------------------------------------------------------
+
+    private AISearchMode _searchMode = AISearchMode.MultithreadedSearcher;
+
+    /// <summary>
+    /// Switch between single-threaded <see cref="AISearchMode.SingleEngine"/> and
+    /// multi-threaded <see cref="AISearchMode.MultithreadedSearcher"/> AI back-end.
+    /// Safe to change between moves; takes effect on the next AI turn.
+    /// </summary>
+    public AISearchMode SearchMode
+    {
+        get => _searchMode;
+        set => _searchMode = value;
+    }
+
+    /// <summary>
+    /// Number of search threads used when <see cref="SearchMode"/> is
+    /// <see cref="AISearchMode.MultithreadedSearcher"/>.
+    /// Defaults to <c>max(1, Environment.ProcessorCount - 1)</c>.
+    /// Must be set before the first AI move in Searcher mode (or before calling
+    /// <see cref="Reset"/> which re-initialises the Searcher).
+    /// </summary>
+    public int SearcherThreadCount { get; set; } = Math.Max(1, Environment.ProcessorCount - 1);
+
+    // Searcher infrastructure (lazy — created on first use in MultithreadedSearcher mode)
+    private Searcher? _searcher;
+    private Channel<string>? _searcherInputChannel;
+    private Channel<object>? _searcherOutputChannel;
+    private CancellationTokenSource? _searcherCts;
+    private Task? _searcherRunTask;
 
     public Side HumanSide { get; private set; } = Side.White;
     public GamePhase Phase { get; private set; } = GamePhase.PlayerTurn;
@@ -67,6 +116,7 @@ public sealed class ChessGame
         LastMoveAlgebraic = null;
         _legalMovesFromSelected.Clear();
         _engine.NewGame();
+        _searcher?.NewGame();
         RefreshLegalMoves();
         TakeSnapshot();
 
@@ -195,6 +245,24 @@ public sealed class ChessGame
     /// NOTE: BestMove() internally makes/unmakes many moves during search. The render thread
     /// must NOT read CurrentPosition during this time — it reads _boardSnapshot instead.
     /// </summary>
+    /// <summary>
+    /// Lazily initialises the <see cref="Searcher"/> and its background Run loop.
+    /// Called automatically before the first AI move in MultithreadedSearcher mode.
+    /// </summary>
+    private void EnsureSearcherInitialized()
+    {
+        if (_searcher != null) return;
+
+        Configuration.EngineSettings.Threads = SearcherThreadCount;
+        _searcherInputChannel = Channel.CreateUnbounded<string>();
+        _searcherOutputChannel = Channel.CreateUnbounded<object>();
+        _searcher = new Searcher(_searcherInputChannel.Reader, _searcherOutputChannel.Writer);
+        _searcherCts = new CancellationTokenSource();
+        // Fire-and-forget: Searcher.Run catches/logs its own exceptions.
+        _searcherRunTask = _searcher.Run(_searcherCts.Token);
+        Console.WriteLine($"[ChessGame] Searcher initialised with {SearcherThreadCount} thread(s)");
+    }
+
     public void ExecuteAIMove()
     {
         if (Phase != GamePhase.AIThinking)
@@ -203,13 +271,55 @@ public sealed class ChessGame
             return;
         }
 
-        Console.WriteLine($"[ChessGame] AI thinking (depth={AiDepth})...");
+        Console.WriteLine($"[ChessGame] AI thinking (depth={AiDepth}, mode={SearchMode})...");
         using var positionBeforeAIMove = new Position(_engine.Game.CurrentPosition);
-        // BestMove already calls Game.MakeMove and Game.UpdateInitialPosition internally.
-        // During search, CurrentPosition.Board[] is volatile — use _boardSnapshot for rendering.
-        var result = _engine.BestMove(new GoCommand($"go depth {AiDepth}"));
-        LastMoveUCI = result.BestMove.UCIString();
-        string algebraicBase = result.BestMove.ToEPDString(positionBeforeAIMove);
+
+        Move bestMove;
+        string algebraicBase;
+
+        if (SearchMode == AISearchMode.SingleEngine)
+        {
+            // Original single-threaded path.
+            // BestMove internally calls Game.MakeMove + Game.UpdateInitialPosition.
+            // During search, CurrentPosition.Board[] is volatile — use _boardSnapshot for rendering.
+            var result = _engine.BestMove(new GoCommand($"go depth {AiDepth}"));
+            bestMove = result.BestMove;
+            algebraicBase = bestMove.ToEPDString(positionBeforeAIMove);
+        }
+        else
+        {
+            // Multi-threaded path via Lynx's Searcher.
+            // The Searcher runs on its own internal Engine instances; _engine.Game is only read
+            // here to get the FEN, then the AI move is applied to it manually below.
+            EnsureSearcherInitialized();
+
+            // Sync the Searcher's internal game state to the current board position.
+            _searcher!.AdjustPosition($"position fen {_engine.Game.FEN}");
+
+            // Send the go command through the channel that Searcher.Run() listens on.
+            _searcherInputChannel!.Writer.TryWrite($"go depth {AiDepth}");
+
+            // Drain the output channel: skip intermediate SearchResult (info) lines,
+            // stop when the Searcher writes BestMoveCommand.
+            SearchResult? latestResult = null;
+            while (true)
+            {
+                var item = _searcherOutputChannel!.Reader.ReadAsync().AsTask().GetAwaiter().GetResult();
+                if (item is SearchResult sr)
+                    latestResult = sr;
+                else if (item is BestMoveCommand)
+                    break;
+            }
+
+            bestMove = latestResult!.BestMove;
+            algebraicBase = bestMove.ToEPDString(positionBeforeAIMove);
+
+            // Apply the move to _engine.Game (mirrors what Engine.BestMove does internally).
+            _engine.Game.MakeMove(bestMove);
+            _engine.Game.UpdateInitialPosition();
+        }
+
+        LastMoveUCI = bestMove.UCIString();
         Console.WriteLine($"[ChessGame] AI played: {LastMoveUCI}");
 
         RefreshLegalMoves();

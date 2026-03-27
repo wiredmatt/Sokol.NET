@@ -487,6 +487,15 @@ public static unsafe class ChessApp
                 _game.AiDepth = depth;
             igEndDisabled();
 
+            {
+                byte smpEnabled = _game.SearchMode == AISearchMode.MultithreadedSearcher ? (byte)1 : (byte)0;
+                igBeginDisabled(gameplaySettingsDisabled);
+                int displayThreads = smpEnabled != 0 ? _game.SearcherThreadCount : 1;
+                if (igCheckbox($"Multithreading ({displayThreads} threads)", ref smpEnabled))
+                    _game.SearchMode = smpEnabled != 0 ? AISearchMode.MultithreadedSearcher : AISearchMode.SingleEngine;
+                igEndDisabled();
+            }
+
             igSeparator();
 
             byte tcEnabled = _useTimeControl ? (byte)1 : (byte)0;
