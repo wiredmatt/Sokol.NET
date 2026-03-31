@@ -164,6 +164,7 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 - **[ConnectFour](examples/ConnectFour)** - Playable Connect 4 game with 3D disc drop animation, ghost preview, pulsing win highlights, alpha-beta AI with parallel search, and cross-platform support (Desktop, Web, iOS, Android)
 - **[Checkers](examples/Checkers)** - Playable Checkers game, animated moves, configurable,  alpha-beta AI ,adjustable AI depth, and cross-platform support (Desktop, Web, iOS, Android)
 - **[Chess](examples/Chess)** - Playable Chess game powered by the Lynx engine with configurable AI depth, move-history export, optional time controls, and support for Desktop, Android, and iOS
+- **[TexasHoldem](examples/TexasHoldem)** - Playable Texas Hold'em poker with 1–9 SmartPlayer AI opponents (Tight/Balanced/Aggressive/LAG), deal and win animations, escalating blinds, simulation mode, and cross-platform support (Desktop, Web, iOS, Android)
 
 ## 📜 Spine License Notice
 
