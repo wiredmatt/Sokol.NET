@@ -1037,6 +1037,20 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-BlockFall",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/BlockFall"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-BlockFall-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/BlockFall"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "Create New Example",
 			"type": "shell",
 			"command": "dotnet",
@@ -1120,6 +1134,7 @@
 			"type": "pickString",
 			"description": "Select an example",
 			"options": [
+				"BlockFall",
 				"TexasHoldem",
 				"Chess",
 				"ManifoldApp",
@@ -1185,6 +1200,7 @@
 			"type": "pickString",
 			"description": "Select an example to build",
 			"options": [
+				"examples/BlockFall",
 				"examples/TexasHoldem",
 				"examples/Chess",
 				"examples/ManifoldApp",
@@ -1284,6 +1300,7 @@
 			"type": "pickString",
 			"description": "⚠️ WARNING: Select an example to PERMANENTLY DELETE",
 			"options": [
+				"BlockFall",
 				"TexasHoldem",
 				"Chess",
 				"ManifoldApp",
