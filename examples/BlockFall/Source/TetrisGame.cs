@@ -175,8 +175,6 @@ public class TetrisGame
     {
         if (GameOver || Paused) return;
 
-        RotateOccurred = LineClearOccurred = LockOccurred = false;
-
         _fallTimer += dt;
         float interval = FallInterval();
         if (_fallTimer >= interval)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Sokol;
@@ -17,6 +18,8 @@ using static Sokol.Utils;
 using static Sokol.SImgui;
 using static Sokol.SDebugText;
 using static Sokol.SLog;
+using static Sokol.SAudio;
+using static Sokol.SFetch;
 using static Imgui.ImguiNative;
 using static Imgui.ImGuiHelpers;
 
@@ -64,6 +67,53 @@ public static unsafe class BlockfallApp
     static int _lastSw, _lastSh;
 
     // -----------------------------------------------------------------------
+    // High score
+    // -----------------------------------------------------------------------
+    static int  _highScore;
+    static bool _newBest;
+
+    static string HighScorePath()
+    {
+        try
+        {
+            string dir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (string.IsNullOrEmpty(dir)) return string.Empty;
+            string folder = Path.Combine(dir, "BlockFall");
+            Directory.CreateDirectory(folder);
+            return Path.Combine(folder, "highscore.txt");
+        }
+        catch { return string.Empty; }
+    }
+
+    static void LoadHighScore()
+    {
+        try
+        {
+            string p = HighScorePath();
+            if (!string.IsNullOrEmpty(p) && File.Exists(p))
+                _highScore = int.TryParse(File.ReadAllText(p).Trim(), out int v) ? v : 0;
+        }
+        catch { }
+    }
+
+    static void SaveHighScore()
+    {
+        try
+        {
+            string p = HighScorePath();
+            if (!string.IsNullOrEmpty(p))
+                File.WriteAllText(p, _highScore.ToString());
+        }
+        catch { }
+    }
+
+    // -----------------------------------------------------------------------
+    // Line-clear flash
+    // -----------------------------------------------------------------------
+    static float _flashTimer;
+    const float  FLASH_DURATION = 0.25f;
+
+    // -----------------------------------------------------------------------
     // Game
     // -----------------------------------------------------------------------
     static readonly TetrisGame _game = new();
@@ -76,6 +126,8 @@ public static unsafe class BlockfallApp
     static readonly bool[]  _keyHeld      = new bool [(int)GameKey.Count];
     const float KEY_INITIAL_DELAY = 0.18f;
     const float KEY_REPEAT_RATE   = 0.05f;
+    // Keys pressed in Event() are queued here and dispatched inside Frame() after the flag reset
+    static readonly Queue<GameKey> _pendingKeys = new();
 
     // -----------------------------------------------------------------------
     // Touch virtual buttons
@@ -107,6 +159,11 @@ public static unsafe class BlockfallApp
 
         ComputeLayout(sapp_width(), sapp_height());
         _game.Reset();
+
+        FileSystem.Instance.Initialize();
+        AudioManager.Init();
+        AudioManager.PlayMusic("music.ogg");   // optional — place music.ogg in Assets/
+        LoadHighScore();
     }
 
     // -----------------------------------------------------------------------
@@ -128,11 +185,26 @@ public static unsafe class BlockfallApp
         }
 
         // --- Game update -------------------------------------------------
+        // Flags are reset here so keyboard/ProcessKeyRepeat actions set them fresh.
+        // Touch-button actions (DrawImGui) run later — audio check is AFTER DrawImGui
+        // so both input paths are captured before any sound decision is made.
+        // Always reset event flags at frame start so they don't persist across frames
+        bool wasGameOver = _game.GameOver;
+        _game.RotateOccurred = _game.LineClearOccurred = _game.LockOccurred = false;
         if (!_game.GameOver && !_game.Paused)
         {
+            // Drain keys queued from Event() — must run AFTER the flag reset
+            while (_pendingKeys.TryDequeue(out var pk))
+                DispatchGameKey(pk);
             ProcessKeyRepeat(dt);
             _game.Update(dt);
         }
+        else
+        {
+            _pendingKeys.Clear();
+        }
+        _flashTimer = MathF.Max(0f, _flashTimer - dt);
+        FileSystem.Instance.Update();
 
         // --- SGP 2D rendering -------------------------------------------
         sgp_begin(sw, sh);
@@ -144,6 +216,7 @@ public static unsafe class BlockfallApp
         DrawLockedCells();
         DrawGhostPiece();
         DrawActivePiece();
+        DrawLineClearFlash();
         DrawPanelBoxes();
         DrawNextPiecePreview();
         DrawGameOverBanner();
@@ -153,8 +226,23 @@ public static unsafe class BlockfallApp
         sgp_flush();
         sgp_end();
 
-        // --- ImGui score panel ------------------------------------------
+        // --- ImGui score panel (touch buttons fire here, setting game flags) ---
         DrawImGui(dt);
+
+        // --- Audio events ---
+        {
+            bool justDied = !wasGameOver && _game.GameOver;
+            if (justDied)
+            {
+                AudioManager.StopAllSfx();
+                AudioManager.Play(SoundEffect.GameEnd);
+                if (_game.Score > _highScore) { _highScore = _game.Score; _newBest = true; SaveHighScore(); }
+                else _newBest = false;
+            }
+            else if (_game.LineClearOccurred) { AudioManager.Play(SoundEffect.Clear); _flashTimer = FLASH_DURATION; }
+            else if (_game.LockOccurred) AudioManager.Play(SoundEffect.Impact);
+        }
+        AudioManager.PushAudio();
 
         sg_end_pass();
         sg_commit();
@@ -254,6 +342,19 @@ public static unsafe class BlockfallApp
     }
 
     // -----------------------------------------------------------------------
+    // White flash over board when lines are cleared
+    // -----------------------------------------------------------------------
+    static void DrawLineClearFlash()
+    {
+        if (_flashTimer <= 0f) return;
+        float alpha = (_flashTimer / FLASH_DURATION) * 0.55f;
+        sgp_set_blend_mode(SGP_BLENDMODE_BLEND);
+        sgp_set_color(1f, 1f, 1f, alpha);
+        sgp_draw_filled_rect(BRD_X, BRD_Y, TetrisGame.Cols * CELL, TetrisGame.Rows * CELL);
+        sgp_set_blend_mode(SGP_BLENDMODE_NONE);
+        sgp_reset_color();
+    }
+
     // Game-over dark band (drawn over the board via SGP)
     // -----------------------------------------------------------------------
     static void DrawGameOverBanner()
@@ -343,7 +444,7 @@ public static unsafe class BlockfallApp
                 igSetCursorPosY(hintsY + hintRowH * 3f + 8f);
                 igSetCursorPosX(10f);
                 if (igButton("New Game", new Vector2(PNL_W - 20f, 0)))
-                    _game.Reset();
+                    StartNewGame();
             }
         }
 
@@ -366,10 +467,10 @@ public static unsafe class BlockfallApp
 
             bool isGameOver = _game.GameOver;
             const float BTN_ROW_H = 40f;   // height of the NEW GAME button row
-            // game-over: GAME OVER + Score + NEW GAME button
+            // game-over: GAME OVER + Score + Best + NEW GAME button
             // paused:    PAUSED + hint
             float ovrH = isGameOver
-                ? bigLineH + smLineH + spacing * 2f + BTN_ROW_H + 28f
+                ? bigLineH + smLineH * 2f + spacing * 3f + BTN_ROW_H + 28f
                 : bigLineH + smLineH + spacing + 20f;
             float ovrW = boardW * 0.9f;
 
@@ -400,6 +501,16 @@ public static unsafe class BlockfallApp
                 igPopFont();
                 curY += smLineH + spacing;
 
+                // Best score line — golden if new best, grey otherwise
+                igSetCursorPosY(curY);
+                igPushFont(null, SM_FONT);
+                if (_newBest)
+                    OvrCentredColored("NEW BEST!", new Vector4(1f, 0.85f, 0.1f, 1f), ovrW);
+                else
+                    OvrCentredColored($"Best: {_highScore}", new Vector4(0.75f, 0.75f, 0.75f, 1f), ovrW);
+                igPopFont();
+                curY += smLineH + spacing;
+
                 // Big tappable NEW GAME button — works on touch, mouse and keyboard
                 igSetCursorPosY(curY);
                 float newGameW = ovrW * 0.72f;
@@ -409,7 +520,7 @@ public static unsafe class BlockfallApp
                 igPushStyleColor_Vec4(ImGuiCol.ButtonHovered, new Vector4(0.28f, 0.78f, 0.32f, 1.00f));
                 igPushStyleColor_Vec4(ImGuiCol.ButtonActive,  new Vector4(0.48f, 0.95f, 0.52f, 1.00f));
                 if (igButton("NEW GAME##ovlbtn", new Vector2(newGameW, BTN_ROW_H)))
-                    _game.Reset();
+                    StartNewGame();
                 igPopStyleColor(3);
                 igPopFont();
             }
@@ -583,6 +694,12 @@ public static unsafe class BlockfallApp
     // -----------------------------------------------------------------------
     // Layout
     // -----------------------------------------------------------------------
+    static void StartNewGame()
+    {
+        _game.Reset();
+        _newBest = false;
+    }
+
     static void ComputeLayout(int sw, int sh)
     {
         _portrait = sh > sw;
@@ -741,7 +858,7 @@ public static unsafe class BlockfallApp
                     or sapp_keycode.SAPP_KEYCODE_ENTER
                     or sapp_keycode.SAPP_KEYCODE_SPACE)
             {
-                _game.Reset();
+                StartNewGame();
             }
             return;
         }
@@ -772,7 +889,7 @@ public static unsafe class BlockfallApp
         {
             _keyHeld[(int)gk]      = true;
             _keyHoldTimer[(int)gk] = 0f;
-            DispatchGameKey(gk.Value);
+            _pendingKeys.Enqueue(gk.Value);   // dispatch inside Frame() after flag reset
         }
     }
 
@@ -797,6 +914,8 @@ public static unsafe class BlockfallApp
     [UnmanagedCallersOnly]
     static void Cleanup()
     {
+        AudioManager.Shutdown();
+        FileSystem.Instance.Shutdown();
         simgui_shutdown();
         sgp_shutdown();
         sg_shutdown();

@@ -61,6 +61,10 @@
       <Compile Remove="bin/**/*" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="NVorbis" Version="0.10.5" />
+    </ItemGroup>
+
   <!-- Exclude shaders from other platform folders -->
   <ItemGroup>
     <Compile Remove="shaders/compiled/ios/**/*.cs" />
