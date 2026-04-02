@@ -130,6 +130,10 @@ public static unsafe class BlockfallApp
     static readonly Queue<GameKey> _pendingKeys = new();
 
     // -----------------------------------------------------------------------
+    // Icon types for draw-list rendered touch button icons
+    enum BtnIcon { Left, Right, Down, Rotate }
+
+    // -----------------------------------------------------------------------
     // Touch virtual buttons
     static float BTN_LEFT_X, BTN_LEFT_W;
     static float BTN_RIGHT_X, BTN_RIGHT_W;
@@ -153,6 +157,8 @@ public static unsafe class BlockfallApp
 
         simgui_setup(new simgui_desc_t { logger = { func = &slog_func } });
 
+        FileSystem.Instance.Initialize();
+
         _passAction = default;
         _passAction.colors[0].load_action = sg_load_action.SG_LOADACTION_CLEAR;
         _passAction.colors[0].clear_value = CLR_BG;
@@ -160,7 +166,7 @@ public static unsafe class BlockfallApp
         ComputeLayout(sapp_width(), sapp_height());
         _game.Reset();
 
-        FileSystem.Instance.Initialize();
+       
         AudioManager.Init();
         AudioManager.PlayMusic("music.ogg");   // optional — place music.ogg in Assets/
         LoadHighScore();
@@ -546,6 +552,64 @@ public static unsafe class BlockfallApp
     }
 
     // -----------------------------------------------------------------------
+    // Draw a vector icon (Left/Right/Down/Rotate) centred on a button rect.
+    // Uses only ImGui draw-list calls — no font required, works on Web too.
+    // -----------------------------------------------------------------------
+    static void DrawBtnIcon(ImDrawList* dl, BtnIcon icon, Vector2 bmin, Vector2 bmax, bool active)
+    {
+        float cx = (bmin.X + bmax.X) * 0.5f;
+        float cy = (bmin.Y + bmax.Y) * 0.5f;
+        float sz = MathF.Min(bmax.X - bmin.X, bmax.Y - bmin.Y);
+        float r  = sz * 0.26f;
+        float alpha = active ? 1.0f : 0.90f;
+        uint  col   = igGetColorU32_Vec4(new Vector4(1f, 1f, 0.5f, alpha));
+
+        if (icon == BtnIcon.Left)
+        {
+            ImDrawList_AddTriangleFilled(dl,
+                new Vector2(cx - r,          cy),
+                new Vector2(cx + r * 0.65f,  cy - r * 0.90f),
+                new Vector2(cx + r * 0.65f,  cy + r * 0.90f), col);
+        }
+        else if (icon == BtnIcon.Right)
+        {
+            ImDrawList_AddTriangleFilled(dl,
+                new Vector2(cx + r,          cy),
+                new Vector2(cx - r * 0.65f,  cy - r * 0.90f),
+                new Vector2(cx - r * 0.65f,  cy + r * 0.90f), col);
+        }
+        else if (icon == BtnIcon.Down)
+        {
+            ImDrawList_AddTriangleFilled(dl,
+                new Vector2(cx,              cy + r),
+                new Vector2(cx - r * 0.90f,  cy - r * 0.65f),
+                new Vector2(cx + r * 0.90f,  cy - r * 0.65f), col);
+        }
+        else // Rotate — arc (~295° sweep) + arrowhead
+        {
+            float arcR   = r * 0.85f;
+            float th     = r * 0.30f;
+            float aStart = MathF.PI * 0.30f;
+            float aEnd   = MathF.PI * 2.02f;
+            ImDrawList_PathClear(dl);
+            ImDrawList_PathArcTo(dl, new Vector2(cx, cy), arcR, aStart, aEnd, 24);
+            ImDrawList_PathStroke(dl, col, ImDrawFlags.None, th);
+            // Proper arrowhead: tip is ahead of arcPt in the CCW tangent direction,
+            // base is symmetric about arcPt in the perpendicular direction.
+            float endTan  = aEnd + MathF.PI * 0.5f;
+            Vector2 arcPt = new(cx + MathF.Cos(aEnd) * arcR, cy + MathF.Sin(aEnd) * arcR);
+            float ahSz    = r * 0.52f;
+            Vector2 tip   = new(arcPt.X + MathF.Cos(endTan)                    * ahSz,
+                                arcPt.Y + MathF.Sin(endTan)                    * ahSz);
+            Vector2 base1 = new(arcPt.X + MathF.Cos(endTan + MathF.PI * 0.5f) * ahSz * 0.55f,
+                                arcPt.Y + MathF.Sin(endTan + MathF.PI * 0.5f) * ahSz * 0.55f);
+            Vector2 base2 = new(arcPt.X - MathF.Cos(endTan + MathF.PI * 0.5f) * ahSz * 0.55f,
+                                arcPt.Y - MathF.Sin(endTan + MathF.PI * 0.5f) * ahSz * 0.55f);
+            ImDrawList_AddTriangleFilled(dl, tip, base1, base2, col);
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Touch d-pad — pure ImGui, left and right of the board
     //
     //  LEFT panel  (left thumb):
@@ -583,8 +647,8 @@ public static unsafe class BlockfallApp
         if (_portrait)
         {
             // ── Portrait: one full-width row of 4 buttons at the bottom ──
-            //    [ ROT ]  [  <  ]  [  >  ]  [  v  ]
-            // Left thumb naturally covers ROT+<, right thumb covers >+v.
+            //    [ ↺ ]  [ ← ]  [ → ]  [ ↓ ]
+            // Left thumb naturally covers ↺+←, right thumb covers →+↓.
             byte oP = 1;
             igSetNextWindowPos(new Vector2(BTN_LEFT_X, BTN_AREA_Y), ImGuiCond.Always, Vector2.Zero);
             igSetNextWindowSize(new Vector2(BTN_LEFT_W, BTN_AREA_H), ImGuiCond.Always);
@@ -593,19 +657,20 @@ public static unsafe class BlockfallApp
             {
                 float btnH = BTN_AREA_H - 10f;
                 float bw   = (BTN_LEFT_W - 14f - pad * 3f) * 0.25f;   // 4 equal buttons
-                igPushFont(null, MathF.Min(28f, btnH * 0.45f));
-                if (igButton("ROT##rot", new Vector2(bw, btnH)) && canAct) _game.Rotate();
+                var dl = igGetWindowDrawList();
+                Vector2 rmin = default, rmax = default;
+
+                if (igButton("##rot", new Vector2(bw, btnH)) && canAct) _game.Rotate();
+                { bool a = igIsItemActive(); igGetItemRectMin(ref rmin); igGetItemRectMax(ref rmax); DrawBtnIcon(dl, BtnIcon.Rotate, rmin, rmax, a); }
                 igSameLine(0f, pad);
-                igPushFont(null, MathF.Min(48f, btnH * 0.70f));
-                if (igButton(" < ##ml",  new Vector2(bw, btnH)) && canAct) _game.MoveLeft();
+                if (igButton("##ml", new Vector2(bw, btnH)) && canAct) _game.MoveLeft();
+                { bool a = igIsItemActive(); igGetItemRectMin(ref rmin); igGetItemRectMax(ref rmax); DrawBtnIcon(dl, BtnIcon.Left,   rmin, rmax, a); }
                 igSameLine(0f, pad);
-                if (igButton(" > ##mr",  new Vector2(bw, btnH)) && canAct) _game.MoveRight();
-                igPopFont();
+                if (igButton("##mr", new Vector2(bw, btnH)) && canAct) _game.MoveRight();
+                { bool a = igIsItemActive(); igGetItemRectMin(ref rmin); igGetItemRectMax(ref rmax); DrawBtnIcon(dl, BtnIcon.Right,  rmin, rmax, a); }
                 igSameLine(0f, pad);
-                igPushFont(null, MathF.Min(28f, btnH * 0.45f));
-                if (igButton("v##dn",    new Vector2(bw, btnH)) && canAct) _game.SoftDrop();
-                igPopFont();
-                igPopFont();
+                if (igButton("##dn", new Vector2(bw, btnH)) && canAct) _game.SoftDrop();
+                { bool a = igIsItemActive(); igGetItemRectMin(ref rmin); igGetItemRectMax(ref rmax); DrawBtnIcon(dl, BtnIcon.Down,   rmin, rmax, a); }
             }
             igEnd();
         }
@@ -621,13 +686,14 @@ public static unsafe class BlockfallApp
             igBegin("##tbL", ref oL, winFlags);
             {
                 float half = (BTN_LEFT_W - 14f - pad) * 0.5f;
-                igPushFont(null, 32f);
-                if (igButton("ROT##rot", new Vector2(half, btnH)) && canAct) _game.Rotate();
+                var dl = igGetWindowDrawList();
+                Vector2 rmin = default, rmax = default;
+
+                if (igButton("##rot", new Vector2(half, btnH)) && canAct) _game.Rotate();
+                { bool a = igIsItemActive(); igGetItemRectMin(ref rmin); igGetItemRectMax(ref rmax); DrawBtnIcon(dl, BtnIcon.Rotate, rmin, rmax, a); }
                 igSameLine(0f, pad);
-                igPushFont(null, 52f);
-                if (igButton(" < ##ml",  new Vector2(half, btnH)) && canAct) _game.MoveLeft();
-                igPopFont();
-                igPopFont();
+                if (igButton("##ml", new Vector2(half, btnH)) && canAct) _game.MoveLeft();
+                { bool a = igIsItemActive(); igGetItemRectMin(ref rmin); igGetItemRectMax(ref rmax); DrawBtnIcon(dl, BtnIcon.Left, rmin, rmax, a); }
             }
             igEnd();
 
@@ -638,13 +704,14 @@ public static unsafe class BlockfallApp
             igBegin("##tbR", ref oR, winFlags);
             {
                 float half = (BTN_RIGHT_W - 14f - pad) * 0.5f;
-                igPushFont(null, 52f);
-                if (igButton(" > ##mr", new Vector2(half, btnH)) && canAct) _game.MoveRight();
+                var dl = igGetWindowDrawList();
+                Vector2 rmin = default, rmax = default;
+
+                if (igButton("##mr", new Vector2(half, btnH)) && canAct) _game.MoveRight();
+                { bool a = igIsItemActive(); igGetItemRectMin(ref rmin); igGetItemRectMax(ref rmax); DrawBtnIcon(dl, BtnIcon.Right, rmin, rmax, a); }
                 igSameLine(0f, pad);
-                igPushFont(null, 32f);
-                if (igButton("v##dn",   new Vector2(half, btnH)) && canAct) _game.SoftDrop();
-                igPopFont();
-                igPopFont();
+                if (igButton("##dn", new Vector2(half, btnH)) && canAct) _game.SoftDrop();
+                { bool a = igIsItemActive(); igGetItemRectMin(ref rmin); igGetItemRectMax(ref rmax); DrawBtnIcon(dl, BtnIcon.Down, rmin, rmax, a); }
             }
             igEnd();
         }
