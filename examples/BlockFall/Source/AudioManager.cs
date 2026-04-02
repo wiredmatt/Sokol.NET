@@ -138,6 +138,13 @@ public static class AudioManager
         }
     }
 
+    /// <summary>Get or set whether the music loop is playing. Thread-safe.</summary>
+    public static bool MusicEnabled
+    {
+        get { lock (_lock) { return _musicPlaying; } }
+        set { lock (_lock) { _musicPlaying = value; } }
+    }
+
     /// <summary>Stop all currently playing SFX voices immediately.</summary>
     public static void StopAllSfx()
     {

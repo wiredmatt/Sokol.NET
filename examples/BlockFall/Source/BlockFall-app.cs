@@ -71,6 +71,14 @@ public static unsafe class BlockfallApp
     // -----------------------------------------------------------------------
     static int  _highScore;
     static bool _newBest;
+    static byte _musicOn = 1;   // 1 = music enabled (igCheckbox uses byte)
+
+    // -----------------------------------------------------------------------
+    // Settings
+    // -----------------------------------------------------------------------
+    static bool  _settingsOpen;
+    static bool  _pausedBeforeSettings;
+    static float _globalTime;
 
     static string HighScorePath()
     {
@@ -179,6 +187,7 @@ public static unsafe class BlockfallApp
     private static void Frame()
     {
         float dt = (float)sapp_frame_duration();
+        _globalTime += dt;
         int sw = sapp_width();
         int sh = sapp_height();
 
@@ -548,6 +557,8 @@ public static unsafe class BlockfallApp
         }
 
         DrawTouchButtonsImGui();
+        DrawSettingsButton();
+        DrawSettingsWindow();
         simgui_render();
     }
 
@@ -607,6 +618,135 @@ public static unsafe class BlockfallApp
                                 arcPt.Y - MathF.Sin(endTan + MathF.PI * 0.5f) * ahSz * 0.55f);
             ImDrawList_AddTriangleFilled(dl, tip, base1, base2, col);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Settings gear button — top-right corner
+    // -----------------------------------------------------------------------
+    static void DrawSettingsButton()
+    {
+        const float BTN_SIZE = 36f;
+        const float MARGIN   = 8f;
+
+        float btnX = sapp_width() - BTN_SIZE - MARGIN;
+        igSetNextWindowPos(new Vector2(btnX, MARGIN), ImGuiCond.Always, Vector2.Zero);
+        igSetNextWindowSize(new Vector2(BTN_SIZE, BTN_SIZE), ImGuiCond.Always);
+        igSetNextWindowBgAlpha(0f);
+
+        byte open = 1;
+        if (igBegin("##settingsBtn", ref open,
+            ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoMove |
+            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoSavedSettings |
+            ImGuiWindowFlags.NoScrollbar))
+        {
+            igPushStyleColor_Vec4(ImGuiCol.Button,        new Vector4(0f, 0f, 0f, 0f));
+            igPushStyleColor_Vec4(ImGuiCol.ButtonHovered, new Vector4(0f, 0f, 0f, 0f));
+            igPushStyleColor_Vec4(ImGuiCol.ButtonActive,  new Vector4(0f, 0f, 0f, 0f));
+            if (igButton("##gearHit", new Vector2(BTN_SIZE, BTN_SIZE)))
+            {
+                if (!_settingsOpen)
+                {
+                    _pausedBeforeSettings = _game.Paused;
+                    _game.Paused = true;
+                }
+                else
+                {
+                    if (!_pausedBeforeSettings)
+                        _game.Paused = false;
+                }
+                _settingsOpen = !_settingsOpen;
+            }
+            bool hovered = igIsItemHovered(0);
+            bool active  = igIsItemActive();
+            igPopStyleColor(3);
+
+            var dl = igGetWindowDrawList();
+            Vector2 wpos = default;
+            igGetWindowPos(ref wpos);
+            float cx  = wpos.X + BTN_SIZE * 0.5f;
+            float cy  = wpos.Y + BTN_SIZE * 0.5f;
+            float r   = BTN_SIZE * 0.36f;
+            float rot = _globalTime * 0.6f + (_settingsOpen ? MathF.PI / 8f : 0f);
+
+            float alpha  = _settingsOpen ? 1.0f : (hovered ? 0.92f : 0.68f);
+            uint colGear = igGetColorU32_Vec4(new Vector4(0.92f, 0.80f, 0.35f, alpha));
+            uint colHole = igGetColorU32_Vec4(new Vector4(0.08f, 0.08f, 0.08f, alpha));
+            uint colRing = igGetColorU32_Vec4(new Vector4(0.60f, 0.50f, 0.15f, alpha * 0.6f));
+
+            if (_settingsOpen || hovered)
+            {
+                float glow = active ? 0.30f : 0.18f;
+                uint colGlow = igGetColorU32_Vec4(new Vector4(1f, 0.85f, 0.3f, glow));
+                ImDrawList_AddCircleFilled(dl, new Vector2(cx, cy), r * 1.7f, colGlow, 32);
+            }
+
+            int teeth = 8;
+            float toothOuter     = r * 1.0f;
+            float toothInner     = r * 0.72f;
+            float toothHalfAngle = MathF.PI / (teeth * 3.0f);
+            Span<Vector2> pts = stackalloc Vector2[teeth * 4];
+            for (int i = 0; i < teeth; i++)
+            {
+                float baseAngle = rot + i * (MathF.PI * 2f / teeth);
+                float a0 = baseAngle - toothHalfAngle * 2f;
+                float a1 = baseAngle - toothHalfAngle;
+                float a2 = baseAngle + toothHalfAngle;
+                float a3 = baseAngle + toothHalfAngle * 2f;
+                pts[i * 4 + 0] = new Vector2(cx + MathF.Cos(a0) * toothInner, cy + MathF.Sin(a0) * toothInner);
+                pts[i * 4 + 1] = new Vector2(cx + MathF.Cos(a1) * toothOuter, cy + MathF.Sin(a1) * toothOuter);
+                pts[i * 4 + 2] = new Vector2(cx + MathF.Cos(a2) * toothOuter, cy + MathF.Sin(a2) * toothOuter);
+                pts[i * 4 + 3] = new Vector2(cx + MathF.Cos(a3) * toothInner, cy + MathF.Sin(a3) * toothInner);
+            }
+            ImDrawList_AddConcavePolyFilled(dl, ref pts[0], teeth * 4, colGear);
+            ImDrawList_AddCircleFilled(dl, new Vector2(cx, cy), toothInner, colGear, 32);
+            ImDrawList_AddCircle(dl, new Vector2(cx, cy), toothInner, colRing, 32, 1.0f);
+            ImDrawList_AddCircleFilled(dl, new Vector2(cx, cy), r * 0.28f, colHole, 20);
+        }
+        igEnd();
+    }
+
+    // -----------------------------------------------------------------------
+    // Settings popup window
+    // -----------------------------------------------------------------------
+    static void DrawSettingsWindow()
+    {
+        if (!_settingsOpen) return;
+
+        const float POP_W = 220f;
+        const float POP_H = 120f;
+        const float MARGIN = 8f;
+
+        float popX = sapp_width() - POP_W - MARGIN;
+        igSetNextWindowPos(new Vector2(popX, MARGIN + 36f + 4f), ImGuiCond.Always, Vector2.Zero);
+        igSetNextWindowSize(new Vector2(POP_W, POP_H), ImGuiCond.Always);
+        igSetNextWindowBgAlpha(0.92f);
+
+        byte open = 1;
+        if (igBegin("Settings##bf", ref open,
+            ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize |
+            ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings))
+        {
+            if (igCheckbox("Music##mchk", ref _musicOn))
+                AudioManager.MusicEnabled = _musicOn != 0;
+
+            igSpacing();
+            igSeparator();
+            igSpacing();
+
+            if (igButton("Close##sclose", new Vector2(-1f, 0f)))
+            {
+                _settingsOpen = false;
+                if (!_pausedBeforeSettings)
+                    _game.Paused = false;
+            }
+        }
+        if (open == 0)
+        {
+            _settingsOpen = false;
+            if (!_pausedBeforeSettings)
+                _game.Paused = false;
+        }
+        igEnd();
     }
 
     // -----------------------------------------------------------------------
@@ -930,10 +1070,19 @@ public static unsafe class BlockfallApp
             return;
         }
 
-        // Pause toggle
+        // Pause toggle (Escape also closes the settings window if open)
         if (key is sapp_keycode.SAPP_KEYCODE_P or sapp_keycode.SAPP_KEYCODE_ESCAPE)
         {
-            _game.Paused = !_game.Paused;
+            if (_settingsOpen)
+            {
+                _settingsOpen = false;
+                if (!_pausedBeforeSettings)
+                    _game.Paused = false;
+            }
+            else
+            {
+                _game.Paused = !_game.Paused;
+            }
             return;
         }
 
