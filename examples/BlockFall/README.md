@@ -1,6 +1,8 @@
 # BlockFall
 
-A fully playable **Tetris-style falling block game** built with [Sokol.NET](../../README.md).
+A fully playable **falling block puzzle game** built with [Sokol.NET](../../README.md).
+
+> **Tetris® Notice**: *Tetris* is a registered trademark of The Tetris Company, LLC. BlockFall is an independent implementation of the falling block puzzle genre and is not affiliated with, endorsed by, or licensed by The Tetris Company.
 
 ## Screenshots
 
@@ -33,7 +35,7 @@ On **mobile and web**, four touch buttons appear at the bottom of the screen: Ro
 
 ## Features
 
-- **Gameplay** — standard Tetris rules: 7 tetrominoes, wall kicks, ghost piece, soft/hard drop, level progression (speed increases every 10 lines), line-clear scoring
+- **Gameplay** — standard falling-block rules (inspired by Tetris™): 7 tetrominoes, wall kicks, ghost piece, soft/hard drop, level progression (speed increases every 10 lines), line-clear scoring
 - **Rendering** — SGP 2D fills for board cells and panel boxes; ImGui for all overlaid text and UI
 - **Audio** — background music loop, line-clear SFX, lock SFX, game-over sting
 - **Settings** — animated gear button (top-right corner) opens a settings popup; pauses the game while open. Contains a Music toggle.

@@ -165,7 +165,7 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 - **[Checkers](examples/Checkers)** - Playable Checkers game, animated moves, configurable,  alpha-beta AI ,adjustable AI depth, and cross-platform support (Desktop, Web, iOS, Android)
 - **[Chess](examples/Chess)** - Playable Chess game powered by the Lynx engine with configurable AI depth, move-history export, optional time controls, and support for Desktop, Android, and iOS
 - **[TexasHoldem](examples/TexasHoldem)** - Playable Texas Hold'em poker with 1–9 SmartPlayer AI opponents (Tight/Balanced/Aggressive/LAG), deal and win animations, escalating blinds, simulation mode, and cross-platform support (Desktop, Web, iOS, Android)
-- **[BlockFall](examples/BlockFall)** A fully playable **Tetris-style falling block game** 
+- **[BlockFall](examples/BlockFall)** - A fully playable falling block puzzle game (inspired by Tetris™) with touch buttons, animated gear settings, music toggle, ghost piece, level progression, and cross-platform support (Desktop, Web, iOS, Android)
 
 ## 📜 Spine License Notice
 
