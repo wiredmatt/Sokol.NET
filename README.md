@@ -149,6 +149,9 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 ### Camera & Hardware
 - **[camera_hardware](examples/camera_hardware)** - ⚠️ *Work in progress* — Live camera feed viewer with ImGui camera picker. Enumerate and switch between devices at runtime. Verified on macOS, iOS, Android, Web, and Windows.
 
+### Filesystem
+- **[FileSystemTest](examples/FileSystemTest)** - Comprehensive test application for [sokol_filesystem](docs/SOKOL_FILESYSTEM.md) — 88 tests across path queries, user folders, asset reads, file I/O (binary + text), directory enumeration, and glob. Verified on macOS, iOS, Android, WebAssembly, Windows, and Linux.
+
 ### Physics
 - **[JoltPhysics](examples/JoltPhysics)** - 10,000 dynamic physics bodies with GPU instancing and multithreading
 - **[bepuphysics](examples/bepuphysics)** - BEPUphysics v2 integration with .NET physics engine
@@ -340,6 +343,7 @@ Comprehensive documentation is available in the **[`docs/`](docs/)** folder:
 - [C Internal Wrappers Auto-Generation](docs/C-Internal-Wrappers-Auto-Generation.md)
 - [WebAssembly Struct Return Workaround](docs/WebAssembly-Struct-Return-Workaround.md)
 - [Output Path Implementation](docs/OUTPUT_PATH_IMPLEMENTATION.md)
+- [sokol_filesystem — Cross-Platform Filesystem Module](docs/SOKOL_FILESYSTEM.md)
 
 📖 **[Full Documentation Index](docs/README.md)**
 

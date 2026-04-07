@@ -73,7 +73,7 @@ else()
 endif()
 
 add_library(sokol ${SOKOL_LIBRARY_TYPE}
-"sokol.c" 
+"sokol.c"
 ${IMGUI_SOURCE_FILES} 
 ${TINYEXR_SOURCE_FILES}
 ${FILEUTIL_SRCS}

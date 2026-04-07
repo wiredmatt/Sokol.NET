@@ -25,6 +25,7 @@ tasks = [
     [ '../ext/box2d/include/box2d/box2d.h',  'b2',      [] ],
     [ '../ext/camerac/include/camerac.h',    'cam',      [] ],
     [ '../ext/manifold/bindings/c/include/manifold/manifoldc.h', 'manifold_', [] ],
+    [ '../ext/sokol/sokol_filesystem.h',     'sfs_',     [] ],
     
 ]
 

@@ -37,6 +37,7 @@ module_names = {
     'cam_':     'CameraC',
     'cam':      'CameraC',
     'manifold_': 'Manifoldc',
+    'sfs_':      'SFilesystem',
 }
 
 # Namespace names per prefix
@@ -97,6 +98,7 @@ library_names = {
     'cam_':     'camerac',  # CameraC uses separate library
     'cam':      'camerac',  # CameraC uses separate library (no-underscore prefix)
     'manifold_': 'manifoldc',  # manifoldc uses separate library
+    'sfs_':      'sokol',
 }
 
 
@@ -127,6 +129,7 @@ c_source_paths = {
     'cam_':     'c/camerac.c',
     'cam':      'c/camerac.c',
     'manifold_': 'c/manifoldc.c',  # manifoldc has its own CMake build — no single .c source
+    'sfs_':      'c/sokol_filesystem.c',
 }
 
 name_ignores = [
@@ -238,6 +241,9 @@ prim_types = {
     'ManifoldSdf':              'delegate* unmanaged<double, double, double, void*, double>',
     # ManifoldSimplePolygon** — double pointer to opaque handle
     'ManifoldSimplePolygon **':  'IntPtr',
+    # sokol_filesystem opaque file handle and callback
+    'sfs_file_t *':              'IntPtr',
+    'sfs_enumerate_callback_t':  'IntPtr',
 }
 
 

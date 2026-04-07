@@ -125,6 +125,8 @@ extern "C"
 
 #define SOKOL_FONTSTASH_IMPL
 #include "sokol_fontstash.h"
+#define SOKOL_FILESYSTEM_IMPL
+#include "sokol/sokol_filesystem.h"
 
 /*=== STB IMAGE C# BINDINGS ==================================================
     Wrapper functions for stb_image to provide C# bindings for fast native
@@ -329,6 +331,7 @@ char* get_asset_relative_path(const char* target_filename) {
     }
     return path;
 }
+
 #endif
 
 
