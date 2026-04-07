@@ -44,7 +44,8 @@ jobs:
           
           # Check if sokol library source files or scripts changed
           while IFS= read -r file; do
-            if [[ "$file" == ext/sokol/* ]] || \
+            if [[ "$file" == ext/sokol ]] || \
+               [[ "$file" == ext/sokol/* ]] || \
                [[ "$file" == ext/CMakeLists.txt ]] || \
                [[ "$file" == ext/sokol_defines.h ]] || \
                [[ "$file" == ext/sokol.c ]] || \
