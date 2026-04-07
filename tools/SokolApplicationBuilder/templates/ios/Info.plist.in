@@ -45,6 +45,21 @@
     @TEMPLATE_STATUS_BAR_APPEARANCE@
     @TEMPLATE_REQUIRES_FULLSCREEN@
     @TEMPLATE_IOS_PLIST_EXTRA_KEYS@
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <false/>
+        <key>UISceneConfigurations</key>
+        <dict>
+            <key>UIWindowSceneSessionRoleApplication</key>
+            <array>
+                <dict>
+                    <key>UISceneConfigurationName</key>
+                    <string>SokolSceneConfiguration</string>
+                </dict>
+            </array>
+        </dict>
+    </dict>
     <key>UILaunchScreen</key>
     <dict>
         <key>UIColorName</key>
