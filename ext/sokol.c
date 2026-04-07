@@ -187,14 +187,6 @@ int sdtx_print_wrapper(const char* str)
     return sdtx_printf("%s", str);
 }
 
-static sgimgui_t sgimgui_ctx = {0};
-
-SOKOL_API_IMPL sgimgui_t * sgimgui_init_csharp(void) {
- 
-    sgimgui_init(&sgimgui_ctx, &(sgimgui_desc_t){0});
-    return &sgimgui_ctx;
-}
-
 
 
 #ifdef __ANDROID__

@@ -16,6 +16,7 @@ public enum simgui_log_item_t
 {
     SIMGUI_LOGITEM_OK,
     SIMGUI_LOGITEM_MALLOC_FAILED,
+    SIMGUI_LOGITEM_BUFFER_OVERFLOW,
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct simgui_allocator_t

@@ -13,12 +13,10 @@ namespace Sokol
 {
     public static unsafe partial class SDebugUI
     {
-        private static sgimgui_t sgimgui = default;
-
         public static void __dbgui_setup(int sample_count)
         {
 #if DEBUG
-            sgimgui = sgimgui_init();
+            sgimgui_setup(new sgimgui_desc_t { });
 
             simgui_setup(new simgui_desc_t
             {
@@ -33,7 +31,7 @@ namespace Sokol
         public static void __dbgui_shutdown()
         {
 #if DEBUG
-            sgimgui_discard(sgimgui);
+            sgimgui_shutdown();
             simgui_shutdown();
 #endif
         }
@@ -51,10 +49,10 @@ namespace Sokol
 
             if (igBeginMainMenuBar())
             {
-                sgimgui_draw_menu(sgimgui, "sokol-gfx");
+                sgimgui_draw_menu("sokol-gfx");
                 igEndMainMenuBar();
             }
-            sgimgui_draw(sgimgui);
+            sgimgui_draw();
             simgui_render();
 #endif
         }

@@ -39,6 +39,7 @@ public enum saudio_log_item
     SAUDIO_LOGITEM_BACKEND_BUFFER_SIZE_ISNT_MULTIPLE_OF_PACKET_SIZE,
     SAUDIO_LOGITEM_VITA_SCEAUDIO_OPEN_FAILED,
     SAUDIO_LOGITEM_VITA_PTHREAD_CREATE_FAILED,
+    SAUDIO_LOGITEM_N3DS_NDSP_OPEN_FAILED,
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct saudio_logger
@@ -53,6 +54,19 @@ public struct saudio_allocator
     public delegate* unmanaged<void*, void*, void> free_fn;
     public void* user_data;
 }
+public enum saudio_n3ds_ndspinterptype
+{
+    SAUDIO_N3DS_DSP_INTERP_POLYPHASE = 0,
+    SAUDIO_N3DS_DSP_INTERP_LINEAR = 1,
+    SAUDIO_N3DS_DSP_INTERP_NONE = 2,
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct saudio_n3ds_desc
+{
+    public int queue_count;
+    public saudio_n3ds_ndspinterptype interpolation_type;
+    public int channel_id;
+}
 [StructLayout(LayoutKind.Sequential)]
 public struct saudio_desc
 {
@@ -64,6 +78,7 @@ public struct saudio_desc
     public delegate* unmanaged<float*, int, int, void> stream_cb;
     public delegate* unmanaged<float*, int, int, void*, void> stream_userdata_cb;
     public void* user_data;
+    public saudio_n3ds_desc n3ds;
     public saudio_allocator allocator;
     public saudio_logger logger;
 }

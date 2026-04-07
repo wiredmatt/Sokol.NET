@@ -136,8 +136,7 @@ name_ignores = [
     'sg_trace_hooks',
     'cgltf_camera',
     'sg_color', # will be create manually inorder to support additional vonversion to Vector3,Vector4,float[] , Span
-    'sgimgui_init',
-    'sgimgui_t', # struct
+    # 'sgimgui_init' and 'sgimgui_t' removed — sgimgui is now singleton (no handle) since upstream upmerge
     'fonsSetErrorCallback', # function pointer callback not supported
     'camDevice_t_',          # opaque handle, exposed as IntPtr via camDevice typedef
     'manifold_warp',         # hand-written wrapper in manifoldc_csharp_internal_wrappers.h
@@ -213,7 +212,6 @@ prim_types = {
     'void **':      'IntPtr',
     'cgltf_float *' : 'float *',    
     'uint8_t *':   'byte*',
-    'sgimgui_t *': 'IntPtr',
     'unsigned char': 'byte',
     'unsigned char *': 'byte*',
     'EXRHeader *': 'IntPtr',

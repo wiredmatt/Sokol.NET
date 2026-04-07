@@ -294,6 +294,8 @@ public enum sapp_log_item
     SAPP_LOGITEM_OK,
     SAPP_LOGITEM_MALLOC_FAILED,
     SAPP_LOGITEM_MACOS_INVALID_NSOPENGL_PROFILE,
+    SAPP_LOGITEM_METAL_CREATE_SWAPCHAIN_DEPTH_TEXTURE_FAILED,
+    SAPP_LOGITEM_METAL_CREATE_SWAPCHAIN_MSAA_TEXTURE_FAILED,
     SAPP_LOGITEM_WIN32_LOAD_OPENGL32_DLL_FAILED,
     SAPP_LOGITEM_WIN32_CREATE_HELPER_WINDOW_FAILED,
     SAPP_LOGITEM_WIN32_HELPER_WINDOW_GETDC_FAILED,
@@ -392,15 +394,259 @@ public enum sapp_log_item
     SAPP_LOGITEM_WGPU_REQUEST_ADAPTER_STATUS_ERROR,
     SAPP_LOGITEM_WGPU_REQUEST_ADAPTER_STATUS_UNKNOWN,
     SAPP_LOGITEM_WGPU_CREATE_INSTANCE_FAILED,
+    SAPP_LOGITEM_VULKAN_REQUIRED_INSTANCE_EXTENSION_FUNCTION_MISSING,
+    SAPP_LOGITEM_VULKAN_ALLOC_DEVICE_MEMORY_NO_SUITABLE_MEMORY_TYPE,
+    SAPP_LOGITEM_VULKAN_ALLOCATE_MEMORY_FAILED,
+    SAPP_LOGITEM_VULKAN_CREATE_INSTANCE_FAILED,
+    SAPP_LOGITEM_VULKAN_ENUMERATE_PHYSICAL_DEVICES_FAILED,
+    SAPP_LOGITEM_VULKAN_NO_PHYSICAL_DEVICES_FOUND,
+    SAPP_LOGITEM_VULKAN_NO_SUITABLE_PHYSICAL_DEVICE_FOUND,
+    SAPP_LOGITEM_VULKAN_CREATE_DEVICE_FAILED_EXTENSION_NOT_PRESENT,
+    SAPP_LOGITEM_VULKAN_CREATE_DEVICE_FAILED_FEATURE_NOT_PRESENT,
+    SAPP_LOGITEM_VULKAN_CREATE_DEVICE_FAILED_INITIALIZATION_FAILED,
+    SAPP_LOGITEM_VULKAN_CREATE_DEVICE_FAILED_OTHER,
+    SAPP_LOGITEM_VULKAN_CREATE_SURFACE_FAILED,
+    SAPP_LOGITEM_VULKAN_CREATE_SWAPCHAIN_FAILED,
+    SAPP_LOGITEM_VULKAN_SWAPCHAIN_CREATE_IMAGE_VIEW_FAILED,
+    SAPP_LOGITEM_VULKAN_SWAPCHAIN_CREATE_IMAGE_FAILED,
+    SAPP_LOGITEM_VULKAN_SWAPCHAIN_ALLOC_IMAGE_DEVICE_MEMORY_FAILED,
+    SAPP_LOGITEM_VULKAN_SWAPCHAIN_BIND_IMAGE_MEMORY_FAILED,
+    SAPP_LOGITEM_VULKAN_ACQUIRE_NEXT_IMAGE_FAILED,
+    SAPP_LOGITEM_VULKAN_QUEUE_PRESENT_FAILED,
     SAPP_LOGITEM_IMAGE_DATA_SIZE_MISMATCH,
     SAPP_LOGITEM_DROPPED_FILE_PATH_TOO_LONG,
     SAPP_LOGITEM_CLIPBOARD_STRING_TOO_BIG,
+}
+public enum sapp_pixel_format
+{
+    _SAPP_PIXELFORMAT_DEFAULT,
+    SAPP_PIXELFORMAT_NONE,
+    SAPP_PIXELFORMAT_RGBA8,
+    SAPP_PIXELFORMAT_SRGB8A8,
+    SAPP_PIXELFORMAT_BGRA8,
+    SAPP_PIXELFORMAT_SBGRA8,
+    SAPP_PIXELFORMAT_DEPTH,
+    SAPP_PIXELFORMAT_DEPTH_STENCIL,
+    _SA_PPPIXELFORMAT_FORCE_U32 = 2147483647,
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_environment_defaults
+{
+    public sapp_pixel_format color_format;
+    public sapp_pixel_format depth_format;
+    public int sample_count;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_metal_environment
+{
+    public void* device;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_d3d11_environment
+{
+    public void* device;
+    public void* device_context;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_wgpu_environment
+{
+    public void* device;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_vulkan_environment
+{
+    public void* instance;
+    public void* physical_device;
+    public void* device;
+    public void* queue;
+    public uint queue_family_index;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_environment
+{
+    public sapp_environment_defaults defaults;
+    public sapp_metal_environment metal;
+    public sapp_d3d11_environment d3d11;
+    public sapp_wgpu_environment wgpu;
+    public sapp_vulkan_environment vulkan;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_metal_swapchain
+{
+    public void* current_drawable;
+    public void* depth_stencil_texture;
+    public void* msaa_color_texture;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_d3d11_swapchain
+{
+    public void* render_view;
+    public void* resolve_view;
+    public void* depth_stencil_view;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_wgpu_swapchain
+{
+    public void* render_view;
+    public void* resolve_view;
+    public void* depth_stencil_view;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_vulkan_swapchain
+{
+    public void* render_image;
+    public void* render_view;
+    public void* resolve_image;
+    public void* resolve_view;
+    public void* depth_stencil_image;
+    public void* depth_stencil_view;
+    public void* render_finished_semaphore;
+    public void* present_complete_semaphore;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_gl_swapchain
+{
+    public uint framebuffer;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_swapchain
+{
+    public int width;
+    public int height;
+    public int sample_count;
+    public sapp_pixel_format color_format;
+    public sapp_pixel_format depth_format;
+    public sapp_metal_swapchain metal;
+    public sapp_d3d11_swapchain d3d11;
+    public sapp_wgpu_swapchain wgpu;
+    public sapp_vulkan_swapchain vulkan;
+    public sapp_gl_swapchain gl;
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct sapp_logger
 {
     public delegate* unmanaged<byte*, uint, uint, byte*, uint, byte*, void*, void> func;
     public void* user_data;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_gl_desc
+{
+    public int major_version;
+    public int minor_version;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_win32_desc
+{
+#if WEB
+    private byte _console_utf8;
+    public bool console_utf8 { get => _console_utf8 != 0; set => _console_utf8 = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool console_utf8;
+#endif
+#if WEB
+    private byte _console_create;
+    public bool console_create { get => _console_create != 0; set => _console_create = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool console_create;
+#endif
+#if WEB
+    private byte _console_attach;
+    public bool console_attach { get => _console_attach != 0; set => _console_attach = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool console_attach;
+#endif
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_html5_desc
+{
+#if WEB
+    private IntPtr _canvas_selector;
+    public string canvas_selector { get => Marshal.PtrToStringAnsi(_canvas_selector);  set { if (_canvas_selector != IntPtr.Zero) { Marshal.FreeHGlobal(_canvas_selector); _canvas_selector = IntPtr.Zero; } if (value != null) { _canvas_selector = Marshal.StringToHGlobalAnsi(value); } } }
+#else
+    [M(U.LPUTF8Str)] public string canvas_selector;
+#endif
+#if WEB
+    private byte _canvas_resize;
+    public bool canvas_resize { get => _canvas_resize != 0; set => _canvas_resize = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool canvas_resize;
+#endif
+#if WEB
+    private byte _preserve_drawing_buffer;
+    public bool preserve_drawing_buffer { get => _preserve_drawing_buffer != 0; set => _preserve_drawing_buffer = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool preserve_drawing_buffer;
+#endif
+#if WEB
+    private byte _premultiplied_alpha;
+    public bool premultiplied_alpha { get => _premultiplied_alpha != 0; set => _premultiplied_alpha = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool premultiplied_alpha;
+#endif
+#if WEB
+    private byte _ask_leave_site;
+    public bool ask_leave_site { get => _ask_leave_site != 0; set => _ask_leave_site = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool ask_leave_site;
+#endif
+#if WEB
+    private byte _update_document_title;
+    public bool update_document_title { get => _update_document_title != 0; set => _update_document_title = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool update_document_title;
+#endif
+#if WEB
+    private byte _bubble_mouse_events;
+    public bool bubble_mouse_events { get => _bubble_mouse_events != 0; set => _bubble_mouse_events = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool bubble_mouse_events;
+#endif
+#if WEB
+    private byte _bubble_touch_events;
+    public bool bubble_touch_events { get => _bubble_touch_events != 0; set => _bubble_touch_events = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool bubble_touch_events;
+#endif
+#if WEB
+    private byte _bubble_wheel_events;
+    public bool bubble_wheel_events { get => _bubble_wheel_events != 0; set => _bubble_wheel_events = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool bubble_wheel_events;
+#endif
+#if WEB
+    private byte _bubble_key_events;
+    public bool bubble_key_events { get => _bubble_key_events != 0; set => _bubble_key_events = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool bubble_key_events;
+#endif
+#if WEB
+    private byte _bubble_char_events;
+    public bool bubble_char_events { get => _bubble_char_events != 0; set => _bubble_char_events = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool bubble_char_events;
+#endif
+#if WEB
+    private byte _use_emsc_set_main_loop;
+    public bool use_emsc_set_main_loop { get => _use_emsc_set_main_loop != 0; set => _use_emsc_set_main_loop = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool use_emsc_set_main_loop;
+#endif
+#if WEB
+    private byte _emsc_set_main_loop_simulate_infinite_loop;
+    public bool emsc_set_main_loop_simulate_infinite_loop { get => _emsc_set_main_loop_simulate_infinite_loop != 0; set => _emsc_set_main_loop_simulate_infinite_loop = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool emsc_set_main_loop_simulate_infinite_loop;
+#endif
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sapp_ios_desc
+{
+#if WEB
+    private byte _keyboard_resizes_canvas;
+    public bool keyboard_resizes_canvas { get => _keyboard_resizes_canvas != 0; set => _keyboard_resizes_canvas = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool keyboard_resizes_canvas;
+#endif
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct sapp_desc
@@ -460,110 +706,10 @@ public struct sapp_desc
     public sapp_icon_desc icon;
     public sapp_allocator allocator;
     public sapp_logger logger;
-    public int gl_major_version;
-    public int gl_minor_version;
-#if WEB
-    private byte _win32_console_utf8;
-    public bool win32_console_utf8 { get => _win32_console_utf8 != 0; set => _win32_console_utf8 = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool win32_console_utf8;
-#endif
-#if WEB
-    private byte _win32_console_create;
-    public bool win32_console_create { get => _win32_console_create != 0; set => _win32_console_create = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool win32_console_create;
-#endif
-#if WEB
-    private byte _win32_console_attach;
-    public bool win32_console_attach { get => _win32_console_attach != 0; set => _win32_console_attach = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool win32_console_attach;
-#endif
-#if WEB
-    private IntPtr _html5_canvas_selector;
-    public string html5_canvas_selector { get => Marshal.PtrToStringAnsi(_html5_canvas_selector);  set { if (_html5_canvas_selector != IntPtr.Zero) { Marshal.FreeHGlobal(_html5_canvas_selector); _html5_canvas_selector = IntPtr.Zero; } if (value != null) { _html5_canvas_selector = Marshal.StringToHGlobalAnsi(value); } } }
-#else
-    [M(U.LPUTF8Str)] public string html5_canvas_selector;
-#endif
-#if WEB
-    private byte _html5_canvas_resize;
-    public bool html5_canvas_resize { get => _html5_canvas_resize != 0; set => _html5_canvas_resize = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_canvas_resize;
-#endif
-#if WEB
-    private byte _html5_preserve_drawing_buffer;
-    public bool html5_preserve_drawing_buffer { get => _html5_preserve_drawing_buffer != 0; set => _html5_preserve_drawing_buffer = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_preserve_drawing_buffer;
-#endif
-#if WEB
-    private byte _html5_premultiplied_alpha;
-    public bool html5_premultiplied_alpha { get => _html5_premultiplied_alpha != 0; set => _html5_premultiplied_alpha = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_premultiplied_alpha;
-#endif
-#if WEB
-    private byte _html5_ask_leave_site;
-    public bool html5_ask_leave_site { get => _html5_ask_leave_site != 0; set => _html5_ask_leave_site = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_ask_leave_site;
-#endif
-#if WEB
-    private byte _html5_update_document_title;
-    public bool html5_update_document_title { get => _html5_update_document_title != 0; set => _html5_update_document_title = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_update_document_title;
-#endif
-#if WEB
-    private byte _html5_bubble_mouse_events;
-    public bool html5_bubble_mouse_events { get => _html5_bubble_mouse_events != 0; set => _html5_bubble_mouse_events = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_bubble_mouse_events;
-#endif
-#if WEB
-    private byte _html5_bubble_touch_events;
-    public bool html5_bubble_touch_events { get => _html5_bubble_touch_events != 0; set => _html5_bubble_touch_events = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_bubble_touch_events;
-#endif
-#if WEB
-    private byte _html5_bubble_wheel_events;
-    public bool html5_bubble_wheel_events { get => _html5_bubble_wheel_events != 0; set => _html5_bubble_wheel_events = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_bubble_wheel_events;
-#endif
-#if WEB
-    private byte _html5_bubble_key_events;
-    public bool html5_bubble_key_events { get => _html5_bubble_key_events != 0; set => _html5_bubble_key_events = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_bubble_key_events;
-#endif
-#if WEB
-    private byte _html5_bubble_char_events;
-    public bool html5_bubble_char_events { get => _html5_bubble_char_events != 0; set => _html5_bubble_char_events = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_bubble_char_events;
-#endif
-#if WEB
-    private byte _html5_use_emsc_set_main_loop;
-    public bool html5_use_emsc_set_main_loop { get => _html5_use_emsc_set_main_loop != 0; set => _html5_use_emsc_set_main_loop = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_use_emsc_set_main_loop;
-#endif
-#if WEB
-    private byte _html5_emsc_set_main_loop_simulate_infinite_loop;
-    public bool html5_emsc_set_main_loop_simulate_infinite_loop { get => _html5_emsc_set_main_loop_simulate_infinite_loop != 0; set => _html5_emsc_set_main_loop_simulate_infinite_loop = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool html5_emsc_set_main_loop_simulate_infinite_loop;
-#endif
-#if WEB
-    private byte _ios_keyboard_resizes_canvas;
-    public bool ios_keyboard_resizes_canvas { get => _ios_keyboard_resizes_canvas != 0; set => _ios_keyboard_resizes_canvas = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool ios_keyboard_resizes_canvas;
-#endif
+    public sapp_gl_desc gl;
+    public sapp_win32_desc win32;
+    public sapp_html5_desc html5;
+    public sapp_ios_desc ios;
 }
 public enum sapp_html5_fetch_error
 {
@@ -672,14 +818,14 @@ public static extern float sapp_heightf();
 #else
 [DllImport("sokol", EntryPoint = "sapp_color_format", CallingConvention = CallingConvention.Cdecl)]
 #endif
-public static extern int sapp_color_format();
+public static extern sapp_pixel_format sapp_color_format();
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_depth_format", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_depth_format", CallingConvention = CallingConvention.Cdecl)]
 #endif
-public static extern int sapp_depth_format();
+public static extern sapp_pixel_format sapp_depth_format();
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_sample_count", CallingConvention = CallingConvention.Cdecl)]
@@ -887,6 +1033,13 @@ public static extern ulong sapp_frame_count();
 public static extern double sapp_frame_duration();
 
 #if __IOS__
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_frame_duration_unfiltered", CallingConvention = CallingConvention.Cdecl)]
+#else
+[DllImport("sokol", EntryPoint = "sapp_frame_duration_unfiltered", CallingConvention = CallingConvention.Cdecl)]
+#endif
+public static extern double sapp_frame_duration_unfiltered();
+
+#if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_set_clipboard_string", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_set_clipboard_string", CallingConvention = CallingConvention.Cdecl)]
@@ -971,6 +1124,38 @@ public static string sapp_get_dropped_file_path(int index)
 #endif
 public static extern void sapp_run(in sapp_desc desc);
 
+#if WEB
+public static sapp_environment sapp_get_environment()
+{
+    sapp_environment result = default;
+    sapp_get_environment_internal(ref result);
+    return result;
+}
+#else
+#if __IOS__
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_get_environment", CallingConvention = CallingConvention.Cdecl)]
+#else
+[DllImport("sokol", EntryPoint = "sapp_get_environment", CallingConvention = CallingConvention.Cdecl)]
+#endif
+public static extern sapp_environment sapp_get_environment();
+#endif
+
+#if WEB
+public static sapp_swapchain sapp_get_swapchain()
+{
+    sapp_swapchain result = default;
+    sapp_get_swapchain_internal(ref result);
+    return result;
+}
+#else
+#if __IOS__
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_get_swapchain", CallingConvention = CallingConvention.Cdecl)]
+#else
+[DllImport("sokol", EntryPoint = "sapp_get_swapchain", CallingConvention = CallingConvention.Cdecl)]
+#endif
+public static extern sapp_swapchain sapp_get_swapchain();
+#endif
+
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_egl_get_display", CallingConvention = CallingConvention.Cdecl)]
 #else
@@ -1007,34 +1192,6 @@ public static extern uint sapp_html5_get_dropped_file_size(int index);
 public static extern void sapp_html5_fetch_dropped_file(in sapp_html5_fetch_request request);
 
 #if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_metal_get_device", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_metal_get_device", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_metal_get_device();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_metal_get_current_drawable", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_metal_get_current_drawable", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_metal_get_current_drawable();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_metal_get_depth_stencil_texture", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_metal_get_depth_stencil_texture", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_metal_get_depth_stencil_texture();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_metal_get_msaa_color_texture", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_metal_get_msaa_color_texture", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_metal_get_msaa_color_texture();
-
-#if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_macos_get_window", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_macos_get_window", CallingConvention = CallingConvention.Cdecl)]
@@ -1049,20 +1206,6 @@ public static extern void* sapp_macos_get_window();
 public static extern void* sapp_ios_get_window();
 
 #if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_d3d11_get_device", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_d3d11_get_device", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_d3d11_get_device();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_d3d11_get_device_context", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_d3d11_get_device_context", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_d3d11_get_device_context();
-
-#if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_d3d11_get_swap_chain", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_d3d11_get_swap_chain", CallingConvention = CallingConvention.Cdecl)]
@@ -1070,67 +1213,11 @@ public static extern void* sapp_d3d11_get_device_context();
 public static extern void* sapp_d3d11_get_swap_chain();
 
 #if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_d3d11_get_render_view", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_d3d11_get_render_view", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_d3d11_get_render_view();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_d3d11_get_resolve_view", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_d3d11_get_resolve_view", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_d3d11_get_resolve_view();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_d3d11_get_depth_stencil_view", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_d3d11_get_depth_stencil_view", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_d3d11_get_depth_stencil_view();
-
-#if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_win32_get_hwnd", CallingConvention = CallingConvention.Cdecl)]
 #else
 [DllImport("sokol", EntryPoint = "sapp_win32_get_hwnd", CallingConvention = CallingConvention.Cdecl)]
 #endif
 public static extern void* sapp_win32_get_hwnd();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_wgpu_get_device", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_wgpu_get_device", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_wgpu_get_device();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_wgpu_get_render_view", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_wgpu_get_render_view", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_wgpu_get_render_view();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_wgpu_get_resolve_view", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_wgpu_get_resolve_view", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_wgpu_get_resolve_view();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_wgpu_get_depth_stencil_view", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_wgpu_get_depth_stencil_view", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern void* sapp_wgpu_get_depth_stencil_view();
-
-#if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_gl_get_framebuffer", CallingConvention = CallingConvention.Cdecl)]
-#else
-[DllImport("sokol", EntryPoint = "sapp_gl_get_framebuffer", CallingConvention = CallingConvention.Cdecl)]
-#endif
-public static extern uint sapp_gl_get_framebuffer();
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_gl_get_major_version", CallingConvention = CallingConvention.Cdecl)]
@@ -1187,6 +1274,20 @@ public static extern void* sapp_android_get_native_activity();
 [DllImport("sokol", EntryPoint = "sapp_query_desc_internal", CallingConvention = CallingConvention.Cdecl)]
 #endif
 public static extern void sapp_query_desc_internal(ref sapp_desc result);
+
+#if __IOS__
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_get_environment_internal", CallingConvention = CallingConvention.Cdecl)]
+#else
+[DllImport("sokol", EntryPoint = "sapp_get_environment_internal", CallingConvention = CallingConvention.Cdecl)]
+#endif
+public static extern void sapp_get_environment_internal(ref sapp_environment result);
+
+#if __IOS__
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sapp_get_swapchain_internal", CallingConvention = CallingConvention.Cdecl)]
+#else
+[DllImport("sokol", EntryPoint = "sapp_get_swapchain_internal", CallingConvention = CallingConvention.Cdecl)]
+#endif
+public static extern void sapp_get_swapchain_internal(ref sapp_swapchain result);
 
 }
 }

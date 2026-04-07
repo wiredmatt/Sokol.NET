@@ -194,7 +194,7 @@ elseif (APPLE)
     else()
         target_compile_options(sokol PRIVATE -x objective-c)
         target_link_libraries(sokol
-            "-framework Cocoa"
+            "-framework AppKit"
             "-framework QuartzCore"
             "-framework Metal"
             "-framework MetalKit"

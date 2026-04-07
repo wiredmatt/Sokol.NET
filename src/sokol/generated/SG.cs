@@ -68,6 +68,7 @@ public enum sg_backend
     SG_BACKEND_METAL_MACOS,
     SG_BACKEND_METAL_SIMULATOR,
     SG_BACKEND_WGPU,
+    SG_BACKEND_VULKAN,
     SG_BACKEND_DUMMY,
 }
 public enum sg_pixel_format
@@ -260,6 +261,18 @@ public struct sg_features
     [M(U.I1)] public bool draw_base_instance;
 #endif
 #if WEB
+    private byte _dual_source_blending;
+    public bool dual_source_blending { get => _dual_source_blending != 0; set => _dual_source_blending = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool dual_source_blending;
+#endif
+#if WEB
+    private byte _vertexformat_int10_n2;
+    public bool vertexformat_int10_n2 { get => _vertexformat_int10_n2 != 0; set => _vertexformat_int10_n2 = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool vertexformat_int10_n2;
+#endif
+#if WEB
     private byte _gl_texture_views;
     public bool gl_texture_views { get => _gl_texture_views != 0; set => _gl_texture_views = value ? (byte)1 : (byte)0; }
 #else
@@ -282,6 +295,7 @@ public struct sg_limits
     public int gl_max_vertex_uniform_components;
     public int gl_max_combined_texture_image_units;
     public int d3d11_max_unordered_access_views;
+    public int vk_min_uniform_buffer_offset_alignment;
 }
 public enum sg_resource_state
 {
@@ -396,6 +410,7 @@ public enum sg_vertex_format
     SG_VERTEXFORMAT_SHORT4N,
     SG_VERTEXFORMAT_USHORT4,
     SG_VERTEXFORMAT_USHORT4N,
+    SG_VERTEXFORMAT_INT10_N2,
     SG_VERTEXFORMAT_UINT10_N2,
     SG_VERTEXFORMAT_HALF2,
     SG_VERTEXFORMAT_HALF4,
@@ -496,6 +511,10 @@ public enum sg_blend_factor
     SG_BLENDFACTOR_ONE_MINUS_BLEND_COLOR,
     SG_BLENDFACTOR_BLEND_ALPHA,
     SG_BLENDFACTOR_ONE_MINUS_BLEND_ALPHA,
+    SG_BLENDFACTOR_SRC1_COLOR,
+    SG_BLENDFACTOR_ONE_MINUS_SRC1_COLOR,
+    SG_BLENDFACTOR_SRC1_ALPHA,
+    SG_BLENDFACTOR_ONE_MINUS_SRC1_ALPHA,
     _SG_BLENDFACTOR_NUM,
     _SG_BLENDFACTOR_FORCE_U32 = 2147483647,
 }
@@ -610,6 +629,18 @@ public struct sg_wgpu_swapchain
     public void* depth_stencil_view;
 }
 [StructLayout(LayoutKind.Sequential)]
+public struct sg_vulkan_swapchain
+{
+    public void* render_image;
+    public void* render_view;
+    public void* resolve_image;
+    public void* resolve_view;
+    public void* depth_stencil_image;
+    public void* depth_stencil_view;
+    public void* render_finished_semaphore;
+    public void* present_complete_semaphore;
+}
+[StructLayout(LayoutKind.Sequential)]
 public struct sg_gl_swapchain
 {
     public uint framebuffer;
@@ -625,6 +656,7 @@ public struct sg_swapchain
     public sg_metal_swapchain metal;
     public sg_d3d11_swapchain d3d11;
     public sg_wgpu_swapchain wgpu;
+    public sg_vulkan_swapchain vulkan;
     public sg_gl_swapchain gl;
 }
 [StructLayout(LayoutKind.Sequential)]
@@ -1090,6 +1122,7 @@ public struct sg_shader_uniform_block
     public byte hlsl_register_b_n;
     public byte msl_buffer_n;
     public byte wgsl_group0_binding_n;
+    public byte spirv_set0_binding_n;
     public sg_uniform_layout layout;
     #pragma warning disable 169
     public struct glsl_uniformsCollection
@@ -1130,6 +1163,7 @@ public struct sg_shader_texture_view
     public byte hlsl_register_t_n;
     public byte msl_texture_n;
     public byte wgsl_group1_binding_n;
+    public byte spirv_set1_binding_n;
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct sg_shader_storage_buffer_view
@@ -1145,6 +1179,7 @@ public struct sg_shader_storage_buffer_view
     public byte hlsl_register_u_n;
     public byte msl_buffer_n;
     public byte wgsl_group1_binding_n;
+    public byte spirv_set1_binding_n;
     public byte glsl_binding_n;
 }
 [StructLayout(LayoutKind.Sequential)]
@@ -1162,6 +1197,7 @@ public struct sg_shader_storage_image_view
     public byte hlsl_register_u_n;
     public byte msl_texture_n;
     public byte wgsl_group1_binding_n;
+    public byte spirv_set1_binding_n;
     public byte glsl_binding_n;
 }
 [StructLayout(LayoutKind.Sequential)]
@@ -1179,6 +1215,7 @@ public struct sg_shader_sampler
     public byte hlsl_register_s_n;
     public byte msl_sampler_n;
     public byte wgsl_group1_binding_n;
+    public byte spirv_set1_binding_n;
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct sg_shader_texture_sampler_pair
@@ -1778,14 +1815,46 @@ public struct sg_frame_stats_wgpu
     public sg_frame_stats_wgpu_bindings bindings;
 }
 [StructLayout(LayoutKind.Sequential)]
-public struct sg_resource_stats
+public struct sg_frame_stats_vk
 {
-    public uint total_alive;
-    public uint total_free;
+    public uint num_cmd_pipeline_barrier;
+    public uint num_allocate_memory;
+    public uint num_free_memory;
+    public uint size_allocate_memory;
+    public uint num_delete_queue_added;
+    public uint num_delete_queue_collected;
+    public uint num_cmd_copy_buffer;
+    public uint num_cmd_copy_buffer_to_image;
+    public uint num_cmd_set_descriptor_buffer_offsets;
+    public uint size_descriptor_buffer_writes;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sg_frame_resource_stats
+{
     public uint allocated;
     public uint deallocated;
     public uint inited;
     public uint uninited;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sg_total_resource_stats
+{
+    public uint alive;
+    public uint free;
+    public uint allocated;
+    public uint deallocated;
+    public uint inited;
+    public uint uninited;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sg_total_stats
+{
+    public sg_total_resource_stats buffers;
+    public sg_total_resource_stats images;
+    public sg_total_resource_stats samplers;
+    public sg_total_resource_stats views;
+    public sg_total_resource_stats shaders;
+    public sg_total_resource_stats pipelines;
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct sg_frame_stats
@@ -1807,16 +1876,24 @@ public struct sg_frame_stats
     public uint size_update_buffer;
     public uint size_append_buffer;
     public uint size_update_image;
-    public sg_resource_stats buffers;
-    public sg_resource_stats images;
-    public sg_resource_stats samplers;
-    public sg_resource_stats views;
-    public sg_resource_stats shaders;
-    public sg_resource_stats pipelines;
+    public sg_frame_resource_stats buffers;
+    public sg_frame_resource_stats images;
+    public sg_frame_resource_stats samplers;
+    public sg_frame_resource_stats views;
+    public sg_frame_resource_stats shaders;
+    public sg_frame_resource_stats pipelines;
     public sg_frame_stats_gl gl;
     public sg_frame_stats_d3d11 d3d11;
     public sg_frame_stats_metal metal;
     public sg_frame_stats_wgpu wgpu;
+    public sg_frame_stats_vk vk;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sg_stats
+{
+    public sg_frame_stats prev_frame;
+    public sg_frame_stats cur_frame;
+    public sg_total_stats total;
 }
 public enum sg_log_item
 {
@@ -1908,6 +1985,42 @@ public enum sg_log_item
     SG_LOGITEM_WGPU_CREATE_PIPELINE_LAYOUT_FAILED,
     SG_LOGITEM_WGPU_CREATE_RENDER_PIPELINE_FAILED,
     SG_LOGITEM_WGPU_CREATE_COMPUTE_PIPELINE_FAILED,
+    SG_LOGITEM_VULKAN_REQUIRED_EXTENSION_FUNCTION_MISSING,
+    SG_LOGITEM_VULKAN_ALLOC_DEVICE_MEMORY_NO_SUITABLE_MEMORY_TYPE,
+    SG_LOGITEM_VULKAN_ALLOCATE_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_ALLOC_BUFFER_DEVICE_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_ALLOC_IMAGE_DEVICE_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_DELETE_QUEUE_EXHAUSTED,
+    SG_LOGITEM_VULKAN_STAGING_CREATE_BUFFER_FAILED,
+    SG_LOGITEM_VULKAN_STAGING_ALLOCATE_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_STAGING_BIND_BUFFER_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_STAGING_STREAM_BUFFER_OVERFLOW,
+    SG_LOGITEM_VULKAN_CREATE_SHARED_BUFFER_FAILED,
+    SG_LOGITEM_VULKAN_ALLOCATE_SHARED_BUFFER_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_BIND_SHARED_BUFFER_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_MAP_SHARED_BUFFER_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_CREATE_BUFFER_FAILED,
+    SG_LOGITEM_VULKAN_BIND_BUFFER_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_CREATE_IMAGE_FAILED,
+    SG_LOGITEM_VULKAN_BIND_IMAGE_MEMORY_FAILED,
+    SG_LOGITEM_VULKAN_CREATE_SHADER_MODULE_FAILED,
+    SG_LOGITEM_VULKAN_UNIFORMBLOCK_SPIRV_SET0_BINDING_OUT_OF_RANGE,
+    SG_LOGITEM_VULKAN_TEXTURE_SPIRV_SET1_BINDING_OUT_OF_RANGE,
+    SG_LOGITEM_VULKAN_STORAGEBUFFER_SPIRV_SET1_BINDING_OUT_OF_RANGE,
+    SG_LOGITEM_VULKAN_STORAGEIMAGE_SPIRV_SET1_BINDING_OUT_OF_RANGE,
+    SG_LOGITEM_VULKAN_SAMPLER_SPIRV_SET1_BINDING_OUT_OF_RANGE,
+    SG_LOGITEM_VULKAN_CREATE_DESCRIPTOR_SET_LAYOUT_FAILED,
+    SG_LOGITEM_VULKAN_SHADER_UNIFORM_DESCRIPTOR_SET_SIZE_VS_CACHE_SIZE,
+    SG_LOGITEM_VULKAN_CREATE_PIPELINE_LAYOUT_FAILED,
+    SG_LOGITEM_VULKAN_CREATE_GRAPHICS_PIPELINE_FAILED,
+    SG_LOGITEM_VULKAN_CREATE_COMPUTE_PIPELINE_FAILED,
+    SG_LOGITEM_VULKAN_CREATE_IMAGE_VIEW_FAILED,
+    SG_LOGITEM_VULKAN_VIEW_MAX_DESCRIPTOR_SIZE,
+    SG_LOGITEM_VULKAN_CREATE_SAMPLER_FAILED,
+    SG_LOGITEM_VULKAN_SAMPLER_MAX_DESCRIPTOR_SIZE,
+    SG_LOGITEM_VULKAN_WAIT_FOR_FENCE_FAILED,
+    SG_LOGITEM_VULKAN_UNIFORM_BUFFER_OVERFLOW,
+    SG_LOGITEM_VULKAN_DESCRIPTOR_BUFFER_OVERFLOW,
     SG_LOGITEM_IDENTICAL_COMMIT_LISTENER,
     SG_LOGITEM_COMMIT_LISTENER_ARRAY_FULL,
     SG_LOGITEM_TRACE_HOOKS_NOT_ENABLED,
@@ -2013,6 +2126,7 @@ public enum sg_log_item
     SG_LOGITEM_VALIDATE_SHADERDESC_UNIFORMBLOCK_METAL_BUFFER_SLOT_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_UNIFORMBLOCK_HLSL_REGISTER_B_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_UNIFORMBLOCK_WGSL_GROUP0_BINDING_COLLISION,
+    SG_LOGITEM_VALIDATE_SHADERDESC_UNIFORMBLOCK_SPIRV_SET0_BINDING_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_UNIFORMBLOCK_NO_MEMBERS,
     SG_LOGITEM_VALIDATE_SHADERDESC_UNIFORMBLOCK_UNIFORM_GLSL_NAME,
     SG_LOGITEM_VALIDATE_SHADERDESC_UNIFORMBLOCK_SIZE_MISMATCH,
@@ -2023,17 +2137,21 @@ public enum sg_log_item
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEBUFFER_HLSL_REGISTER_U_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEBUFFER_GLSL_BINDING_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEBUFFER_WGSL_GROUP1_BINDING_COLLISION,
+    SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEBUFFER_SPIRV_SET1_BINDING_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEIMAGE_EXPECT_COMPUTE_STAGE,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEIMAGE_METAL_TEXTURE_SLOT_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEIMAGE_HLSL_REGISTER_U_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEIMAGE_GLSL_BINDING_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEIMAGE_WGSL_GROUP1_BINDING_COLLISION,
+    SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_STORAGEIMAGE_SPIRV_SET1_BINDING_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_TEXTURE_METAL_TEXTURE_SLOT_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_TEXTURE_HLSL_REGISTER_T_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_TEXTURE_WGSL_GROUP1_BINDING_COLLISION,
+    SG_LOGITEM_VALIDATE_SHADERDESC_VIEW_TEXTURE_SPIRV_SET1_BINDING_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_SAMPLER_METAL_SAMPLER_SLOT_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_SAMPLER_HLSL_REGISTER_S_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_SAMPLER_WGSL_GROUP1_BINDING_COLLISION,
+    SG_LOGITEM_VALIDATE_SHADERDESC_SAMPLER_SPIRV_SET1_BINDING_COLLISION,
     SG_LOGITEM_VALIDATE_SHADERDESC_TEXTURE_SAMPLER_PAIR_VIEW_SLOT_OUT_OF_RANGE,
     SG_LOGITEM_VALIDATE_SHADERDESC_TEXTURE_SAMPLER_PAIR_SAMPLER_SLOT_OUT_OF_RANGE,
     SG_LOGITEM_VALIDATE_SHADERDESC_TEXTURE_SAMPLER_PAIR_TEXTURE_STAGE_MISMATCH,
@@ -2051,10 +2169,12 @@ public enum sg_log_item
     SG_LOGITEM_VALIDATE_PIPELINEDESC_NO_COMPUTE_SHADER_EXPECTED,
     SG_LOGITEM_VALIDATE_PIPELINEDESC_NO_CONT_ATTRS,
     SG_LOGITEM_VALIDATE_PIPELINEDESC_ATTR_BASETYPE_MISMATCH,
+    SG_LOGITEM_VALIDATE_PIPELINEDESC_ATTR_VERTEXFORMAT_INT10_N2_NOT_SUPPORTED,
     SG_LOGITEM_VALIDATE_PIPELINEDESC_LAYOUT_STRIDE4,
     SG_LOGITEM_VALIDATE_PIPELINEDESC_ATTR_SEMANTICS,
     SG_LOGITEM_VALIDATE_PIPELINEDESC_SHADER_READONLY_STORAGEBUFFERS,
     SG_LOGITEM_VALIDATE_PIPELINEDESC_BLENDOP_MINMAX_REQUIRES_BLENDFACTOR_ONE,
+    SG_LOGITEM_VALIDATE_PIPELINEDESC_DUAL_SOURCE_BLENDING_NOT_SUPPORTED,
     SG_LOGITEM_VALIDATE_VIEWDESC_CANARY,
     SG_LOGITEM_VALIDATE_VIEWDESC_UNIQUE_VIEWTYPE,
     SG_LOGITEM_VALIDATE_VIEWDESC_ANY_VIEWTYPE,
@@ -2264,12 +2384,22 @@ public struct sg_wgpu_environment
     public void* device;
 }
 [StructLayout(LayoutKind.Sequential)]
+public struct sg_vulkan_environment
+{
+    public void* instance;
+    public void* physical_device;
+    public void* device;
+    public void* queue;
+    public uint queue_family_index;
+}
+[StructLayout(LayoutKind.Sequential)]
 public struct sg_environment
 {
     public sg_environment_defaults defaults;
     public sg_metal_environment metal;
     public sg_d3d11_environment d3d11;
     public sg_wgpu_environment wgpu;
+    public sg_vulkan_environment vulkan;
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct sg_commit_listener
@@ -2289,6 +2419,50 @@ public struct sg_logger
 {
     public delegate* unmanaged<byte*, uint, uint, byte*, uint, byte*, void*, void> func;
     public void* user_data;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sg_d3d11_desc
+{
+#if WEB
+    private byte _shader_debugging;
+    public bool shader_debugging { get => _shader_debugging != 0; set => _shader_debugging = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool shader_debugging;
+#endif
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sg_metal_desc
+{
+#if WEB
+    private byte _force_managed_storage_mode;
+    public bool force_managed_storage_mode { get => _force_managed_storage_mode != 0; set => _force_managed_storage_mode = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool force_managed_storage_mode;
+#endif
+#if WEB
+    private byte _use_command_buffer_with_retained_references;
+    public bool use_command_buffer_with_retained_references { get => _use_command_buffer_with_retained_references != 0; set => _use_command_buffer_with_retained_references = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool use_command_buffer_with_retained_references;
+#endif
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sg_wgpu_desc
+{
+#if WEB
+    private byte _disable_bindgroups_cache;
+    public bool disable_bindgroups_cache { get => _disable_bindgroups_cache != 0; set => _disable_bindgroups_cache = value ? (byte)1 : (byte)0; }
+#else
+    [M(U.I1)] public bool disable_bindgroups_cache;
+#endif
+    public int bindgroups_cache_size;
+}
+[StructLayout(LayoutKind.Sequential)]
+public struct sg_vulkan_desc
+{
+    public int copy_staging_buffer_size;
+    public int stream_staging_buffer_size;
+    public int descriptor_buffer_size;
 }
 [StructLayout(LayoutKind.Sequential)]
 public struct sg_desc
@@ -2314,31 +2488,10 @@ public struct sg_desc
 #else
     [M(U.I1)] public bool enforce_portable_limits;
 #endif
-#if WEB
-    private byte _d3d11_shader_debugging;
-    public bool d3d11_shader_debugging { get => _d3d11_shader_debugging != 0; set => _d3d11_shader_debugging = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool d3d11_shader_debugging;
-#endif
-#if WEB
-    private byte _mtl_force_managed_storage_mode;
-    public bool mtl_force_managed_storage_mode { get => _mtl_force_managed_storage_mode != 0; set => _mtl_force_managed_storage_mode = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool mtl_force_managed_storage_mode;
-#endif
-#if WEB
-    private byte _mtl_use_command_buffer_with_retained_references;
-    public bool mtl_use_command_buffer_with_retained_references { get => _mtl_use_command_buffer_with_retained_references != 0; set => _mtl_use_command_buffer_with_retained_references = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool mtl_use_command_buffer_with_retained_references;
-#endif
-#if WEB
-    private byte _wgpu_disable_bindgroups_cache;
-    public bool wgpu_disable_bindgroups_cache { get => _wgpu_disable_bindgroups_cache != 0; set => _wgpu_disable_bindgroups_cache = value ? (byte)1 : (byte)0; }
-#else
-    [M(U.I1)] public bool wgpu_disable_bindgroups_cache;
-#endif
-    public int wgpu_bindgroups_cache_size;
+    public sg_d3d11_desc d3d11;
+    public sg_metal_desc metal;
+    public sg_wgpu_desc wgpu;
+    public sg_vulkan_desc vulkan;
     public sg_allocator allocator;
     public sg_logger logger;
     public sg_environment environment;
@@ -3506,47 +3659,47 @@ public static extern void sg_fail_pipeline(sg_pipeline pip);
 public static extern void sg_fail_view(sg_view view);
 
 #if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_enable_frame_stats", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_enable_stats", CallingConvention = CallingConvention.Cdecl)]
 #else
-[DllImport("sokol", EntryPoint = "sg_enable_frame_stats", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("sokol", EntryPoint = "sg_enable_stats", CallingConvention = CallingConvention.Cdecl)]
 #endif
-public static extern void sg_enable_frame_stats();
+public static extern void sg_enable_stats();
 
 #if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_disable_frame_stats", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_disable_stats", CallingConvention = CallingConvention.Cdecl)]
 #else
-[DllImport("sokol", EntryPoint = "sg_disable_frame_stats", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("sokol", EntryPoint = "sg_disable_stats", CallingConvention = CallingConvention.Cdecl)]
 #endif
-public static extern void sg_disable_frame_stats();
+public static extern void sg_disable_stats();
 
 #if WEB
-[DllImport("sokol", EntryPoint = "sg_frame_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
-private static extern int sg_frame_stats_enabled_native();
-public static bool sg_frame_stats_enabled() => sg_frame_stats_enabled_native() != 0;
+[DllImport("sokol", EntryPoint = "sg_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
+private static extern int sg_stats_enabled_native();
+public static bool sg_stats_enabled() => sg_stats_enabled_native() != 0;
 #else
 #if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_frame_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
 #else
-[DllImport("sokol", EntryPoint = "sg_frame_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("sokol", EntryPoint = "sg_stats_enabled", CallingConvention = CallingConvention.Cdecl)]
 #endif
 [return: M(U.I1)]
-public static extern bool sg_frame_stats_enabled();
+public static extern bool sg_stats_enabled();
 #endif
 
 #if WEB
-public static sg_frame_stats sg_query_frame_stats()
+public static sg_stats sg_query_stats()
 {
-    sg_frame_stats result = default;
-    sg_query_frame_stats_internal(ref result);
+    sg_stats result = default;
+    sg_query_stats_internal(ref result);
     return result;
 }
 #else
 #if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_query_frame_stats", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_query_stats", CallingConvention = CallingConvention.Cdecl)]
 #else
-[DllImport("sokol", EntryPoint = "sg_query_frame_stats", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("sokol", EntryPoint = "sg_query_stats", CallingConvention = CallingConvention.Cdecl)]
 #endif
-public static extern sg_frame_stats sg_query_frame_stats();
+public static extern sg_stats sg_query_stats();
 #endif
 
 [StructLayout(LayoutKind.Sequential)]
@@ -3867,6 +4020,13 @@ public static extern void* sg_mtl_render_command_encoder();
 [DllImport("sokol", EntryPoint = "sg_mtl_compute_command_encoder", CallingConvention = CallingConvention.Cdecl)]
 #endif
 public static extern void* sg_mtl_compute_command_encoder();
+
+#if __IOS__
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_mtl_command_queue", CallingConvention = CallingConvention.Cdecl)]
+#else
+[DllImport("sokol", EntryPoint = "sg_mtl_command_queue", CallingConvention = CallingConvention.Cdecl)]
+#endif
+public static extern void* sg_mtl_command_queue();
 
 #if WEB
 public static sg_mtl_buffer_info sg_mtl_query_buffer_info(sg_buffer buf)
@@ -4342,11 +4502,11 @@ public static extern void sg_query_view_image_internal(ref sg_image result, sg_v
 public static extern void sg_query_view_buffer_internal(ref sg_buffer result, sg_view view);
 
 #if __IOS__
-[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_query_frame_stats_internal", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_query_stats_internal", CallingConvention = CallingConvention.Cdecl)]
 #else
-[DllImport("sokol", EntryPoint = "sg_query_frame_stats_internal", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("sokol", EntryPoint = "sg_query_stats_internal", CallingConvention = CallingConvention.Cdecl)]
 #endif
-public static extern void sg_query_frame_stats_internal(ref sg_frame_stats result);
+public static extern void sg_query_stats_internal(ref sg_stats result);
 
 #if __IOS__
 [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "sg_d3d11_query_buffer_info_internal", CallingConvention = CallingConvention.Cdecl)]

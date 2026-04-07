@@ -117,8 +117,8 @@ SOKOL_API_IMPL void sg_query_view_buffer_internal(sg_buffer* result, sg_view vie
     *result = sg_query_view_buffer(view);
 }
 
-SOKOL_API_IMPL void sg_query_frame_stats_internal(sg_frame_stats* result) {
-    *result = sg_query_frame_stats();
+SOKOL_API_IMPL void sg_query_stats_internal(sg_stats* result) {
+    *result = sg_query_stats();
 }
 
 SOKOL_API_IMPL void sg_d3d11_query_buffer_info_internal(sg_d3d11_buffer_info* result, sg_buffer buf) {
@@ -213,6 +213,14 @@ SOKOL_API_IMPL void sg_gl_query_view_info_internal(sg_gl_view_info* result, sg_v
 
 SOKOL_API_IMPL void sapp_query_desc_internal(sapp_desc* result) {
     *result = sapp_query_desc();
+}
+
+SOKOL_API_IMPL void sapp_get_environment_internal(sapp_environment* result) {
+    *result = sapp_get_environment();
+}
+
+SOKOL_API_IMPL void sapp_get_swapchain_internal(sapp_swapchain* result) {
+    *result = sapp_get_swapchain();
 }
 
 // ========== SGlue (sglue_) ==========
