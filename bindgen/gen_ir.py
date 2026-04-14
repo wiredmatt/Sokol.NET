@@ -118,6 +118,9 @@ def parse_enum(decl, source):
                             item['value'] = str(-int(unary_inner[0]['value']))
                         else:
                             sys.exit(f"ERROR: Enum value ConstantExpr must have exactly one IntegerLiteral ({item_decl['name']})")
+                    elif 'value' in const_expr:
+                        # Clang folds complex expressions (bit shifts, etc.) into ConstantExpr.value
+                        item['value'] = const_expr['value']
                     else:
                         sys.exit(f"ERROR: Enum value ConstantExpr must have exactly one IntegerLiteral ({item_decl['name']})")
             if needs_value and 'value' not in item:

@@ -33,3 +33,7 @@
 [submodule "ext/lynx"]
 	path = ext/lynx
 	url = https://github.com/lynx-chess/Lynx.git
+[submodule "ext/nanovg"]
+	path = ext/nanovg
+	url = https://github.com/elix22/nanovg.git
+	branch = sokol-nanovg

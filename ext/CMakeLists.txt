@@ -46,6 +46,10 @@ set(TINYEXR_SOURCE_FILES
         tinyexr_wrapper.cpp
 )
 
+set(NANOVG_SOURCE_FILES
+        nanovg/src/nanovg_impl.c
+)
+
 # Avoid pulling tinyexr/nanozlib (which embeds wuffs) into the Emscripten build
 # We check both CMAKE_SYSTEM_NAME (toolchain file) and the EMSCRIPTEN cache var
 # to be resilient across emcmake/toolchain invocations.
@@ -77,6 +81,7 @@ add_library(sokol ${SOKOL_LIBRARY_TYPE}
 ${IMGUI_SOURCE_FILES} 
 ${TINYEXR_SOURCE_FILES}
 ${FILEUTIL_SRCS}
+${NANOVG_SOURCE_FILES}
 "basisu/sokol_basisu.cpp")
 
 

@@ -423,4 +423,58 @@ SOKOL_API_IMPL void simgui_sampler_from_imtextureid_internal(sg_sampler* result,
     *result = simgui_sampler_from_imtextureid(imtex_id);
 }
 
+// ========== NanoVG (nvg) ==========
+
+SOKOL_API_IMPL void nvgRGB_internal(NVGcolor* result, unsigned char r, unsigned char g, unsigned char b) {
+    *result = nvgRGB(r, g, b);
+}
+
+SOKOL_API_IMPL void nvgRGBf_internal(NVGcolor* result, float r, float g, float b) {
+    *result = nvgRGBf(r, g, b);
+}
+
+SOKOL_API_IMPL void nvgRGBA_internal(NVGcolor* result, unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+    *result = nvgRGBA(r, g, b, a);
+}
+
+SOKOL_API_IMPL void nvgRGBAf_internal(NVGcolor* result, float r, float g, float b, float a) {
+    *result = nvgRGBAf(r, g, b, a);
+}
+
+SOKOL_API_IMPL void nvgLerpRGBA_internal(NVGcolor* result, NVGcolor c0, NVGcolor c1, float u) {
+    *result = nvgLerpRGBA(c0, c1, u);
+}
+
+SOKOL_API_IMPL void nvgTransRGBA_internal(NVGcolor* result, NVGcolor c0, unsigned char a) {
+    *result = nvgTransRGBA(c0, a);
+}
+
+SOKOL_API_IMPL void nvgTransRGBAf_internal(NVGcolor* result, NVGcolor c0, float a) {
+    *result = nvgTransRGBAf(c0, a);
+}
+
+SOKOL_API_IMPL void nvgHSL_internal(NVGcolor* result, float h, float s, float l) {
+    *result = nvgHSL(h, s, l);
+}
+
+SOKOL_API_IMPL void nvgHSLA_internal(NVGcolor* result, float h, float s, float l, unsigned char a) {
+    *result = nvgHSLA(h, s, l, a);
+}
+
+SOKOL_API_IMPL void nvgLinearGradient_internal(NVGpaint* result, NVGcontext * ctx, float sx, float sy, float ex, float ey, NVGcolor icol, NVGcolor ocol) {
+    *result = nvgLinearGradient(ctx, sx, sy, ex, ey, icol, ocol);
+}
+
+SOKOL_API_IMPL void nvgBoxGradient_internal(NVGpaint* result, NVGcontext * ctx, float x, float y, float w, float h, float r, float f, NVGcolor icol, NVGcolor ocol) {
+    *result = nvgBoxGradient(ctx, x, y, w, h, r, f, icol, ocol);
+}
+
+SOKOL_API_IMPL void nvgRadialGradient_internal(NVGpaint* result, NVGcontext * ctx, float cx, float cy, float inr, float outr, NVGcolor icol, NVGcolor ocol) {
+    *result = nvgRadialGradient(ctx, cx, cy, inr, outr, icol, ocol);
+}
+
+SOKOL_API_IMPL void nvgImagePattern_internal(NVGpaint* result, NVGcontext * ctx, float ox, float oy, float ex, float ey, float angle, int image, float alpha) {
+    *result = nvgImagePattern(ctx, ox, oy, ex, ey, angle, image, alpha);
+}
+
 #endif // SOKOL_CSHARP_INTERNAL_WRAPPERS_H

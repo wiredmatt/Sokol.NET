@@ -38,6 +38,7 @@ module_names = {
     'cam':      'CameraC',
     'manifold_': 'Manifoldc',
     'sfs_':      'SFilesystem',
+    'nvg':       'NanoVG',
 }
 
 # Namespace names per prefix
@@ -70,6 +71,7 @@ extra_declarations = {
 # e.g. manifold functions use 'manifold_' but types use 'Manifold' (PascalCase)
 extra_api_prefixes = {
     'manifold_': ['Manifold'],
+    'nvg':       ['NVG', 'snvg_'],
 }
 
 # Library names for DllImport statements
@@ -99,6 +101,7 @@ library_names = {
     'cam':      'camerac',  # CameraC uses separate library (no-underscore prefix)
     'manifold_': 'manifoldc',  # manifoldc uses separate library
     'sfs_':      'sokol',
+    'nvg':       'sokol',
 }
 
 
@@ -130,6 +133,7 @@ c_source_paths = {
     'cam':      'c/camerac.c',
     'manifold_': 'c/manifoldc.c',  # manifoldc has its own CMake build — no single .c source
     'sfs_':      'c/sokol_filesystem.c',
+    'nvg':       'c/nanovg.c',
 }
 
 name_ignores = [
@@ -143,6 +147,15 @@ name_ignores = [
     'fonsSetErrorCallback', # function pointer callback not supported
     'camDevice_t_',          # opaque handle, exposed as IntPtr via camDevice typedef
     'manifold_warp',         # hand-written wrapper in manifoldc_csharp_internal_wrappers.h
+    'NVGcolor',              # has anonymous union; defined manually in NanoVG.cs partial class
+    # NanoVG internal backend types (not needed from C#; use nvgCreateSokol instead)
+    'NVGscissor',
+    'NVGvertex',
+    'NVGpath',
+    'NVGparams',
+    'nvgCreateInternal',
+    'nvgDeleteInternal',
+    'nvgInternalParams',
 ]
 
 name_overrides = {
@@ -184,6 +197,7 @@ type_overrides = {
 
 prim_types = {
     'int':          'int',
+    'const int':    'int',
     'bool':         'bool',
     'char':         'byte',
     'int8_t':       'sbyte',
@@ -244,6 +258,8 @@ prim_types = {
     # sokol_filesystem opaque file handle and callback
     'sfs_file_t *':              'IntPtr',
     'sfs_enumerate_callback_t':  'IntPtr',
+    # nanovg opaque context handle
+    'NVGcontext *':              'IntPtr',
 }
 
 

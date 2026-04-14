@@ -26,6 +26,7 @@ tasks = [
     [ '../ext/camerac/include/camerac.h',    'cam',      [] ],
     [ '../ext/manifold/bindings/c/include/manifold/manifoldc.h', 'manifold_', [] ],
     [ '../ext/sokol/sokol_filesystem.h',     'sfs_',     [] ],
+    [ '../ext/nanovg/src/sokol_nanovg.h',    'nvg',      ['sg_'] ],
     
 ]
 

@@ -128,6 +128,12 @@ extern "C"
 #define SOKOL_FILESYSTEM_IMPL
 #include "sokol/sokol_filesystem.h"
 
+
+// nanovg.h declarations only; implementation is compiled in nanovg_impl.c
+#include "nanovg/src/nanovg.h"
+#define SOKOL_NANOVG_IMPL
+#include "nanovg/src/sokol_nanovg.h"
+
 /*=== STB IMAGE C# BINDINGS ==================================================
     Wrapper functions for stb_image to provide C# bindings for fast native
     image loading (especially important for WebAssembly performance).
