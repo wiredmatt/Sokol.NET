@@ -425,6 +425,8 @@ This project is licensed under the MIT License. See individual library folders f
 ## 🙏 Credits
 
 Built on top of these excellent libraries:
+- [NanoVG](https://github.com/memononen/nanovg) by Mikko Mononen — vector graphics library (zlib license); `ext/nanovg/src/nanovg_impl.c` is a Sokol.NET integration wrapper (zlib license, Copyright 2026 Eli Aloni)
+- [sokol_nanovg](https://github.com/vinnyhorgan/nanovg) by Daniel Vincent Horgan (vinnyhorgan) — native NanoVG backend for Sokol headers (zlib license)
 - [Sokol](https://github.com/floooh/sokol) by Andre Weissflog
 - [Dear ImGui](https://github.com/ocornut/imgui) by Omar Cornut
 - [Assimp](https://github.com/assimp/assimp) - Open Asset Import Library
