@@ -18,10 +18,12 @@ public static unsafe class NanovgdemoApp
     static _state      state    = new _state();
     static IntPtr      vg       = IntPtr.Zero;
     static Demo.DemoData? demoData = null;
-    static float       mouseX   = 0f;
-    static float       mouseY   = 0f;
-    static bool        blowup   = false;
-    static double      time     = 0.0;
+    static float       mouseX        = 0f;
+    static float       mouseY        = 0f;
+    static bool        blowup        = false;
+    static double      time          = 0.0;
+    static double      lastTapTime   = -1.0;
+    const  double      DoubleTapMs   = 0.3;
 
     [UnmanagedCallersOnly]
     private static void Init()
@@ -91,7 +93,15 @@ public static unsafe class NanovgdemoApp
                 }
                 break;
             case sapp_event_type.SAPP_EVENTTYPE_TOUCHES_ENDED:
-                blowup = !blowup;
+                if (time - lastTapTime <= DoubleTapMs)
+                {
+                    blowup = !blowup;
+                    lastTapTime = -1.0;
+                }
+                else
+                {
+                    lastTapTime = time;
+                }
                 break;
             case sapp_event_type.SAPP_EVENTTYPE_KEY_DOWN:
                 if (e->key_code == sapp_keycode.SAPP_KEYCODE_SPACE)
