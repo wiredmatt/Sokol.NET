@@ -1006,24 +1006,35 @@ public static unsafe class Demo
         FileSystem.Instance.LoadFile("fonts/entypo.ttf", (path, bytes, status) =>
         {
             if (status == FileLoadStatus.Success && bytes != null)
-                fixed (byte* ptr = bytes)
-                    data.fontIcons = nvgCreateFontMem(vg, "icons", ptr, bytes.Length, 0);
+            {
+                // Copy to unmanaged memory so NanoVG (stbtt) can safely hold the pointer
+                // for the lifetime of the font. Pass freeData=1 so NanoVG owns it.
+                var unmanaged = Marshal.AllocHGlobal(bytes.Length);
+                Marshal.Copy(bytes, 0, unmanaged, bytes.Length);
+                data.fontIcons = nvgCreateFontMem(vg, "icons", (byte*)unmanaged, bytes.Length, 1);
+            }
             data.pendingLoads--;
         }, 512 * 1024);
 
         FileSystem.Instance.LoadFile("fonts/Roboto-Regular.ttf", (path, bytes, status) =>
         {
             if (status == FileLoadStatus.Success && bytes != null)
-                fixed (byte* ptr = bytes)
-                    data.fontNormal = nvgCreateFontMem(vg, "sans", ptr, bytes.Length, 0);
+            {
+                var unmanaged = Marshal.AllocHGlobal(bytes.Length);
+                Marshal.Copy(bytes, 0, unmanaged, bytes.Length);
+                data.fontNormal = nvgCreateFontMem(vg, "sans", (byte*)unmanaged, bytes.Length, 1);
+            }
             data.pendingLoads--;
         }, 512 * 1024);
 
         FileSystem.Instance.LoadFile("fonts/Roboto-Bold.ttf", (path, bytes, status) =>
         {
             if (status == FileLoadStatus.Success && bytes != null)
-                fixed (byte* ptr = bytes)
-                    data.fontBold = nvgCreateFontMem(vg, "sans-bold", ptr, bytes.Length, 0);
+            {
+                var unmanaged = Marshal.AllocHGlobal(bytes.Length);
+                Marshal.Copy(bytes, 0, unmanaged, bytes.Length);
+                data.fontBold = nvgCreateFontMem(vg, "sans-bold", (byte*)unmanaged, bytes.Length, 1);
+            }
             data.pendingLoads--;
         }, 512 * 1024);
 
@@ -1031,8 +1042,9 @@ public static unsafe class Demo
         {
             if (status == FileLoadStatus.Success && bytes != null)
             {
-                fixed (byte* ptr = bytes)
-                    data.fontEmoji = nvgCreateFontMem(vg, "emoji", ptr, bytes.Length, 0);
+                var unmanaged = Marshal.AllocHGlobal(bytes.Length);
+                Marshal.Copy(bytes, 0, unmanaged, bytes.Length);
+                data.fontEmoji = nvgCreateFontMem(vg, "emoji", (byte*)unmanaged, bytes.Length, 1);
                 // Add emoji as fallback for normal and bold once they are known
                 if (data.fontNormal != -1) nvgAddFallbackFontId(vg, data.fontNormal, data.fontEmoji);
                 if (data.fontBold   != -1) nvgAddFallbackFontId(vg, data.fontBold,   data.fontEmoji);
