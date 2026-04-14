@@ -96,6 +96,7 @@ The `examples/` folder contains 44 sample applications demonstrating various fea
 
 ### 2D Graphics
 - **[SkiaSokolApp](examples/SkiaSokolApp)** - SkiaSharp sample gallery with 40+ interactive samples (shapes, text, images, filters, shaders, animations)
+- **[NanoVGDemo](examples/NanoVGDemo)** - Full C# port of the official NanoVG demo — vector graphics, gradients, text, images, stencil fills, and animated widgets across Desktop, Web, iOS, and Android
 - **[sgl](examples/sgl)** - 2D immediate mode rendering
 - **[sgl_lines](examples/sgl_lines)** - Line rendering techniques
 - **[shapes_transform](examples/shapes_transform)** - 2D transformations
