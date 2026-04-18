@@ -144,6 +144,7 @@ Samples for [sokol_gp](https://github.com/edubart/sokol_gp) — a minimal, effic
 - **[sdf](examples/sdf)** - Signed distance field rendering
 
 ### UI & Integration
+- **[GUIDemo](examples/GUIDemo)** ⚠️ *Work in progress* — Interactive showcase for **Sokol.GUI**, a custom immediate-style retained-mode UI framework built on Sokol.NET. Demonstrates 16 feature tabs: widgets, theming, MVVM/MVC data binding, animations, XML markup, docking, drag-and-drop, bi-directional text, colour picker, property grid, and more. Targets Desktop, Android, and iOS.
 - **[cimgui](examples/cimgui)** - Dear ImGui integration
 - **[imgui_usercallback](examples/imgui_usercallback)** - Custom ImGui rendering
 
