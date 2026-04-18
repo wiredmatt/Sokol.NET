@@ -81,7 +81,9 @@ public class NumberInput : TextBox
         {
             case KEY_ENTER:
             case KEY_KP_ENTER:
-                Commit(); return true;
+                Commit();
+                base.OnKeyDown(e);  // fires Submitted (→ overlay Hide) and desktop MoveFocusNext
+                return true;
             case KEY_UP:
                 Step(+1); return true;
             case KEY_DOWN:
@@ -110,6 +112,12 @@ public class NumberInput : TextBox
             && v >= Min && v <= Max)
             ValueChanged?.Invoke(v);
     }
+
+    /// <summary>
+    /// Called by MobileKeyboardOverlay to fire ValueChanged after syncing
+    /// text from a proxy, bypassing the normal OnTextInput path.
+    /// </summary>
+    internal void NotifyValueChanged() => TryFireValueChanged();
 
     private void Commit()
     {

@@ -49,7 +49,24 @@ public sealed class MobileKeyboardOverlay : Widget
 
         Widget? proxy = null;
 
-        if (focused is TextBox tb)
+        if (focused is NumberInput nin)
+        {
+            var p = new NumberInput
+            {
+                Text                   = nin.Text,
+                Min                    = nin.Min,
+                Max                    = nin.Max,
+                DecimalPlaces          = nin.DecimalPlaces,
+                SkipKeyboardManagement = true,
+            };
+            p.TextChanged += t =>
+            {
+                if (_original is NumberInput o) { o.Text = t; o.NotifyValueChanged(); }
+            };
+            p.Submitted += () => Hide();
+            proxy = p;
+        }
+        else if (focused is TextBox tb)
         {
             var p = new TextBox
             {
