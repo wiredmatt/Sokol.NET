@@ -30,6 +30,7 @@ public static unsafe class GuidemoApp
     // ─── Widgets we need to reference ────────────────────────────────────────
     static Label?      _statusLabel;
     static ProgressBar? _progressBar;
+    static Image?      _baboonImg;
 
     // ─── Init ─────────────────────────────────────────────────────────────────
     [UnmanagedCallersOnly]
@@ -68,6 +69,13 @@ public static unsafe class GuidemoApp
         var baseFonts = new[] { "sans", "bold" };
         FontRegistry.Instance.RegisterFallbackAsync(_vg, "hebrew", "fonts/NotoSansHebrew-Regular.ttf", baseFonts);
         FontRegistry.Instance.RegisterFallbackAsync(_vg, "arabic", "fonts/NotoSansArabic-Regular.ttf", baseFonts);
+
+        // Load baboon image for the More tab image widget
+        FileSystem.Instance.LoadFile("baboon.png", (path, bytes, status) =>
+        {
+            if (status == FileLoadStatus.Success && bytes != null)
+                _baboonImg!.Source = UIImage.LoadFromMemory(_vg, bytes);
+        });
 
         // Build the UI
         BuildUI();
@@ -723,7 +731,7 @@ public static unsafe class GuidemoApp
         inner.AddChild(new Separator());
         inner.AddChild(new Label { Text = "Tooltip  /  ContextMenu  /  Image" });
         var demoRow = new Panel { Layout = new BoxLayout(Orientation.Horizontal, Alignment.Center, 10),
-                                   FixedSize = new Vector2(0, 36) };
+                                   FixedSize = new Vector2(0, 130) };
 
         var tooltipBtn = new Button("Hover me")
         {
@@ -744,11 +752,12 @@ public static unsafe class GuidemoApp
             ContextMenu.Show(items, ctxBtn.ScreenPosition + new Vector2(0, ctxBtn.Bounds.Height));
         };
 
-        var imgWidget = new Image
+        _baboonImg = new Image
         {
-            FixedSize = new Vector2(40, 28), KeepAspect = true,
-            Tooltip = "Image widget (null source → placeholder)",
+            FixedSize = new Vector2(120, 120), KeepAspect = true,
+            Tooltip = "baboon.png loaded via NanoVG",
         };
+        var imgWidget = _baboonImg;
 
         demoRow.AddChild(tooltipBtn);
         demoRow.AddChild(ctxBtn);
