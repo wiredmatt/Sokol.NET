@@ -120,3 +120,67 @@ Full guides are in `docs/`. Key ones:
 - `docs/CREATE_PROJECT.md` — standalone project setup
 - `docs/SOKOL_APPLICATION_BUILDER.md` — build tool reference
 - `docs/VSCODE_RUN_GUIDE.md` — VS Code setup walkthrough
+
+## Coding Principles
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+- Don't assume behavior is consistent across platforms. An assumption that holds on macOS Metal may silently break on WASM/WebGL2 or Android GLES3.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+- The C#↔C interop and NativeAOT constraints already add inherent complexity — don't compound it with speculative abstractions.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+- **Never manually edit `src/sokol/generated/`** — it is auto-generated from C headers. Run `generate-bindings.sh` instead.
+- Changes to shared C# code or `ext/` can silently break a different target platform. Name which platforms a change has been verified on.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+**Define acceptance criteria upfront. Loop until verified.**
+
+Before starting, state what "done" looks like. In this project, success criteria are often visual or platform-specific rather than unit tests:
+- "Fix the rendering bug" → "Cube renders without z-fighting on macOS Metal and WASM"
+- "Add a GUI widget" → "Widget displays correctly and input is handled on desktop and Android"
+- "Refactor shader path" → "All affected examples compile and run on all target platforms"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+When a proper automated test isn't feasible (graphics output, native crashes, platform-specific behavior), define the manual acceptance check explicitly before starting — don't leave it as "make it work".
