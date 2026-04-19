@@ -64,9 +64,9 @@ public sealed class FontRegistry
         uint bufferSize = 512 * 1024)
     {
         Sokol.SLog.Info($"GUI: Requesting font '{name}' from '{assetPath}'", "Sokol.GUI");
-        Sokol.SFileSystem.FileSystem.Instance.LoadFile(assetPath, (path, bytes, status) =>
+        SFilesystem.LoadFileAsync(assetPath, (path, bytes, status) =>
         {
-            if (status == Sokol.SFileSystem.FileLoadStatus.Success && bytes != null)
+            if (status == SFileLoadStatus.Success && bytes != null)
             {
                 IntPtr unmanaged = Marshal.AllocHGlobal(bytes.Length);
                 Marshal.Copy(bytes, 0, unmanaged, bytes.Length);
@@ -98,9 +98,9 @@ public sealed class FontRegistry
         string[] baseFontNames, uint bufferSize = 512 * 1024)
     {
         Sokol.SLog.Info($"GUI: Requesting fallback font '{name}' from '{assetPath}'", "Sokol.GUI");
-        Sokol.SFileSystem.FileSystem.Instance.LoadFile(assetPath, (path, bytes, status) =>
+        SFilesystem.LoadFileAsync(assetPath, (path, bytes, status) =>
         {
-            if (status == Sokol.SFileSystem.FileLoadStatus.Success && bytes != null)
+            if (status == SFileLoadStatus.Success && bytes != null)
             {
                 IntPtr unmanaged = Marshal.AllocHGlobal(bytes.Length);
                 Marshal.Copy(bytes, 0, unmanaged, bytes.Length);

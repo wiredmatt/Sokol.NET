@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Sokol;
 using Sokol.GUI;
-using Sokol.SFileSystem;
 using static Sokol.SApp;
 using static Sokol.SG;
 using static Sokol.SGlue;
@@ -43,7 +42,7 @@ public static unsafe class GuidemoApp
         });
 
         stm_setup();
-        FileSystem.Instance.Initialize();
+        SFilesystem.Initialize();
 
         // NanoVG context
         _vg = nvgCreateSokol(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
@@ -71,9 +70,9 @@ public static unsafe class GuidemoApp
         FontRegistry.Instance.RegisterFallbackAsync(_vg, "arabic", "fonts/NotoSansArabic-Regular.ttf", baseFonts);
 
         // Load baboon image for the More tab image widget
-        FileSystem.Instance.LoadFile("baboon.png", (path, bytes, status) =>
+        SFilesystem.LoadFileAsync("baboon.png", (path, bytes, status) =>
         {
-            if (status == FileLoadStatus.Success && bytes != null)
+            if (status == SFileLoadStatus.Success && bytes != null)
                 _baboonImg!.Source = UIImage.LoadFromMemory(_vg, bytes);
         });
 
@@ -85,7 +84,7 @@ public static unsafe class GuidemoApp
     [UnmanagedCallersOnly]
     static void Frame()
     {
-        FileSystem.Instance.Update();
+        SFilesystem.Update();
 
 #if __ANDROID__
         float dpi  = 1f; // TBD ELI , unreliable on Android
@@ -120,7 +119,7 @@ public static unsafe class GuidemoApp
     {
         Screen.Shutdown();
         if (_vg != IntPtr.Zero) nvgDeleteSokol(_vg);
-        FileSystem.Instance.Shutdown();
+        SFilesystem.Shutdown();
         sg_shutdown();
 
         if (Debugger.IsAttached) Environment.Exit(0);
