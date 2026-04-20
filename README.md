@@ -78,7 +78,7 @@ See example projects (`assimp_simple`, `spine_simple`, `ozz_shdfeatures`) and th
 
 ## 🎮 Example Applications
 
-The `examples/` folder contains 44 sample applications demonstrating various features:
+The `examples/` folder contains 69 sample applications demonstrating various features:
 
 ### Graphics Fundamentals
 - **[clear](examples/clear)** - Basic window and clear color
