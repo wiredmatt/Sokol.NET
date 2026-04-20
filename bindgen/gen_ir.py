@@ -146,6 +146,9 @@ def parse_func(decl, source):
             if param['kind'] != 'ParmVarDecl':
                 print(f"  >> warning: ignoring func {decl['name']} (unsupported parameter type)")
                 return None
+            if 'name' not in param:
+                print(f"  >> warning: ignoring func {decl['name']} (unnamed parameter)")
+                return None
             outp_param = {}
             outp_param['name'] = param['name']
             outp_param['type'] = filter_types(param['type']['qualType'])

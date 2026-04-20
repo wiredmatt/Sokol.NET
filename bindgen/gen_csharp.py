@@ -39,6 +39,7 @@ module_names = {
     'manifold_': 'Manifoldc',
     'sfs_':      'SFilesystem',
     'nvg':       'NanoVG',
+    'nsvg':      'NanoSVG',
 }
 
 # Namespace names per prefix
@@ -72,6 +73,7 @@ extra_declarations = {
 extra_api_prefixes = {
     'manifold_': ['Manifold'],
     'nvg':       ['NVG', 'snvg_'],
+    'nsvg':      ['NSVG'],
 }
 
 # Library names for DllImport statements
@@ -102,6 +104,7 @@ library_names = {
     'manifold_': 'manifoldc',  # manifoldc uses separate library
     'sfs_':      'sokol',
     'nvg':       'sokol',
+    'nsvg':      'nanosvg',
 }
 
 
@@ -134,6 +137,7 @@ c_source_paths = {
     'manifold_': 'c/manifoldc.c',  # manifoldc has its own CMake build — no single .c source
     'sfs_':      'c/sokol_filesystem.c',
     'nvg':       'c/nanovg.c',
+    'nsvg':      'c/nanosvg.c',
 }
 
 name_ignores = [
@@ -156,6 +160,12 @@ name_ignores = [
     'nvgCreateInternal',
     'nvgDeleteInternal',
     'nvgInternalParams',
+    'NSVGpaint',              # has anonymous union; define manually if needed
+    'NSVGrasterizer',         # opaque struct; handle as IntPtr manually
+    'nsvgCreateRasterizer',   # returns opaque NSVGrasterizer*; define manually
+    'nsvgRasterize',          # takes opaque NSVGrasterizer*; define manually
+    'nsvgDeleteRasterizer',   # takes opaque NSVGrasterizer* (unnamed param); define manually
+    'nsvgParseFromFile',      # won;t work on mobile platforms due to file I/O; ignore for now
 ]
 
 name_overrides = {
@@ -407,7 +417,7 @@ def is_prim_ptr(s):
 
 def is_struct_ptr(s):
     for struct_type in struct_types:
-        if s == f"{struct_type} *":
+        if s == f"{struct_type} *" or s == f"struct {struct_type} *":
             return True
     return False
 
@@ -443,9 +453,10 @@ def extract_array_nums(s):
     return s[s.index('['):].replace('[', ' ').replace(']', ' ').split()
 
 def extract_ptr_type(s):
-    # Remove 'const' and pointer markers to get the base type
+    # Remove 'const', 'struct' keyword, and pointer markers to get the base type
     # e.g., "const unsigned char *" -> "unsigned char"
-    s = s.replace('const', '').replace('*', '').strip()
+    # e.g., "struct NSVGpath *" -> "NSVGpath"
+    s = s.replace('const', '').replace('struct ', '').replace('*', '').strip()
     return s
 
 def as_extern_c_arg_type(arg_type, prefix):

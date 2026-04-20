@@ -134,6 +134,11 @@ extern "C"
 #define SOKOL_NANOVG_IMPL
 #include "nanovg/src/sokol_nanovg.h"
 
+#define NANOSVG_IMPLEMENTATION
+#include "nanosvg/src/nanosvg.h"
+#define NANOSVGRAST_IMPLEMENTATION
+#include "nanosvg/src/nanosvgrast.h"
+
 /*=== STB IMAGE C# BINDINGS ==================================================
     Wrapper functions for stb_image to provide C# bindings for fast native
     image loading (especially important for WebAssembly performance).

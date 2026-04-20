@@ -37,3 +37,6 @@
 	path = ext/nanovg
 	url = https://github.com/elix22/nanovg.git
 	branch = sokol-nanovg
+[submodule "ext/nanosvg"]
+	path = ext/nanosvg
+	url = https://github.com/elix22/nanosvg.git
