@@ -75,8 +75,8 @@ jobs:
     needs: check-changes
     if: |
       needs.check-changes.outputs.should_build == 'true' &&
-      github.ref == 'refs/heads/main' && 
-      github.event_name == 'push'
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') || github.event_name == 'workflow_dispatch')
     
     steps:
     - name: Checkout repository
@@ -711,7 +711,7 @@ jobs:
         retention-days: 90
     
     - name: Create release archive
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       run: |
         cd combined-libs
         tar -czf ../sokol-libraries.tar.gz *
@@ -719,7 +719,7 @@ jobs:
         zip -r sokol-libraries.zip combined-libs/*
     
     - name: Upload release archives
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       uses: actions/upload-artifact@v4
       with:
         name: sokol-libraries-archives
@@ -729,7 +729,7 @@ jobs:
         retention-days: 90
     
     - name: Commit libraries to repository
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       run: |
         # Checkout the repository (artifacts download doesn't include repo files)
         git clone --depth 2 --branch main https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git repo
