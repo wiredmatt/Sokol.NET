@@ -22,6 +22,9 @@ git submodule update --init --recursive
 The primary build tool is `SokolApplicationBuilder` at `tools/SokolApplicationBuilder/`.
 
 ```bash
+# Compile shaders only (runs sokol-shdc for all platforms)
+dotnet build examples/<project>/<ProjectName>.csproj -t:CompileShaders
+
 # Prepare project (compiles shaders, copies assets)
 dotnet run --project tools/SokolApplicationBuilder -- --task prepare --architecture desktop --path examples/cube
 
@@ -107,6 +110,7 @@ C functions that return structs by value cannot be called directly via P/Invoke 
 ### Shader Workflow
 
 Shaders are written in Sokol's cross-compiled `.glsl` dialect and compiled by `sokol-shdc` (in `tools/sokol-tools/`) into C header files, then embedded in the C# project. Compiled outputs go to `examples/<name>/shaders/compiled/`. See `docs/SHADER_GUIDE.md`.
+
 
 ### Optional Dynamic Libraries
 

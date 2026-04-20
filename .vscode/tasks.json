@@ -1107,6 +1107,20 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-NanoSVGDemo",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "desktop", "--path", "${workspaceFolder}/examples/NanoSVGDemo"],
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "prepare-NanoSVGDemo-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/NanoSVGDemo"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "Create New Example",
 			"type": "shell",
 			"command": "dotnet",
@@ -1190,6 +1204,7 @@
 			"type": "pickString",
 			"description": "Select an example",
 			"options": [
+				"NanoSVGDemo",
 				"GUIDemo",
 				"NanoVGDemo",
 				"FileSystemTest",
@@ -1260,6 +1275,7 @@
 			"type": "pickString",
 			"description": "Select an example to build",
 			"options": [
+				"examples/NanoSVGDemo",
 				"examples/GUIDemo",
 				"examples/NanoVGDemo",
 				"examples/FileSystemTest",
@@ -1364,6 +1380,7 @@
 			"type": "pickString",
 			"description": "⚠️ WARNING: Select an example to PERMANENTLY DELETE",
 			"options": [
+				"NanoSVGDemo",
 				"GUIDemo",
 				"NanoVGDemo",
 				"FileSystemTest",

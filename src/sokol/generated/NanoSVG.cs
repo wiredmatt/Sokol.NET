@@ -381,23 +381,23 @@ public struct NSVGimage
     public NSVGshape* shapes;
 }
 #if __IOS__
-[DllImport("@rpath/nanosvg.framework/nanosvg", EntryPoint = "nsvgParse", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "nsvgParse", CallingConvention = CallingConvention.Cdecl)]
 #else
-[DllImport("nanosvg", EntryPoint = "nsvgParse", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("sokol", EntryPoint = "nsvgParse", CallingConvention = CallingConvention.Cdecl)]
 #endif
 public static extern NSVGimage* nsvgParse(IntPtr input, [M(U.LPUTF8Str)] string units, float dpi);
 
 #if __IOS__
-[DllImport("@rpath/nanosvg.framework/nanosvg", EntryPoint = "nsvgDuplicatePath", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "nsvgDuplicatePath", CallingConvention = CallingConvention.Cdecl)]
 #else
-[DllImport("nanosvg", EntryPoint = "nsvgDuplicatePath", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("sokol", EntryPoint = "nsvgDuplicatePath", CallingConvention = CallingConvention.Cdecl)]
 #endif
 public static extern NSVGpath* nsvgDuplicatePath(NSVGpath* p);
 
 #if __IOS__
-[DllImport("@rpath/nanosvg.framework/nanosvg", EntryPoint = "nsvgDelete", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("@rpath/sokol.framework/sokol", EntryPoint = "nsvgDelete", CallingConvention = CallingConvention.Cdecl)]
 #else
-[DllImport("nanosvg", EntryPoint = "nsvgDelete", CallingConvention = CallingConvention.Cdecl)]
+[DllImport("sokol", EntryPoint = "nsvgDelete", CallingConvention = CallingConvention.Cdecl)]
 #endif
 public static extern void nsvgDelete(NSVGimage* image);
 

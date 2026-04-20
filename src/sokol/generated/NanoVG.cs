@@ -994,6 +994,7 @@ public struct snvg_allocator_t
 [StructLayout(LayoutKind.Sequential)]
 public struct snvg_desc_t
 {
+    public int max_vertices;
     public snvg_allocator_t allocator;
 }
 #if __IOS__

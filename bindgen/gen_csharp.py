@@ -104,7 +104,7 @@ library_names = {
     'manifold_': 'manifoldc',  # manifoldc uses separate library
     'sfs_':      'sokol',
     'nvg':       'sokol',
-    'nsvg':      'nanosvg',
+    'nsvg':      'sokol',
 }
 
 

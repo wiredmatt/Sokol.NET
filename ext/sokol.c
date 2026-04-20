@@ -134,6 +134,7 @@ extern "C"
 #define SOKOL_NANOVG_IMPL
 #include "nanovg/src/sokol_nanovg.h"
 
+#define NANOSVG_ALL_COLOR_KEYWORDS	// Include full list of color keywords.
 #define NANOSVG_IMPLEMENTATION
 #include "nanosvg/src/nanosvg.h"
 #define NANOSVGRAST_IMPLEMENTATION

@@ -28,23 +28,23 @@ namespace Sokol
 
         // Rasterizer bindings — NSVGrasterizer is opaque, exposed as IntPtr.
 #if __IOS__
-        [DllImport("@rpath/nanosvg.framework/nanosvg", EntryPoint = "nsvgCreateRasterizer", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "nsvgCreateRasterizer", CallingConvention = CallingConvention.Cdecl)]
 #else
-        [DllImport("nanosvg", EntryPoint = "nsvgCreateRasterizer", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("sokol", EntryPoint = "nsvgCreateRasterizer", CallingConvention = CallingConvention.Cdecl)]
 #endif
         public static extern IntPtr nsvgCreateRasterizer();
 
 #if __IOS__
-        [DllImport("@rpath/nanosvg.framework/nanosvg", EntryPoint = "nsvgRasterize", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "nsvgRasterize", CallingConvention = CallingConvention.Cdecl)]
 #else
-        [DllImport("nanosvg", EntryPoint = "nsvgRasterize", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("sokol", EntryPoint = "nsvgRasterize", CallingConvention = CallingConvention.Cdecl)]
 #endif
         public static extern void nsvgRasterize(IntPtr r, NSVGimage* image, float tx, float ty, float scale, byte* dst, int w, int h, int stride);
 
 #if __IOS__
-        [DllImport("@rpath/nanosvg.framework/nanosvg", EntryPoint = "nsvgDeleteRasterizer", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("@rpath/sokol.framework/sokol", EntryPoint = "nsvgDeleteRasterizer", CallingConvention = CallingConvention.Cdecl)]
 #else
-        [DllImport("nanosvg", EntryPoint = "nsvgDeleteRasterizer", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("sokol", EntryPoint = "nsvgDeleteRasterizer", CallingConvention = CallingConvention.Cdecl)]
 #endif
         public static extern void nsvgDeleteRasterizer(IntPtr r);
     }
