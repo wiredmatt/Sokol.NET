@@ -327,39 +327,40 @@ jobs:
         retention-days: 90
     
     - name: Commit libraries to repository
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
       run: |
-        # Checkout the repository
-        git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git repo
+        # Checkout the repository (artifacts download doesn't include repo files)
+        git clone --depth 2 --branch main https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git repo
         cd repo
+
+        # Configure git
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        
-        # Copy new spine-c libraries to main libs/ directory
+
+        # Remove old spine-c libraries (if they exist)
+        rm -rf libs/windows libs/macos libs/linux libs/emscripten libs/android libs/ios
+
+        # Ensure libs directory exists
+        mkdir -p libs
+
+        # Copy new libraries
         cp -r ../combined-libs/* libs/
-        
-        # Check if there are any changes
-        if git diff --quiet libs/; then
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "No spine-c library changes to commit"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          exit 0
-        fi
-        
-        # Stage and commit changes
-        git add libs/
-        
-        # Create commit message and commit
-        git commit -m "Auto-update built spine-c libraries [skip ci]" \
-                   -m "Generated from commit: ${{ github.sha }}" \
-                   -m "Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        
-        # Pull with rebase in case there were other commits
-        git pull --rebase origin main
-        
-        # Push changes
-        git push origin main
-        
+
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "✓ Successfully committed spine-c libraries"
+        echo "📦 Updating spine-c libraries..."
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        # Stage changes
+        git add libs/
+
+        # Commit and push
+        git commit -m "Auto-update built spine-c libraries [skip ci]
+
+        Built from commit: ${{ github.sha }}
+        Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+        git push origin main
+
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "✅ Spine-C libraries committed and pushed successfully"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
