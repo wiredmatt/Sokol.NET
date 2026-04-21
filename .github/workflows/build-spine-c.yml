@@ -265,7 +265,7 @@ jobs:
     
     - name: Reorganize artifacts
       run: |
-        # Create final structure in main libs/ directory
+        # Create final structure under spine-c subdirectory to avoid conflicting with sokol libs
         mkdir -p combined-libs/windows/x64/release
         mkdir -p combined-libs/macos/arm64/release
         mkdir -p combined-libs/macos/x86_64/release
@@ -275,12 +275,12 @@ jobs:
         mkdir -p combined-libs/android/armeabi-v7a/release
         mkdir -p combined-libs/android/x86_64/release
         mkdir -p combined-libs/ios/release
-        
+
         # Copy Windows artifacts
         if [ -d "libs/windows-x64" ]; then
           cp -r libs/windows-x64/* combined-libs/windows/ || true
         fi
-        
+
         # Copy macOS artifacts
         if [ -d "libs/macos-arm64" ]; then
           cp -r libs/macos-arm64/* combined-libs/macos/arm64/ || true
@@ -288,17 +288,17 @@ jobs:
         if [ -d "libs/macos-x86_64" ]; then
           cp -r libs/macos-x86_64/* combined-libs/macos/x86_64/ || true
         fi
-        
+
         # Copy Linux artifacts
         if [ -d "libs/linux-X64" ]; then
           cp -r libs/linux-X64/* combined-libs/linux/ || true
         fi
-        
+
         # Copy Web artifacts
         if [ -d "libs/emscripten-x86" ]; then
           cp -r libs/emscripten-x86/* combined-libs/emscripten/ || true
         fi
-        
+
         # Copy Android artifacts
         if [ -d "libs/android-arm64-v8a" ]; then
           cp -r libs/android-arm64-v8a/* combined-libs/android/arm64-v8a/ || true
@@ -309,12 +309,12 @@ jobs:
         if [ -d "libs/android-x86_64" ]; then
           cp -r libs/android-x86_64/* combined-libs/android/x86_64/ || true
         fi
-        
+
         # Copy iOS artifacts
         if [ -d "libs/ios-arm64" ]; then
           cp -r libs/ios-arm64/* combined-libs/ios/ || true
         fi
-        
+
         # Show final structure
         echo "Final artifact structure:"
         find combined-libs -type f
@@ -337,21 +337,21 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-        # Remove old spine-c libraries (if they exist)
-        rm -rf libs/windows libs/macos libs/linux libs/emscripten libs/android libs/ios
+        # Remove old spine-c libraries
+        rm -rf ext/spine-c/libs
 
-        # Ensure libs directory exists
-        mkdir -p libs
+        # Ensure target directory exists
+        mkdir -p ext/spine-c/libs
 
-        # Copy new libraries
-        cp -r ../combined-libs/* libs/
+        # Copy new spine-c libraries
+        cp -r ../combined-libs/* ext/spine-c/libs/
 
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "📦 Updating spine-c libraries..."
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
         # Stage changes
-        git add libs/
+        git add ext/spine-c/libs/
 
         # Commit and push
         git commit -m "Auto-update built spine-c libraries [skip ci]
