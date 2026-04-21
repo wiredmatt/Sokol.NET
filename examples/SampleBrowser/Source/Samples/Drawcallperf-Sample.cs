@@ -47,7 +47,6 @@ public static unsafe class DrawcallPerf
         }
         public _stats stats;
         public string backend;
-         public sgimgui_t sgimgui;
     }
 
     static _state state = new _state();
@@ -94,7 +93,7 @@ public static unsafe class DrawcallPerf
             logger = { func = &SLog.slog_func }
         });
 
-        state.sgimgui = sgimgui_init();
+        sgimgui_setup(new sgimgui_desc_t { });
 
         state.pass_action = new sg_pass_action();
         state.pass_action.colors[0] = new sg_color_attachment_action
@@ -265,8 +264,8 @@ public static unsafe class DrawcallPerf
         // sokol-gfx debug ui
         if (igBeginMainMenuBar())
         {
-            sgimgui_draw_menu( state.sgimgui, "sokol-gfx");
-            sgimgui_draw(state.sgimgui);
+            sgimgui_draw_menu("sokol-gfx");
+            sgimgui_draw();
             igEndMainMenuBar();
         }
 
@@ -359,7 +358,7 @@ public static unsafe class DrawcallPerf
         if (state.shd.id != 0)
             sg_destroy_shader(state.shd);
         
-        sgimgui_discard(state.sgimgui);
+        sgimgui_shutdown();
         simgui_shutdown();
         // Note: Graphics context managed by SampleBrowser, do NOT call sg_shutdown
         

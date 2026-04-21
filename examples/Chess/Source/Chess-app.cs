@@ -487,6 +487,9 @@ public static unsafe class ChessApp
                 _game.AiDepth = depth;
             igEndDisabled();
 
+#if WEB
+            _game.SearchMode = AISearchMode.SingleEngine;
+#else
             {
                 byte smpEnabled = _game.SearchMode == AISearchMode.MultithreadedSearcher ? (byte)1 : (byte)0;
                 igBeginDisabled(gameplaySettingsDisabled);
@@ -495,6 +498,7 @@ public static unsafe class ChessApp
                     _game.SearchMode = smpEnabled != 0 ? AISearchMode.MultithreadedSearcher : AISearchMode.SingleEngine;
                 igEndDisabled();
             }
+#endif
 
             igSeparator();
 

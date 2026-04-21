@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Set Emscripten version
-EMSCRIPTEN_VERSION="3.1.34"
+EMSCRIPTEN_VERSION="3.1.56"
 
 # Path to local emsdk
 EMSDK_PATH="./tools/emsdk/emsdk"

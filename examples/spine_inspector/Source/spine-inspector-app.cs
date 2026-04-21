@@ -73,7 +73,6 @@ public static unsafe class SpineInspectorApp
 
     struct UIState
     {
-        public sgimgui_t sgimgui;
         public bool draw_bones_enabled;
         public bool atlas_open;
         public bool bones_open;
@@ -229,7 +228,7 @@ public static unsafe class SpineInspectorApp
         {
             logger = { func = &slog_func }
         });
-        state.ui.sgimgui = sgimgui_init();
+        sgimgui_setup(new sgimgui_desc_t { });
 
         // Initialize pass action
         state.pass_action = default;
@@ -329,7 +328,7 @@ public static unsafe class SpineInspectorApp
         state.buffers.skeleton.Dispose();
         state.buffers.image.Dispose();
         
-        sgimgui_discard(state.ui.sgimgui);
+        sgimgui_shutdown();
         simgui_shutdown();
         sspine_shutdown();
         sfetch_shutdown();
@@ -713,7 +712,7 @@ public static unsafe class SpineInspectorApp
                 igEndMenu();
             }
 
-            sgimgui_draw_menu(state.ui.sgimgui, "sokol-gfx");
+            sgimgui_draw_menu("sokol-gfx");
 
             if (igBeginMenu("options", true))
             {
@@ -860,7 +859,7 @@ public static unsafe class SpineInspectorApp
             }
         }
 
-        sgimgui_draw(state.ui.sgimgui);
+        sgimgui_draw();
     }
 
     static void DrawBonesWindow(ref Vector2 pos)

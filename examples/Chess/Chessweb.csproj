@@ -35,25 +35,23 @@
 
     <Import Project="$(SokolNetHome)/Directory.Build.props" />
 
+    <ItemGroup>
+      <ProjectReference Include="$(SokolNetHome)/ext/lynx/src/Lynx/Lynx.csproj" />
+    </ItemGroup>
+
     <PropertyGroup>
       <BuildConfigLower>$(Configuration.ToLower())</BuildConfigLower>
       <SokolLibPath>$(SokolLibsPath)emscripten/x86/$(BuildConfigLower)/sokol.a</SokolLibPath>
-      <SpineCLibsPath>$(SokolNetHome)/ext/spine-c/libs/</SpineCLibsPath>
-      <SpineCLibPath>$(SpineCLibsPath)emscripten/x86/release/spine-c.a</SpineCLibPath>
     </PropertyGroup>
 
     <ItemGroup>
       <NativeFileReference Include="$(SokolLibPath)">
         <Link>libs\sokol.a</Link>
       </NativeFileReference>
-      <NativeFileReference Include="$(SpineCLibPath)">
-        <Link>libs\spine-c.a</Link>
-      </NativeFileReference>
     </ItemGroup>
 
     <Target Name="ValidateSokolLib" BeforeTargets="Build">
       <Error Condition="!Exists('$(SokolLibPath)')" Text="sokol.a not found at $(SokolLibPath). Please build the library using ./scripts/build-web-library.sh" />
-      <Error Condition="!Exists('$(SpineCLibPath)')" Text="spine-c.a not found at $(SpineCLibPath). Please build the library using ./ext/spine-c/scripts/build-spine-c-web.sh" />
     </Target>
 
     <PropertyGroup>
@@ -139,7 +137,7 @@
                 <EmccExtraLDFlags>
                     -lexports.js
                     --js-library wwwroot/sokol_js_lib.js
-                    -s EXPORTED_RUNTIME_METHODS='[ 'ccall','dynCall','stackSave','stackRestore','stackAlloc', 'FS_createPath','addFunction','cwrap','UTF8ArrayToString','runtimeKeepalivePop','runtimeKeepalivePush','wasmExports']'
+                    -s EXPORTED_RUNTIME_METHODS='['ccall','dynCall','stackSave','stackRestore','stackAlloc', 'FS_createPath','addFunction','cwrap','UTF8ArrayToString','runtimeKeepalivePop','runtimeKeepalivePush','wasmExports']'
                 </EmccExtraLDFlags>
             </PropertyGroup>
         </When>

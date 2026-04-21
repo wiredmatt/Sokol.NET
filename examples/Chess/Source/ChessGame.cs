@@ -77,7 +77,12 @@ public sealed class ChessGame
     public Side HumanSide { get; private set; } = Side.White;
     public GamePhase Phase { get; private set; } = GamePhase.PlayerTurn;
     public GameOverReason OverReason { get; private set; } = GameOverReason.None;
+#if WEB
+    // Web builds have no multithreading support,   only single-engine mode , decreased AI depth.
+    public int AiDepth { get; set; } = 3;
+#else
     public int AiDepth { get; set; } = 5;
+#endif
     public string? LastMoveUCI { get; private set; }
     public string? LastMoveAlgebraic { get; private set; }
 

@@ -1023,6 +1023,13 @@
 			"problemMatcher": "$msCompile"
 		},
 		{
+			"label": "prepare-Chess-web",
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["run", "--project", "${workspaceFolder}/tools/SokolApplicationBuilder", "--", "--task", "prepare", "--architecture", "web", "--path", "${workspaceFolder}/examples/Chess"],
+			"problemMatcher": "$msCompile"
+		},
+		{
 			"label": "prepare-TexasHoldem",
 			"type": "shell",
 			"command": "dotnet",

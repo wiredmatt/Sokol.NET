@@ -41,13 +41,15 @@ jobs:
           # Get changed files
           CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
           
-          # Check if spine-c source files changed
+          # Check if spine-c source files or sokol headers changed
           while IFS= read -r file; do
             if [[ "$file" == ext/spine-c/src/* ]] || \
                [[ "$file" == ext/spine-c/include/* ]] || \
                [[ "$file" == ext/spine-c/CMakeLists.txt ]] || \
                [[ "$file" == ext/spine-c/scripts/* ]] || \
                [[ "$file" == ext/spine-c/sokol_spine_extension.c ]] || \
+               [[ "$file" == ext/sokol/sokol_gfx.h ]] || \
+               [[ "$file" == ext/sokol/util/sokol_spine.h ]] || \
                [[ "$file" == .github/workflows/build-spine-c.yml ]]; then
               echo "Found spine-c source change: $file"
               SHOULD_BUILD=true

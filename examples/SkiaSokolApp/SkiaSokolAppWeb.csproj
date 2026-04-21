@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <ImportDirectoryBuildProps Condition="'$(ImportDirectoryBuildProps)' == ''">true</ImportDirectoryBuildProps>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <OutputType>Exe</OutputType>
         <TargetOS>browser</TargetOS>
         <TargetArchitecture>wasm</TargetArchitecture>
@@ -11,6 +11,7 @@
         <WasmBuildNative>true</WasmBuildNative>
         <RunAOTCompilation>true</RunAOTCompilation>
         <WasmEnableSIMD>false</WasmEnableSIMD>
+        <WasmEnableJiterpreter>false</WasmEnableJiterpreter>
         <EmccEnableAssertions>true</EmccEnableAssertions>
         <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
         <PublishTrimmed>true</PublishTrimmed>
@@ -124,7 +125,7 @@
                 <EmccExtraLDFlags>
                     -lidbfs.js
                     --js-library wwwroot/sokol_js_lib.js
-                    -s EXPORTED_RUNTIME_METHODS='['ccall','dynCall','stackSave','stackRestore','stackAlloc', 'FS_createPath','addFunction','cwrap','UTF8ArrayToString','runtimeKeepalivePop','runtimeKeepalivePush']'
+                    -s EXPORTED_RUNTIME_METHODS='['ccall','dynCall','stackSave','stackRestore','stackAlloc', 'FS_createPath','addFunction','cwrap','UTF8ArrayToString','runtimeKeepalivePop','runtimeKeepalivePush','wasmExports']'
                 </EmccExtraLDFlags>
             </PropertyGroup>
         </When>
@@ -149,7 +150,7 @@
                 <EmccExtraLDFlags>
                     -lexports.js
                     --js-library wwwroot/sokol_js_lib.js
-                    -s EXPORTED_RUNTIME_METHODS='[ 'ccall','dynCall','stackSave','stackRestore','stackAlloc', 'FS_createPath','addFunction','cwrap','UTF8ArrayToString','runtimeKeepalivePop','runtimeKeepalivePush']'
+                    -s EXPORTED_RUNTIME_METHODS='[ 'ccall','dynCall','stackSave','stackRestore','stackAlloc', 'FS_createPath','addFunction','cwrap','UTF8ArrayToString','runtimeKeepalivePop','runtimeKeepalivePush','wasmExports']'
                 </EmccExtraLDFlags>
             </PropertyGroup>
         </When>

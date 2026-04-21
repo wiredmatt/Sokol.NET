@@ -54,7 +54,6 @@ public static unsafe class TexViewApp
         public int ui_max_mip;
         public float ui_mip_lod;
         public bool ui_use_linear_sampler;
-        public sgimgui_t sgimgui;
         
         // Fetch buffer
         public SharedBuffer fetch_buffer;
@@ -76,7 +75,7 @@ public static unsafe class TexViewApp
         });
         
         // Setup sokol-gfx-imgui
-        state.sgimgui = sgimgui_init();
+        sgimgui_setup(new sgimgui_desc_t { });
         
         // Setup sokol-imgui
         simgui_setup(new simgui_desc_t
@@ -165,7 +164,7 @@ public static unsafe class TexViewApp
         sg_apply_uniforms(UB_fs_params, SG_RANGE<fs_params_t>(ref fs_params));
         sg_draw(0, 4, 1);
         
-        sgimgui_draw(state.sgimgui);
+        sgimgui_draw();
         simgui_render();
         sg_end_pass();
         sg_commit();
@@ -182,7 +181,7 @@ public static unsafe class TexViewApp
     {
         state.fetch_buffer.Dispose();
         sfetch_shutdown();
-        sgimgui_discard(state.sgimgui);
+        sgimgui_shutdown();
         simgui_shutdown();
         sg_shutdown();
         sbasisu_shutdown();
@@ -197,7 +196,7 @@ public static unsafe class TexViewApp
     {
         if (igBeginMainMenuBar())
         {
-            sgimgui_draw_menu(state.sgimgui, "sokol-gfx");
+            sgimgui_draw_menu( "sokol-gfx");
             igEndMainMenuBar();
         }
         
