@@ -30,6 +30,7 @@ Currently supported:
 - Desktop
 - Android
 - iOS
+- Web
 
 Currently not supported:
 
