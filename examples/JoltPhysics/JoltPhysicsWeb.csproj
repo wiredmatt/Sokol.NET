@@ -14,7 +14,7 @@
         <WasmEnableJiterpreter>false</WasmEnableJiterpreter>
         <EmccEnableAssertions>false</EmccEnableAssertions>
         <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
-        <PublishTrimmed>false</PublishTrimmed>
+        <PublishTrimmed>true</PublishTrimmed>
         <TrimMode>partial</TrimMode>
         <WasmStripILAfterAOT>true</WasmStripILAfterAOT>
         <WasmAllowUndefinedSymbols>true</WasmAllowUndefinedSymbols>
