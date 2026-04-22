@@ -8,7 +8,7 @@ Sokol.NET is a comprehensive C# binding and application framework built on top o
 
 ## 🌐 Live Examples
 
-**[✨ Try all 38 examples in your browser →](https://elix22.github.io/Sokol.NET/)**
+**[✨ Try all 59 examples in your browser →](https://elix22.github.io/Sokol.NET/)**
 
 Experience Sokol.NET's capabilities instantly with interactive WebAssembly examples. No installation required!
 
