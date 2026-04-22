@@ -24,21 +24,21 @@
                 "program": "powershell",
                 "args": [
                     "-Command",
-                    "$sokolHome = Get-Content $env:USERPROFILE\\.sokolnet_config\\sokolnet_home; dotnet run --project \"$sokolHome\\tools\\dotnet-serve\\src\\dotnet-serve\\dotnet-serve.csproj\" -- -d ${workspaceFolder}\\bin\\Debug\\net8.0\\browser-wasm\\AppBundle -p ${input:browserPort} -h 'Cross-Origin-Opener-Policy: same-origin' -h 'Cross-Origin-Embedder-Policy: require-corp' -h 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' -h 'Pragma: no-cache'"
+                    "$sokolHome = Get-Content $env:USERPROFILE\\.sokolnet_config\\sokolnet_home; dotnet run --project \"$sokolHome\\tools\\dotnet-serve\\src\\dotnet-serve\\dotnet-serve.csproj\" -- -d ${workspaceFolder}\\bin\\Debug\\net10.0\\browser-wasm\\AppBundle -p ${input:browserPort} -h 'Cross-Origin-Opener-Policy: same-origin' -h 'Cross-Origin-Embedder-Policy: require-corp' -h 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' -h 'Pragma: no-cache'"
                 ]
             },
             "linux": {
                 "program": "bash",
                 "args": [
                     "-c",
-                    "dotnet run --project $(cat ~/.sokolnet_config/sokolnet_home)/tools/dotnet-serve/src/dotnet-serve/dotnet-serve.csproj -- -d ${workspaceFolder}/bin/Debug/net8.0/browser-wasm/AppBundle -p ${input:browserPort} -h 'Cross-Origin-Opener-Policy: same-origin' -h 'Cross-Origin-Embedder-Policy: require-corp' -h 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' -h 'Pragma: no-cache'"
+                    "dotnet run --project $(cat ~/.sokolnet_config/sokolnet_home)/tools/dotnet-serve/src/dotnet-serve/dotnet-serve.csproj -- -d ${workspaceFolder}/bin/Debug/net10.0/browser-wasm/AppBundle -p ${input:browserPort} -h 'Cross-Origin-Opener-Policy: same-origin' -h 'Cross-Origin-Embedder-Policy: require-corp' -h 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' -h 'Pragma: no-cache'"
                 ]
             },
             "osx": {
                 "program": "bash",
                 "args": [
                     "-c",
-                    "dotnet run --project $(cat ~/.sokolnet_config/sokolnet_home)/tools/dotnet-serve/src/dotnet-serve/dotnet-serve.csproj -- -d ${workspaceFolder}/bin/Debug/net8.0/browser-wasm/AppBundle -p ${input:browserPort} -h 'Cross-Origin-Opener-Policy: same-origin' -h 'Cross-Origin-Embedder-Policy: require-corp' -h 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' -h 'Pragma: no-cache'"
+                    "dotnet run --project $(cat ~/.sokolnet_config/sokolnet_home)/tools/dotnet-serve/src/dotnet-serve/dotnet-serve.csproj -- -d ${workspaceFolder}/bin/Debug/net10.0/browser-wasm/AppBundle -p ${input:browserPort} -h 'Cross-Origin-Opener-Policy: same-origin' -h 'Cross-Origin-Embedder-Policy: require-corp' -h 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' -h 'Pragma: no-cache'"
                 ]
             },
             "cwd": "${workspaceFolder}",
