@@ -177,7 +177,6 @@ public static unsafe class NanosvgdemoApp
         state.isLoading = true;
         state.currentSvgIndex = index;
         state.svgName = Path.GetFileNameWithoutExtension(SvgFiles[index]);
-        _vectorDebugLogged = false;
         SFilesystem.LoadFileAsync(SvgFiles[index], OnSvgLoaded);
     }
 
@@ -302,11 +301,22 @@ public static unsafe class NanosvgdemoApp
 
     private static NVGcolor NsvgColorToNvg(uint color, float opacity)
     {
+#if WEB
+        // NativeAOT AOT (-O3): P/Invoke with ref NVGcolor fails to flush writes back
+        // to WASM locals in large methods. Construct NVGcolor with pure C# arithmetic.
+        return new NVGcolor(
+            (color & 0xFF) * (1f / 255f),
+            ((color >> 8) & 0xFF) * (1f / 255f),
+            ((color >> 16) & 0xFF) * (1f / 255f),
+            ((color >> 24) & 0xFF) * (1f / 255f) * opacity
+        );
+#else
         byte r = (byte)(color & 0xFF);
         byte g = (byte)((color >> 8) & 0xFF);
         byte b = (byte)((color >> 16) & 0xFF);
         byte a = (byte)((color >> 24) & 0xFF);
         return nvgRGBA(r, g, b, (byte)(a * opacity));
+#endif
     }
 
     // grad->xform is the user→gradient inverse transform (set by nsvg__xformInverse in nsvg__scaleToViewbox).
@@ -314,7 +324,7 @@ public static unsafe class NanosvgdemoApp
     private static NVGpaint GradientPaint(IntPtr ctx, NSVGpaint* paint, float opacity)
     {
 #if WEB
-        NSVGgradient* grad = (NSVGgradient*)(nuint)paint->gradient;
+        NSVGgradient* grad = (NSVGgradient*)(nuint)paint->gradient;  // gradient ptr is same union member as color on WASM
 #else
         NSVGgradient* grad = paint->gradient;
 #endif
@@ -364,8 +374,6 @@ public static unsafe class NanosvgdemoApp
         return area;
     }
 
-    private static bool _vectorDebugLogged = false;
-
     private static void DrawVectorSVG()
     {
         float winW = sapp_widthf();
@@ -383,18 +391,8 @@ public static unsafe class NanosvgdemoApp
         nvgTranslate(state.nvgCtx, tx, ty);
         nvgScale(state.nvgCtx, scale, scale);
 
-        bool doLog = !_vectorDebugLogged;
-        _vectorDebugLogged = true;
-        int shapeIdx = 0;
-
         for (NSVGshape* shape = state.parsedImage->shapes; shape != null; shape = shape->next)
         {
-            if (doLog && shapeIdx < 3)
-            {
-                int npts = shape->paths != null ? shape->paths->npts : 0;
-                Console.WriteLine($"[VEC] shape[{shapeIdx}]: fill.type={shape->fill.type} fill.color=0x{shape->fill.color:X8} stroke.type={shape->stroke.type} opacity={shape->opacity} npts={npts}");
-            }
-            shapeIdx++;
             if ((shape->flags & (byte)NSVGflags.NSVG_FLAGS_VISIBLE) == 0)
                 continue;
 
