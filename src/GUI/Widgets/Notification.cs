@@ -79,7 +79,7 @@ public sealed class NotificationHost : Widget
         var theme = ThemeManager.Current;
         float screenW = Bounds.Width;
         float screenH = Bounds.Height;
-        float dt      = 1f / 60f;   // approx; sufficient for per-frame decay
+        float dt      = AnimationManager.Instance?.LastDelta ?? (1f / 60f);
 
         float startX = screenW - ToastW - ToastMarginR;
         float startY = screenH - ToastMarginB - ToastH;

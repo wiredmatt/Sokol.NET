@@ -24,11 +24,14 @@ public sealed class AnimationManager
 
     public void Unregister(Tween tween) => _tweens.Remove(tween);
 
+    public float LastDelta { get; private set; }
+
     public void Update()
     {
         double now   = stm_sec(stm_now());
         float  delta = (float)(now - _lastTime);
         _lastTime    = now;
+        LastDelta    = delta;
 
         // Guard against large gaps (app was backgrounded, first frame, etc.).
         if (delta > 0.1f) delta = 0.016f;
